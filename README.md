@@ -8,7 +8,7 @@ this implementation is focusing on providing dsp scripting processing
 for other hosts (like pure-data and Max/MSP) and platforms.
 
 This project comes with a subset of the original eel2 code from Cockos 
-WDL[http://www.cockos.com/wdl].
+[WDL](http://www.cockos.com/wdl).
 
 See [this](http://forum.cockos.com/showthread.php?t=27764) for great JSFX
 examples.
