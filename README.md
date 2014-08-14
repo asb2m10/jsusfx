@@ -3,6 +3,8 @@ jsusfx -  Opensource Jesusonic FX implementation
 jsusfx is an opensource implementation of the [JSFX](http://www.reaper.fm/sdk/js/js.php) 
 scripting language that is available with [Reaper](http://www.reaper.fm).
 
+*There is too much bugs to be usable, but should be good enough for regular use soon!*
+
 While the original JSFX scripting language can do alot of thing in Reaper, 
 this implementation is focusing on providing dsp scripting processing 
 for other hosts (like pure-data and Max/MSP) and platforms.
