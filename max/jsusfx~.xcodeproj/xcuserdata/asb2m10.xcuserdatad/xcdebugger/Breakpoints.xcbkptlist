@@ -8,24 +8,13 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "jsusfx_max.cpp"
-         timestampString = "428215021.181862"
+         timestampString = "429676442.636054"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "23"
-         endingLineNumber = "23">
-      </FileBreakpoint>
-      <FileBreakpoint
-         shouldBeEnabled = "No"
-         ignoreCount = "0"
-         continueAfterRunningActions = "No"
-         filePath = "jsusfx_max.cpp"
-         timestampString = "428476618.017898"
-         startingColumnNumber = "9223372036854775807"
-         endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "66"
-         endingLineNumber = "66"
-         landmarkName = "jsusfx_dblclick(t_jsusfx *x)"
-         landmarkType = "7">
+         startingLineNumber = "26"
+         endingLineNumber = "26"
+         landmarkName = "displayError(const char *msg)"
+         landmarkType = "5">
       </FileBreakpoint>
    </FileBreakpoints>
 </Bucket>

@@ -7,18 +7,18 @@
 #include "z_dsp.h"
 #include "ext_buffer.h"
 #include "ext_critical.h"
+#include "ext_path.h"
+#include "ext_sysfile.h"
 
 #include "../jsusfx.h"
 
 class JsusFxMax : public JsusFx {
-    using JsusFx::displayMsg;
-    using JsusFx::displayError;
 public:
-    void displayMsg(char *msg) {
+    void displayMsg(const char *msg) {
         post(msg);
     }
 
-    void displayError(char *msg) {
+    void displayError(const char *msg) {
         error(msg);
     }
 };
@@ -31,6 +31,7 @@ typedef struct _jsusfx {
     t_object *m_editor;
     t_critical critical;
     void *outlet1;
+	t_handle text;
 } t_jsusfx;
 
 static t_class *jsusfx_class;
@@ -54,20 +55,36 @@ void jsusfx_describe(t_jsusfx *x) {
     }
 }
 
+t_max_err sysfile_geteof(t_filehandle f, t_ptr_size *logeof);
+t_max_err sysfile_read( t_filehandle f, t_ptr_size *count, void *bufptr);
+
 void jsusfx_dblclick(t_jsusfx *x) {
     if (!x->m_editor) {
-        char fullpath[1024];
-        path_toabsolutesystempath(x->path, x->scriptname, fullpath);
-        std::ifstream is(fullpath);
-        char stupid[65535];
-        is.read(stupid, 65535);
-        if ( ! is.is_open() ) {
-			error("jsusfx~: error opening file %s", fullpath);
-		}
-		
+        t_filehandle fh_read;
+        if ( path_opensysfile(x->scriptname, x->path, &fh_read, READ_PERM) ) {
+            error("unable to openfile");
+            return;
+        }
+        
+        long err;
+        t_ptr_size eof;
+        
+		sysfile_geteof(fh_read, &eof);
+       
+		if (x->text)
+			sysmem_resizehandle(x->text, eof);
+		else
+			x->text = sysmem_newhandle(eof);
+
+        err = sysfile_readtextfile(fh_read, x->text, eof, TEXT_LB_NATIVE);
+        if (err) {
+            error("unable to readfile %s", x->scriptname);
+        }
+
 		x->m_editor = reinterpret_cast<t_object *>(object_new(CLASS_NOBOX, gensym("jed"), (t_object *)x, 0));
-        object_method(x->m_editor, gensym("filename"), gensym(x->scriptname), x->path);
-        object_method(x->m_editor, gensym("settext"), stupid, gensym("utf-8"));
+        object_attr_setchar(x->m_editor, gensym("scratch"), 1);
+        object_method(x->m_editor, gensym("settext"), *(x->text), gensym("utf-8"));
+        object_method(x->m_editor, gensym("filename"), x->scriptname, x->path);
     } else {
         object_attr_setchar(x->m_editor, gensym("visible"), 1);
     }
@@ -78,6 +95,7 @@ long jsusfx_edsave(t_jsusfx *x, char **ht, long size) {
 	
 	critical_enter(x->critical);
 	if ( x->fx->compile(ss) == true ) {
+        post("jsusfx~: effect '%s' compiled sucessfully", x->fx->desc);
 		x->fx->prepare(sys_getsr(), sys_getblksize());
 	}
 	critical_exit(x->critical);    
@@ -132,12 +150,18 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
     
     if ( argc >= 2 && atom_gettype(argv+1) == A_LONG ) {
 		x->fx->normalizeSliders = atom_getlong(argv+1);
-	}
+	} else {
+        x->fx->normalizeSliders = 1;
+    }
+    post("normalizer sl %x", x->fx->normalizeSliders);
 	return (x);
 }
 
 void jsusfx_free(t_jsusfx *x) {
-	dsp_free((t_pxobject*)x);	
+    if ( x->m_editor )
+        object_method(x->m_editor, gensym("w_close"));
+	dsp_free((t_pxobject*)x);
+    sysmem_freehandle(x->text);
     critical_free(x->critical);
     delete x->fx;
 }
@@ -151,7 +175,7 @@ void jsusfx_slider(t_jsusfx *x, t_int id, double value) {
         return;
     }
     
-    post("sending %g to %s", value, x->fx->sliders[id].desc);
+    //post("sending %g to %s", value, x->fx->sliders[id].desc);
     
     x->fx->moveSlider(id, value);
 }

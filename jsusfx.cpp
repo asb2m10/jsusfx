@@ -6,6 +6,8 @@
 #include "WDL/ptrlist.h"
 #include "WDL/assocarray.h"
 
+#include "ext.h"
+
 using namespace std;
 
 #define AUTOVAR(name) name = NSEEL_VM_regvar(m_vm, #name); *name = 0
@@ -192,8 +194,9 @@ void JsusFx::moveSlider(int idx, float value) {
 	if ( normalizeSliders != 0 ) {
 		float steps = sliders[idx].max - sliders[idx].min;
 
-		value = (value * steps) / normalizeSliders;
-		value += sliders[idx].min;
+		float tmp  = (value * steps) / normalizeSliders;
+		tmp += sliders[idx].min;
+        post("normalizing %g %g", value, tmp);
 	}
 	computeSlider |= sliders[idx].setValue(value);
 }
