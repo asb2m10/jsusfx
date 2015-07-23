@@ -1,7 +1,7 @@
-CC=gcc
+CC=clang	
 CFLAGS=-O -g -DWDL_FFT_REALSIZE=8
 LFLAGS=
-CXX=g++
+CXX=clang++
 PORTABLE=true
 
 OBJS=../jsusfx.o ../WDL/eel2/nseel-caltab.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-lextab.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o jsusfx_test.o
@@ -14,7 +14,7 @@ ifeq ($(UNAME_S),Darwin)
     CFLAGS += -arch $(ARCH)
   else
     ARCH = i686
-    CFLAGS += -arch i386
+    CFLAGS += -arch i686
   endif
 else
   ARCH := $(shell uname -m)
@@ -45,7 +45,7 @@ endif
 CXXFLAGS=$(CFLAGS)
 
 jsusfx_test: jsusfx_test.o $(OBJS) $(OBJS2)
-	g++ -o $@ $^ $(CXXFLAGS) $(LFLAGS)
+	clang++ -o $@ $^ $(CXXFLAGS) $(LFLAGS)
 
 test: jsusfx_test
 	./jsusfx_test

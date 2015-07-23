@@ -1,3 +1,20 @@
+/*
+ * Copyright 2014-2015 Pascal Gauthier
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * *distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
+
 #include <fstream>
 #include <sstream>
 
@@ -13,13 +30,25 @@
 #include "../jsusfx.h"
 
 class JsusFxMax : public JsusFx {
-public:
-    void displayMsg(const char *msg) {
-        post(msg);
+public:    
+    void displayMsg(const char *fmt, ...) {
+        char output[4096];
+        va_list argptr;
+        va_start(argptr, fmt);
+        vsnprintf(output, 4095, fmt, argptr);
+        va_end(argptr);
+        
+        post("%s\n", output);
     }
 
-    void displayError(const char *msg) {
-        error(msg);
+    void displayError(const char *fmt, ...) {
+        char output[4096];
+        va_list argptr;
+        va_start(argptr, fmt);
+        vsnprintf(output, 4095, fmt, argptr);
+        va_end(argptr);
+        
+        error("%s\n", output);
     }
 };
 
@@ -53,6 +82,10 @@ void jsusfx_describe(t_jsusfx *x) {
             outlet_anything(x->outlet1 , gensym("slider"), 4, argv);
         } 
     }
+}
+
+void jsusfx_showvars(t_jsusfx *x) {
+    x->fx->displayVar();
 }
 
 t_max_err sysfile_geteof(t_filehandle f, t_ptr_size *logeof);
@@ -247,7 +280,7 @@ void jsusfx_assist(t_jsusfx *x, void *b, long m, long a, char *s) {
 		switch (a) {
             case 0: sprintf(s,"(signal) Left Output");	break;
             case 1: sprintf(s,"(signal) Right Output");	break;
-            case 2: sprintf(s,"jsfx content");	break;
+            case 2: sprintf(s,"jsfx info");	break;
 		}
 	}
 }
@@ -262,8 +295,8 @@ int C74_EXPORT main(void) {
     class_addmethod(c, (method)jsusfx_dblclick, "dblclick", A_CANT, 0);
     class_addmethod(c, (method)jsusfx_edsave, "edsave", A_CANT, 0);
     class_addmethod(c, (method)jsusfx_edclose, "edclose", A_CANT, 0);
-    
-    //class_addmethod(c, (method)jsusfx_dsp, "dsp", A_CANT, 0);
+    class_addmethod(c, (method)jsusfx_describe, "describe", A_CANT, 0);
+    class_addmethod(c, (method)jsusfx_showvars, "showvars", A_CANT, 0);
     
 	class_dspinit(c);
 	class_register(CLASS_BOX, c);
@@ -273,22 +306,3 @@ int C74_EXPORT main(void) {
 
 	return 0;
 }
-
-
-/*
-t_int *jsusfx_perform(t_int *w) {
-    t_jsusfx *x = reinterpret_cast<t_jsusfx *>(w[1]);
-    //int sz = *(w[2]);
-    float **ins = reinterpret_cast<float **>(w[3]);
-    float **outs = reinterpret_cast<float **>(w[5]);
-    x->fx.process(ins, outs, 64);
-    return w+6;
-}
-
-
-void jsusfx_dsp(t_jsusfx *x, t_signal **sp, short *count) {
-    x->fx.prepare(sp[0]->s_sr, sp[0]->s_size);
-    	dsp_add(jsusfx_peform, 4, x, sp[0]->s_vec, sp[1]->s_vec, sp[0]->s_n);
-}
-*/
-

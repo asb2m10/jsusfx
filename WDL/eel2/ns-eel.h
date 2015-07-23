@@ -145,6 +145,7 @@ void NSEEL_VM_SetGRAM(NSEEL_VMCTX ctx, void **gram);
 void NSEEL_VM_FreeGRAM(void **ufd); // frees a gmem context.
 void NSEEL_VM_SetCustomFuncThis(NSEEL_VMCTX ctx, void *thisptr);
 
+EEL_F *NSEEL_VM_getramptr(NSEEL_VMCTX ctx, unsigned int offs, int *validCount);
 
 struct eelStringSegmentRec {
   struct eelStringSegmentRec *_next;
@@ -169,7 +170,7 @@ char *NSEEL_code_getcodeerror(NSEEL_VMCTX ctx);
 int NSEEL_code_geterror_flag(NSEEL_VMCTX ctx);
 void NSEEL_code_execute(NSEEL_CODEHANDLE code);
 void NSEEL_code_free(NSEEL_CODEHANDLE code);
-int *NSEEL_code_getstats(NSEEL_CODEHANDLE code); // 4 ints...source bytes, static code bytes, call code bytes, data bytes
+int *EEL_STRING_DEBUGOUT(NSEEL_CODEHANDLE code); // 4 ints...source bytes, static code bytes, call code bytes, data bytes
   
 
 // global memory control/view

@@ -13,8 +13,8 @@
          endingColumnNumber = "9223372036854775807"
          startingLineNumber = "26"
          endingLineNumber = "26"
-         landmarkName = "displayError(const char *msg)"
-         landmarkType = "5">
+         landmarkName = "class JsusFxMax"
+         landmarkType = "3">
       </FileBreakpoint>
    </FileBreakpoints>
 </Bucket>

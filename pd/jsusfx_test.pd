@@ -1,0 +1,78 @@
+#N canvas 798 371 636 487 10;
+#X obj 372 439 dac~;
+#X obj 480 59 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
+-262144 -1 -1 2800 1;
+#X obj 479 20 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
+-262144 -1 -1 12700 1;
+#X msg 15 44 describe;
+#X obj 478 99 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
+0 10 -262144 -1 -1 7800 1;
+#X obj 477 139 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
+0 10 -262144 -1 -1 10500 1;
+#X obj 260 383 jsusfx~ gain.jsfx;
+#X obj 477 182 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X obj 323 203 oggread~;
+#X msg 323 152 1;
+#X msg 344 172 0;
+#N canvas 421 422 844 347 slider_r 0;
+#X obj 199 220 outlet;
+#X obj 45 33 r slider1;
+#X obj 114 34 r slider2;
+#X obj 180 37 r slider3;
+#X obj 245 30 r slider4;
+#X msg 44 87 slider 1 \$1;
+#X obj 323 26 r slider5;
+#X msg 326 87 slider 5 \$1;
+#X msg 242 114 slider 4 \$1;
+#X msg 180 89 slider 3 \$1;
+#X msg 111 114 slider 2 \$1;
+#X obj 412 25 r slider6;
+#X msg 417 86 slider 6 \$1;
+#X obj 516 22 r slider7;
+#X msg 518 83 slider 7 \$1;
+#X connect 1 0 5 0;
+#X connect 2 0 10 0;
+#X connect 3 0 9 0;
+#X connect 4 0 8 0;
+#X connect 5 0 0 0;
+#X connect 6 0 7 0;
+#X connect 7 0 0 0;
+#X connect 8 0 0 0;
+#X connect 9 0 0 0;
+#X connect 10 0 0 0;
+#X connect 11 0 12 0;
+#X connect 12 0 0 0;
+#X connect 13 0 14 0;
+#X connect 14 0 0 0;
+#X restore 393 337 pd slider_r;
+#X msg 46 78 dumpvars;
+#X msg 17 382 compile gain.jsfx;
+#X msg 306 122 open test.ogg;
+#X obj 478 226 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X obj 478 270 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X text 108 79 dumpvars output all the variable output to the pd console
+;
+#X text 81 44 describe outputs the assigned slider to the pd console
+;
+#X text 13 445 Use compile to recompile (or change) the current script
+;
+#X text 9 6 jsusfx~ : Jesusonic for pure-data ============================================================
+;
+#X msg 165 412 compile sweepinglowpass;
+#X msg 57 412 compile octaveup;
+#X connect 3 0 6 0;
+#X connect 6 0 0 0;
+#X connect 6 1 0 1;
+#X connect 8 0 6 0;
+#X connect 8 1 6 1;
+#X connect 9 0 8 0;
+#X connect 10 0 8 0;
+#X connect 11 0 6 0;
+#X connect 12 0 6 0;
+#X connect 13 0 6 0;
+#X connect 14 0 8 0;
+#X connect 21 0 6 0;
+#X connect 22 0 6 0;

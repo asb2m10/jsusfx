@@ -1,12 +1,29 @@
+/*
+ * Copyright 2014-2015 Pascal Gauthier
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * *distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
+
 #pragma once
 
 #include <string.h>
 #include <sstream>
 #include <iostream>
 #include <string>
-#include "ext.h"
-#include "WDL/eel2/ns-eel.h"
 
+#include "WDL/eel2/ns-eel.h"
+#include "WDL/eel2/ns-eel-int.h"
 class eel_string_context_state;
 
 class Slider {
@@ -32,26 +49,31 @@ public:
 
 		char *tmp = strchr(buffer, '>');
 		if ( tmp != NULL ) {
-			strcpy(desc, tmp+1);
+			strncpy(desc, tmp+1, 64);
 			tmp = 0;
+
+			int l = strlen(desc);
+			desc[l-1] = 0;
 		} else {
 			desc[0] = 0;
 		}
 		
 		tmp = strtok(buffer, "<,");
-		if ( !sscanf(tmp, "%f", &def) ) {
+		if ( !sscanf(tmp, "%f", &def) )
 			return false;
-		} 
 		
 		tmp = strtok(NULL, "<,");
-		if ( !sscanf(tmp, "%f", &min) ) {
+		if ( !sscanf(tmp, "%f", &min) )
 			return false;
-		}
 		
 		tmp = strtok(NULL, "<,");
-		if ( !sscanf(tmp, "%f", &max) ) {
+		if ( !sscanf(tmp, "%f", &max) )
 			return false;
-		}
+
+		tmp = strtok(NULL, "<,");
+		if ( tmp != NULL )
+			sscanf(tmp, "%f", &inc);
+
 		*owner = def;
 		exists = true;
 		return true;
@@ -98,7 +120,7 @@ public:
 	eel_string_context_state *m_string_context;
     
 	JsusFx();
-	~JsusFx();
+	virtual ~JsusFx();
 
 	bool compile(std::istream &input);
 	void prepare(int sampleRate, int blockSize);
@@ -106,11 +128,13 @@ public:
 	void process(float **input, float **output, int size);
 	void process64(double **input, double **output, int size);
 	
-	virtual void displayMsg(const char *msg);
-	virtual void displayError(const char *msg);
+	virtual void displayMsg(const char *fmt, ...) = 0;
+	virtual void displayError(const char *fmt, ...) = 0;
 
+    void dumpvars();
+    
 	static void init();
-
+    
 	char desc[64];
 };
 

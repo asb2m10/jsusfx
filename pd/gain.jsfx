@@ -1,0 +1,10 @@
+desc:gain balblabla
+
+slider1:1<0,5,0.01>GAINL
+slider2:1<0,5,0.01>GAINR
+
+@init
+gg=0;
+@sample
+spl0=spl0*slider1;
+spl1=spl1*slider2;
