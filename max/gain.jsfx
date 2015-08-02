@@ -1,7 +1,7 @@
-desc:gain balblabla
+desc:gain balblabla ok
 
-slider1:1<0,5,0.01>GAINL
-slider2:1<0,5,0.01>GAINR
+slider1:1<0,5,0.01>GAINLC
+slider2:1<0,5,0.01>GAINRR
 
 @init
 gg=0;

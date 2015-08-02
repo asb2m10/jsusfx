@@ -1,0 +1,289 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+desc: Waveshaper Multi (Various Formulas)
+
+slider1:0<0,1,1{Stereo,Mono}>Processing
+slider2:0<0,1,1{Type1,Type2,Type3}>Waveshaper
+slider3:0<0,100,0.05>Drive 2xOS (%)
+slider4:0<0,100,0.05>Muffle (%)
+slider5:0<-25,25,0.05>Output (dB)
+slider6:0<0,1,1{On,Off}>Limiter
+slider7:0<0,1,1{Off,On}>Oversample (x2)
+
+@init
+//fir restoration
+c1 = 1;
+c2 = -0.75;
+c3 = 0.17;
+fgain = 4.1;
+
+//fir bandlimit
+bl_c1 = 0.52;
+bl_c2 = 0.54;
+bl_c3 = -0.02;
+
+@slider
+
+os = slider7;
+//outgain
+outgain = 10^(slider5/20);
+
+//drive
+drive1 = 1+slider3/35;
+drvc = 1.5;
+drive2 = slider3/99-0.07;
+drv2_k = drive2/(1-drive2);
+pi_drv2 = $pi*drive2;
+sin_pi_drv2 = sin($pi*drive2);
+
+//lp
+slider4 > 0 ? (
+  muffle = 20000-(slider4*100+9000);
+  lp_cut = 2*$pi*muffle;
+  lp_n = 1/(lp_cut+2*srate);
+  lp_b1 = (2*srate-lp_cut)*lp_n;
+  lp_a0 = lp_a1=lp_cut*lp_n;
+);
+
+@sample
+
+//===========================
+//stereo
+slider1 == 0 ? (
+
+inl = spl0;
+inr = spl1;
+ 
+slider3 > 0 ? (
+
+
+//oversample ?
+os == 1 ? (
+
+//---------------------------
+//power series in
+ps_out1l = 0.5*(inl+ps_out2l);
+ps_out2l = 0.5*ps_out1l;
+
+ps_out1r = 0.5*(inr+ps_out2r);
+ps_out2r = 0.5*ps_out1r;
+
+//---------------------------
+//drive
+slider2 == 0 ? (
+  o_in1l = (1+drv2_k)*ps_out1l/(1+drv2_k*abs(ps_out1l));
+  o_in2l = (1+drv2_k)*ps_out2l/(1+drv2_k*abs(ps_out2l));
+  o_in1r = (1+drv2_k)*ps_out1r/(1+drv2_k*abs(ps_out1r));
+  o_in2r = (1+drv2_k)*ps_out2r/(1+drv2_k*abs(ps_out2r));
+);
+slider2 == 1 ? (
+  o_in1l = sin(pi_drv2*ps_out1l)*1/sin_pi_drv2;
+  o_in2l = sin(pi_drv2*ps_out2l)*1/sin_pi_drv2;
+  o_in1r = sin(pi_drv2*ps_out1r)*1/sin_pi_drv2;
+  o_in2r = sin(pi_drv2*ps_out2r)*1/sin_pi_drv2;
+);
+slider2 == 2 ? (  
+  o_in1l  = (ps_out1l)*(abs((ps_out1l)) + drive1)/((ps_out1l)^2 + (drive1-1)*abs((ps_out1l)) + 1)*(drive1/drvc);
+  o_in2l  = (ps_out2l)*(abs((ps_out2l)) + drive1)/((ps_out2l)^2 + (drive1-1)*abs((ps_out2l)) + 1)*(drive1/drvc);
+  o_in1r  = (ps_out1r)*(abs((ps_out1r)) + drive1)/((ps_out1r)^2 + (drive1-1)*abs((ps_out1r)) + 1)*(drive1/drvc);
+  o_in2r  = (ps_out2r)*(abs((ps_out2r)) + drive1)/((ps_out2r)^2 + (drive1-1)*abs((ps_out2r)) + 1)*(drive1/drvc);
+);
+
+//---------------------------
+//bandlimit
+bl3_l1 = bl2_l1;
+bl3_r1 = bl2_r1;
+bl3_l2 = bl2_l2;
+bl3_r2 = bl2_r2;
+
+bl2_l1 = bl1_l1;
+bl2_r1 = bl1_r1;
+bl2_l2 = bl1_l2;
+bl2_r2 = bl1_r2;
+
+bl1_l1 = o_in1l;
+bl1_r1 = o_in1r;
+bl1_l2 = o_in2l;
+bl1_r2 = o_in2r;
+
+bl_out1l = (bl1_l1*bl_c1 + bl2_l1*bl_c2 + bl3_l1*bl_c3);
+bl_out1r = (bl1_r1*bl_c1 + bl2_r1*bl_c2 + bl3_r1*bl_c3);
+bl_out2l = (bl1_l2*bl_c1 + bl2_l2*bl_c2 + bl3_l2*bl_c3);
+bl_out2r = (bl1_r2*bl_c1 + bl2_r2*bl_c2 + bl3_r2*bl_c3);
+
+//---------------------------
+//power series out
+o_out1l = 0.5*(bl_out1l+o_out2l);
+o_out2l = 0.5*(bl_out2l+o_out1l);
+
+o_out1r = 0.5*(bl_out1r+o_out2r);
+o_out2r = 0.5*(bl_out2r+o_out1r);
+
+//---------------------------
+//fir restoration
+s3l = s2l;
+s3r = s2r;
+s2l = s1l;
+s2r = s1r;
+s1l = o_out1l;
+s1r = o_out1r;
+
+o_outl = (s1l*c1+s2l*c2+s3l*c3)*fgain;
+o_outr = (s1r*c1+s2r*c2+s3r*c3)*fgain;
+
+) : (
+
+//drive
+slider2 == 0 ? (
+  o_outl = (1+drv2_k)*inl/(1+drv2_k*abs(inl));
+  o_outr = (1+drv2_k)*inr/(1+drv2_k*abs(inr));
+);
+slider2 == 1 ? (
+  o_outl = sin(pi_drv2*inl)*1/sin_pi_drv2;
+  o_outr = sin(pi_drv2*inr)*1/sin_pi_drv2;
+);
+slider2 == 2 ? (  
+  o_outl  = (inl)*(abs((inl)) + drive1)/((inl)^2 + (drive1-1)*abs((inl)) + 1)*(drive1/drvc);
+  o_outr  = (inr)*(abs((inr)) + drive1)/((inr)^2 + (drive1-1)*abs((inr)) + 1)*(drive1/drvc);
+);
+
+);
+
+) : (
+o_outl = inl;
+o_outr = inr;
+);
+
+//---------------------------
+//lp
+slider4 > 0 ? (
+  lp_inl = o_outl;
+  lp_inr = o_outr;
+  lp_outputl = lp_inl*lp_a0+lp_inl*lp_a1+lp_outputl*lp_b1;
+  lp_outputr = lp_inr*lp_a0+lp_inr*lp_a1+lp_outputr*lp_b1;
+  o_outl = lp_outputl;
+  o_outr = lp_outputr;
+);
+
+//---------------------------
+//limiter
+outl = o_outl*outgain;
+outr = o_outr*outgain;
+
+slider6 == 0 ? (
+  outl = min(max(outl,-0.98),0.98);
+  outr = min(max(outr,-0.98),0.98);
+);
+spl0 = outl;
+spl1 = outr;
+
+//===========================
+//mono
+) : (
+
+in = (spl0+spl1)/2;
+
+slider3 > 0 ? (
+
+os == 1 ? (
+
+//---------------------------
+//power series in
+ps_out1 = 0.5*(in+ps_out2);
+ps_out2 = 0.5*ps_out1;
+
+//---------------------------
+//drive
+slider2 == 0 ? (  
+  o_in1 = (1+drv2_k)*ps_out1/(1+drv2_k*abs(ps_out1));
+  o_in2 = (1+drv2_k)*ps_out2/(1+drv2_k*abs(ps_out2));
+);
+slider2 == 1 ? (
+  o_in1 = sin(pi_drv2*ps_out1)*1/sin_pi_drv2;
+  o_in2 = sin(pi_drv2*ps_out2)*1/sin_pi_drv2;
+);
+slider2 == 2 ? (  
+  o_in1  = (ps_out1)*(abs((ps_out1)) + drive1)/((ps_out1)^2 + (drive1-1)*abs((ps_out1)) + 1)*(drive1/drvc);
+  o_in2  = (ps_out2)*(abs((ps_out2)) + drive1)/((ps_out2)^2 + (drive1-1)*abs((ps_out2)) + 1)*(drive1/drvc);
+);
+
+//---------------------------
+//bandlimit
+bl3_1 = bl2_1;
+bl3_2 = bl2_2;
+
+bl2_1 = bl1_1;
+bl2_2 = bl1_2;
+
+bl1_1 = o_in1;
+bl1_2 = o_in2;
+
+bl_out1 = (bl1_1*bl_c1 + bl2_1*bl_c2 + bl3_1*bl_c3);
+bl_out2 = (bl1_2*bl_c1 + bl2_2*bl_c2 + bl3_2*bl_c3);
+
+//---------------------------
+//power series out
+o_out1 = 0.5*(bl_out1+o_out2);
+o_out2 = 0.5*(bl_out2+o_out1);
+
+//---------------------------
+//fir restoration
+s3l = s2l;
+s2l = s1l;
+s1l = o_out1;
+
+o_out = (s1l*c1+s2l*c2+s3l*c3)*fgain;
+
+) : (
+
+
+//drive
+slider2 == 0 ? (
+  o_out = (1+drv2_k)*in/(1+drv2_k*abs(in));  
+);
+slider2 == 1 ? (
+  o_out = sin(pi_drv2*in)*1/sin_pi_drv2;  
+);
+slider2 == 2 ? (  
+  o_out  = (in)*(abs((in)) + drive1)/((in)^2 + (drive1-1)*abs((in)) + 1)*(drive1/drvc); 
+);
+
+);
+
+) : (
+o_out = in;
+);
+
+//---------------------------
+//lp
+slider4 > 0 ? (
+  lp_in = o_out;
+  lp_output = lp_in*lp_a0+lp_in*lp_a1+lp_output*lp_b1;
+  o_out = lp_output;
+);
+
+//---------------------------
+//limiter
+out = o_out*outgain;
+slider6 == 0 ? (
+  out = min(max(out,-0.98),0.98);
+);
+spl0=spl1=out;
+
+);
+

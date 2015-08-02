@@ -1,0 +1,222 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+//**********************************************************
+// Cheby Type I
+// References:
+// Christian W. Budde, Cockos, Wiki
+//**********************************************************
+
+desc:Chebyshev Filter
+
+slider1:0<0,1,1{Stereo,Mono}>Processing
+slider2:0<0,2,1{LP (24dB/oct),HP (6dB/oct),BP (6dB/oct)}>Filter Type
+slider3:100<0,100,0.05>Cutoff (Scale)
+slider4:0.3<0,0.9,0.0005>Passband ripple (Less/More)
+slider5:0<-25,25,0.05>Output (dB)
+slider6:0<0,1,1{On,Off}>Limiter
+
+@init
+//cDenorm = 10^-30;
+cDenorm = 0;
+mv=2^(-0.2/6);
+e = 2.718281828459045;
+pi = 3.141592653589793;
+cutoff = 20000;
+
+@slider
+mono = slider1;
+ftype = slider2;
+fs = srate;
+outgain = 10^(slider5/20);
+limiter = slider6;
+
+sx = 16+slider3*1.20103;
+cutoff = floor(exp(sx*log(1.059))*8.17742);
+
+cutoff < 90 ? (
+pbr = 0.5;
+) : (
+pbr = 1.03-0.1-slider4;
+);
+
+K = tan(pi*cutoff/srate);
+
+sg = (e^pbr-e^(-pbr))/2;
+cg = (e^pbr+e^(-pbr))/2;
+cg *= cg;
+
+Coeff0 = 1/(cg-0.85355339059327376220042218105097);
+Coeff1 = K*Coeff0*sg*1.847759065022573512256366378792;
+Coeff2 = 1/(cg-0.14644660940672623779957781894758);
+Coeff3 = K*Coeff2*sg*0.76536686473017954345691996806;
+
+K *= K;
+
+tgt_a0 = 1/(Coeff1+K+Coeff0);
+tgt_a1 = 2*(Coeff0-K)*tgt_a0;
+tgt_a2 = (Coeff1-K-Coeff0)*tgt_a0;
+tgt_b0 = tgt_a0*K;
+tgt_b1 = 2*tgt_b0;
+tgt_b2 = tgt_b0;
+
+tgt_a3 = 1/(Coeff3+K+Coeff2);
+tgt_a4 = 2*(Coeff2-K)*tgt_a3;
+tgt_a5 = (Coeff3-K-Coeff2)*tgt_a3;
+tgt_b3 = tgt_a3*K;
+tgt_b4 = 2*tgt_b3;
+tgt_b5 = tgt_b3;
+
+@block
+//interpolate all coeffs
+d_a1 = (tgt_a1-src_a1)/samplesblock;
+a1 = src_a1;
+src_a1 = tgt_a1;
+d_a2 = (tgt_a2-src_a2)/samplesblock;
+a2 = src_a2;
+src_a2 = tgt_a2;
+d_a4 = (tgt_a4-src_a4)/samplesblock;
+a4 = src_a4;
+src_a4 = tgt_a4;
+d_a5 = (tgt_a5-src_a5)/samplesblock;
+a5 = src_a5;
+src_a5 = tgt_a5;
+d_b0 = (tgt_b0-src_b0)/samplesblock;
+b0 = src_b0;
+src_b0 = tgt_b0;
+d_b1 = (tgt_b1-src_b1)/samplesblock;
+b1 = src_b1;
+src_b1 = tgt_b1;
+d_b2 = (tgt_b2-src_b2)/samplesblock;
+b2 = src_b2;
+src_b2 = tgt_b2;
+d_b3 = (tgt_b3-src_b3)/samplesblock;
+b3 = src_b3;
+src_b3 = tgt_b3;
+d_b4 = (tgt_b4-src_b4)/samplesblock;
+b4 = src_b4;
+src_b4 = tgt_b4;
+d_b5 = (tgt_b5-src_b5)/samplesblock;
+b5 = src_b5;
+src_b5 = tgt_b5;
+
+@sample
+
+//interpolate
+a1 += d_a1;
+a2 += d_a2;
+a4 += d_a4;
+a5 += d_a5;
+b0 += d_b0;
+b1 += d_b1;
+b2 += d_b2;
+b3 += d_b3;
+b4 += d_b4;
+b5 += d_b5;
+
+//stereo
+mono == 0 ? (
+
+InputL = spl0;
+InputR = spl1;
+
+Stage1L = b0*InputL + State0L;
+Stage1R = b0*InputR + State0R;
+State0L = b1*InputL + a1*Stage1L + State1L;
+State0R = b1*InputR + a1*Stage1R + State1R;
+State1L = b2*InputL + a2*Stage1L;
+State1R = b2*InputR + a2*Stage1R;
+OutputL = b3*Stage1L + State2L;
+OutputR = b3*Stage1R + State2R;
+State2L = b4*Stage1L + a4*OutputL + State3L;
+State2R = b4*Stage1R + a4*OutputR + State3R;
+State3L = b5*Stage1L + a5*OutputL;
+State3R = b5*Stage1R + a5*OutputR;
+
+ftype == 0 ? (
+outl = OutputL;
+outr = OutputR;
+);
+ftype == 1 ? (
+outl = InputL-OutputL;
+outr = InputR-OutputR;
+);
+ftype == 2 ? (
+outl = 2*(Stage1L-OutputL);
+outr = 2*(Stage1R-OutputR);
+);
+
+outl = outl*outgain;
+outr = outr*outgain;
+
+//limiter
+limiter == 0 ? (
+  spl0 = min(max((outl+cDenorm),-mv),mv);
+  spl1 = min(max((outr+cDenorm),-mv),mv);
+) : (
+  spl0 = outl;
+  spl1 = outr;
+);
+
+//mono
+) : (
+
+Input = ((spl0+spl1)/2);
+
+Stage1 = b0*Input + State0;
+State0 = b1*Input + a1*Stage1 + State1;
+State1 = b2*Input + a2*Stage1;
+Output = b3*Stage1 + State2;
+State2 = b4*Stage1 + a4*Output + State3;
+State3 = b5*Stage1 + a5*Output;
+
+ftype == 0 ? (
+out = output;
+);
+ftype == 1 ? (
+out = Input-Output;
+);
+ftype == 2 ? (
+out = 2*(Stage1-Output);
+);
+
+out = out*outgain;
+
+//limiter
+limiter == 0 ? (
+  spl0 = min(max((out+cDenorm),-mv),mv);
+  spl1 = min(max((out+cDenorm),-mv),mv);
+) : (
+  spl0 = out;
+  spl1 = out;
+);
+
+);
+
+@gfx 100 10
+gfx_x=gfx_y=5;
+gfx_lineto(gfx_x, gfx_y,0);
+gfx_r=gfx_b=0;
+gfx_g=gfx_a=1;
+gfx_drawchar($'F');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(cutoff,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');

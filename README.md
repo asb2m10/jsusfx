@@ -1,41 +1,46 @@
-jsusfx -  Opensource Jesusonic FX implementation
+jsusfx -  Opensource JesuSonic FX implementation
 ================================================
 jsusfx is an opensource implementation of the [JSFX](http://www.reaper.fm/sdk/js/js.php) 
-scripting language that is available with [Reaper](http://www.reaper.fm).
+scripting language that was created by [Cockos](http://www.cockos.com/jesusonic/) and
+is made available with [Reaper](http://www.reaper.fm).
 
-While the original JSFX scripting language can do alot of things in Reaper, 
-this implementation is focusing on providing dsp scripting processing 
-for other hosts (like pure-data and Max/MSP) and platforms.
-
-The pure-data implementation is now somewhat stable... The Max still needs tunings.
+While the original JSFX scripting language can do alot of things in Reaper, this 
+implementation is focusing on providing dsp scripting processing for other hosts
+(like pure-data and Max/MSP) and platforms.
 
 This project comes with a subset of the original eel2 code from Cockos 
 [WDL](http://www.cockos.com/wdl).
 
-See [this](http://forum.cockos.com/showthread.php?t=27764) for great JSFX
-examples.
+While this project could support plugin formats like LV2 or VST, this 
+implementation focuses on Pure Data and Max support.
+
+Pure Data and Max implementation
+--------------------------------
+The external object is called jsusfx~ and the object arguments are the 
+script to run. This script is search trough your pd/max path.
+
+* To change a slider, you need to send [slider <num> <0..1 value>]
+* Sliders are normalized to 0..1 for all parameters
+* Turning on the DSP runs the @init section
+* Use [compile] message to recompile your script. Optionally you can specify a new script to compile
+* Use [describe] to output the associated sliders
+* Use [dumpvars] to dump the current variables values
+* Use [bypass 0/1] to bypass the effect
+* Double click on the object and you can edit the JSFX script (Max only)
+
+See the pd and max directory to see how to build them.
+
+TODO
+----
+* Adapt pd Makefile for OS X
+* Fix the gcc bytecode generation bug
+* Make the Intel JIT work 
 
 Limitations
 -----------
 * Only supports 2 in / 2 out
+* @gfx, @serialize and @import section is ignored
 * No midi support
-* No GFX (the GFX section is just ignored)
-* Only works with clang (gcc generates incompatible eel code; I will check that later)
-
-Pure-data and Max implementation
---------------------------------
-The external object is called jsusfx~. See the pd and max directory to 
-see how to build them.
-
-* It will check on the max/pd path to find the script file specified in the object creation arguments.
-* Sliders are normalized to 0..1 for all 'parameters'.
-* Turning on the DSP runs the @init section.
-* To change a slider, you need to send the following message [slider <num> <value>]
-* Use [compile] message to recompile your script.
-* Use [describe] to output the associated sliders.
-* Use [dumpvars] to dump the created variables .
-* If you double click on the object, you can edit the JSFX script (Max only).
-
 
 Credits
 -------

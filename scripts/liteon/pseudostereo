@@ -1,0 +1,166 @@
+/// (C) 2008-2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+// *****************************************************************************
+// Pseudo-Stereo
+// Based on Paul Kellet's excelent 'mdaStereo' plugin
+// *****************************************************************************
+
+//=======================================================
+desc:Pseudo-Stereo (mda)
+//=======================================================
+
+slider1:0<-100,100,0.01>Fx (%) : Haas ( - ) / Comb ( + )
+slider2:20<1,50,0.01>Delay (ms)
+slider3:0<-100,100,0.01>Balance (L/R)
+slider4:0<-20,20,0.01>Output (dB)
+
+//=======================================================
+@init
+//=======================================================
+
+//-------------------------------------------------------
+//define buffer size, srate based - 4410, 4800, 9600 etc
+//-------------------------------------------------------
+size = srate/10;
+bp = size;
+buffer = 0;
+
+//=======================================================
+@slider
+//=======================================================
+
+//-------------------------------------------------------
+//fx type: 'haas' or 'comb'
+//fxk - coeff for tweaking fx amounts
+//-------------------------------------------------------
+slider1 > 0 ? fxk = 115 : fxk = 200;
+fxamount = 0.5+(slider1/fxk);
+
+//-------------------------------------------------------
+//delay, some math here based on - x/1000*srate
+//-------------------------------------------------------
+tgt_del = sqr((srate*(22+4*slider2)-200000)/208000);
+
+//-------------------------------------------------------
+//outgain
+//-------------------------------------------------------
+outgain = 10^(slider4/20);
+
+//-------------------------------------------------------
+//balance
+//-------------------------------------------------------
+bal = slider3/100;
+tgt_bl = min(1-bal,1)*outgain;
+tgt_br = min(1+bal,1)*outgain;
+
+//-------------------------------------------------------
+//calculate feedback - haas or comb
+//-------------------------------------------------------
+fxamount<0.5 ? (
+    tgt_li = 0.25+(1.5*fxamount);
+    tgt_ld = 0;
+    tgt_ri = 2*fxamount;
+    tgt_rd = 1-tgt_ri;
+ ) : (
+    tgt_li = 1.5-fxamount;
+    tgt_ld = fxamount-0.5;
+    tgt_ri = tgt_li;
+    tgt_rd = -tgt_ld;
+);
+fxamnt_abs = 0.5+abs(fxamount-0.5);
+tgt_li *= fxamnt_abs;
+tgt_ld *= fxamnt_abs;
+tgt_ri *= fxamnt_abs;
+tgt_rd *= fxamnt_abs;
+
+//=======================================================
+@block
+//=======================================================
+
+//-------------------------------------------------------
+//interpolate params per sblock
+//-------------------------------------------------------
+d_ri = (tgt_ri-src_ri)/samplesblock;
+ri = src_ri;
+src_ri = tgt_ri;
+d_rd = (tgt_rd-src_rd)/samplesblock;
+rd = src_rd;
+src_rd = tgt_rd;
+d_li = (tgt_li-src_li)/samplesblock;
+li = src_li;
+src_li = tgt_li;
+d_ld = (tgt_ld-src_ld)/samplesblock;
+ld = src_ld;
+src_ld = tgt_ld;
+d_del = (tgt_del-src_del)/samplesblock;
+del = src_del;
+src_del = tgt_del;
+d_bl = (tgt_bl-src_bl)/samplesblock;
+bl = src_bl;
+src_bl = tgt_bl;
+d_br = (tgt_br-src_br)/samplesblock;
+br = src_br;
+src_br = tgt_br;
+
+//=======================================================
+@sample
+//=======================================================
+
+//-------------------------------------------------------
+//interpolate params
+//-------------------------------------------------------
+li += d_li;
+ld += d_ld;
+ri += d_ri;
+rd += d_rd;
+del += d_del;
+bl += d_bl;
+br += d_br;
+
+//-------------------------------------------------------
+//set inputs and sum to mono
+//-------------------------------------------------------
+chl = spl0;
+chr = spl1;
+a = (spl0+spl1)/2;
+         
+//-------------------------------------------------------
+//write new value in buffer
+//-------------------------------------------------------
+buffer[bp] = a; 
+
+//-------------------------------------------------------
+//apply feedback
+//-------------------------------------------------------
+tmp = (bp+del)%size;
+b =  buffer[tmp];
+chl += (a*li)-(b*ld);
+chr += (a*ri)-(b*rd);
+
+//-------------------------------------------------------
+//new buffer position or reset
+//-------------------------------------------------------
+bp = bp-1;
+bp < 0 ? bp = size;
+
+//-------------------------------------------------------
+//output
+//-------------------------------------------------------
+spl0 = chl*bl*0.7;
+spl1 = chr*br*0.7;
+

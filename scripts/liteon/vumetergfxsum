@@ -1,0 +1,301 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+//******************************************************************************
+//References: cockos, wiki, math books
+//******************************************************************************
+
+desc: VUMeterGFXSum
+
+slider1:50<1,300,1>Response (MS)
+slider2:5<1,10,0.1>Release (Slow/Fast)
+
+@init
+//st - sample time, sc - db scale, rp - right channel y pading, r - radius
+sc = 6/log(2);
+rp = 261;
+r = 200;
+yl = yr = ylt = yrt = 74;
+xl = xr = 66;
+ms  = slider1;
+cs = 0;
+suml = sumr = 0;
+rms_i = 0;
+i_max = 36;
+
+@slider
+rel = slider2;
+ms = slider1;
+st = ms*srate/1000;
+hold = (0.001*ms*srate)*36;
+cs = 0;
+suml = sumr = 0;
+
+@block
+rmsl = floor(sc*log(sqrt(suml/cs))*100)/100;
+
+rms_i == i_max ? (
+  rmsl_gfx = rmsl;
+  rms_i = 0;
+);
+rms_i += 1;
+
+bscnt > st ? (
+
+  ool = log(pvl)*sc;
+  
+  //get x from exp scale
+  xlt = floor(exp(log(1.055)*2.1*ool)*285);
+  
+  //get y from x and radius - r     
+  l=sqrt(sqr(r)+sqr(212-xlt));
+  h=((l-r)*r/l);
+  m=sqrt(sqr(l-r)-sqr(h));
+  ylt=35+h;
+  xlt < 212 ? xlt=xlt+m : xlt=xlt-m;
+  
+  //update x,y,out
+  old_xl < xlt ? (xl = min(max(xlt,66),375); yl = ylt; olt = ool;);
+  bscnt = pvl = pvr = 0;
+);
+
+old_xl = xl;
+
+bscnt += samplesblock;
+
+//indicator fall-back
+fallback = rel/2*samplesblock/1024;
+fbi_l = exp(xl/512)*fallback;
+xl > 66 ? xl -= fbi_l;
+
+//limit x
+xl = min(max(xl,66),375);
+
+//get y after fall-back
+yl=35;
+l=sqrt(sqr(r)+sqr(212-xl));
+h=((l-r)*r/l);
+yl=floor(yl+h);
+
+@sample
+maxs = abs(max(spl0,spl1));
+pvl = max(pvl,maxs);
+cs == hold ? (
+cs = 0;
+suml = 0;
+) : (
+cs += 1;
+suml += sqr(maxs);
+);
+
+@gfx 425 191
+//**************************************************************** left
+//red scale
+gfx_r =  gfx_a = 1;
+gfx_g = gfx_b =0;
+gfx_x = 283;
+gfx_y = 28;
+gfx_drawnumber(0,0);
+gfx_x = 370;
+gfx_y = 55;
+gfx_drawnumber(3,0);
+gfx_x = 405;
+gfx_y = 57;
+gfx_drawchar($'+');
+gfx_x = 283;
+gfx_y = 38;
+gfx_lineto(269,76,0.5);
+gfx_x = 311;
+gfx_y = 43;
+gfx_lineto(293,80,1);
+gfx_x = 342;
+gfx_y = 51;
+gfx_lineto(318,85,1);
+gfx_x = 370;
+gfx_y = 65;
+gfx_lineto(344,93,0.5);
+
+//white scale
+gfx_r = gfx_g = gfx_b = 1;
+gfx_a = 1;
+gfx_x = 12;
+gfx_y = 60;
+gfx_drawchar($'-');
+gfx_x = 41;
+gfx_y = 53;
+gfx_drawnumber(20,0);
+gfx_x = 80;
+gfx_y = 37;
+gfx_drawnumber(10,0);
+gfx_x = 125;
+gfx_y = 29;
+gfx_drawnumber(7,0);
+gfx_x = 157;
+gfx_y = 25;
+gfx_drawnumber(5,0);
+gfx_x = 198;
+gfx_y = 24;
+gfx_drawnumber(3,0);
+gfx_x = 56;
+gfx_y = 63;
+gfx_lineto(82,92,0.5);
+gfx_x = 95;
+gfx_y = 47;
+gfx_lineto(119,82,0.5);
+gfx_x = 130;
+gfx_y = 39;
+gfx_lineto(146,77,0.5);
+gfx_x = 145;
+gfx_y = 37;
+gfx_lineto(158,75,1);
+gfx_x = 162;
+gfx_y = 35;
+gfx_lineto(171,74,0.5);
+gfx_x = 180;
+gfx_y = 34;
+gfx_lineto(187,74,1);
+gfx_x = 202;
+gfx_y = 34;
+gfx_lineto(204,72,0.5);
+gfx_x = 227;
+gfx_y = 34;
+gfx_lineto(223,73,1);
+gfx_x = 253;
+gfx_y = 35;
+gfx_lineto(245,73,1);
+
+//vu box border
+gfx_r = gfx_g = gfx_b = 0.75;
+gfx_a = 1;
+gfx_x = 198;
+gfx_y = 108;
+gfx_rectto(241,139);
+//vu box
+gfx_a = 1;
+gfx_r = 0.5;
+gfx_g = gfx_b = 0.1;
+gfx_x = 200;
+gfx_y = 110;
+gfx_rectto(239,137);
+//vu text
+gfx_r = gfx_g = gfx_b = 0.85;
+gfx_a = 1;
+gfx_x = 212;
+gfx_y = 120;
+gfx_drawchar($'V');
+gfx_drawchar($'U');
+
+//meter
+olt > 0 ? (
+  gfx_r = 1; 
+  gfx_g = gfx_b = 0;
+) : (
+  gfx_r = gfx_g = gfx_b = 1;
+);
+gfx_a = 1;
+gfx_x = 212;
+gfx_y = 236;
+gfx_lineto(xl,yl,1);
+gfx_x = 211;
+gfx_y = 236;
+gfx_lineto(xl-1,yl,1);
+gfx_x = 210;
+gfx_y = 236;
+gfx_lineto(xl-2,yl,1);
+
+//big border
+gfx_r = gfx_g = gfx_b = 0.55;
+gfx_a = 1;
+gfx_x = 0;
+gfx_y = 179;
+gfx_rectto(425,180);
+//big box 1
+gfx_r = 0.1;
+gfx_g = 0.2; 
+gfx_b = 0.39;
+gfx_a = 1;
+gfx_x = 0;
+gfx_y = 180;
+gfx_rectto(425,261);
+//big box 2 
+gfx_r = gfx_g = gfx_b = 1;
+gfx_a = 0.1;
+gfx_x = 0;
+gfx_y = 180;
+gfx_rectto(425,190);
+//big box 3
+gfx_r = gfx_g = gfx_b = 0;
+gfx_a = 0.3;
+gfx_x = 0;
+gfx_y = 245;
+gfx_rectto(425,261);
+//ch textbox1
+gfx_r = gfx_g = gfx_b = 0;
+gfx_a = 1;
+gfx_x = 350;
+gfx_y = 210;
+gfx_rectto(415,227);
+//ch textbox2
+gfx_r = gfx_g = gfx_b = 0;
+gfx_a = 1;
+gfx_x = 250;
+gfx_y = 210;
+gfx_rectto(315,227);
+//ch text
+gfx_r = gfx_g = gfx_b = 1;
+gfx_a = 1;
+gfx_x = 20;
+gfx_y = 215;
+gfx_drawchar($'L');
+gfx_drawchar($'+');
+gfx_drawchar($'R');
+gfx_x = 215;
+gfx_drawchar($'R');
+gfx_drawchar($'M');
+gfx_drawchar($'S');
+gfx_x = 333;
+gfx_drawchar($'P');
+gfx_x = 255;
+rmsl_gfx > -300 ? (
+  rmsl_gfx > 0.0 ? (
+    gfx_r = 1;
+    gfx_g = gfx_b = 0;
+    gfx_drawchar($'+');
+  );
+  gfx_drawnumber(rmsl_gfx,2);
+) : (
+  gfx_drawchar($'-');
+  gfx_drawchar($'I');
+  gfx_drawchar($'N');
+  gfx_drawchar($'F');
+);
+gfx_r = 1;
+gfx_g = gfx_b = 1;
+gfx_x = 355;
+olt > -300 ? (
+  olt >= 0.0 ? (
+    gfx_drawchar($'+');
+    gfx_r = 1;
+    gfx_g = gfx_b = 0;  
+  );
+  gfx_drawnumber(olt,2);
+) : (
+  gfx_drawchar($'-');
+  gfx_drawchar($'I');
+  gfx_drawchar($'N');
+  gfx_drawchar($'F');
+);

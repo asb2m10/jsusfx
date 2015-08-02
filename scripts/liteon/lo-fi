@@ -1,0 +1,100 @@
+// (C) 2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+desc:Lo-Fi
+slider1:0<0,1,1{Mono,Stereo}>Mode
+slider2:21<0,100,1>S&&H Amount (%)
+slider3:10<4,16,1>Depth
+slider4:1<0,1,1{Off,On}>Interpolation
+slider5:0.95<0,1,0.01>Post-Filter
+slider6:0<-8,32,0.01>Pre Amp (dB)
+slider7:-0.1<-18,0,0.01>Limit (dB)
+@init
+pifs=$pi/srate;
+i=0;gfx_r=gfx_g=gfx_b=gfx_a=0.9;
+@slider
+mode=slider1;
+r=(exp(slider2*0.0486)-1)|0;
+gfxr=srate/(r+1);
+s=(2^(slider3-1))*.5;
+s5=s*.5;
+sd=1/s;
+depth=slider3;
+g=2^(slider6/6);
+lim=2^(slider7/6);
+int=slider4;
+//+++ post filter
+c=1/tan(pifs*f1=exp(slider5*6.90775+2.99573));
+k1=(1+(c2=c*c)-(c131=c*1.31))*(k0=1/(1+c2+c131));
+k2=2*(1-c2)*k0;
+@sample
+!mode?(  
+  //+++ mono  
+  s0=(spl0+spl1)*s5;
+  s0|=0;
+  s0*=sd*g;
+  n1=n0;
+  (i+=1)>r?(
+    i=0;
+    h0=s0;
+    int?h0=.5*(n1+n0=s0);
+  );
+  spl0=(m0l=k0*h0-k1*m2l-k2*m1l)+m1l+m1l+m2l;
+  m2l=m1l;m1l=m0l;
+  spl0=spl1=min(max(spl0,-lim),lim);
+):(
+  //+++ stereo  
+  s0=s*spl0;s1=s*spl1;
+  s0|=0;s1|=0;
+  s0*=sd*g;s1*=sd*g;
+  n1=n0;j1=j0;
+  (i+=1)>r?(
+    i=0;
+    h0=s0;
+    h1=s1;
+    int?h0=.5*(n1+n0=s0);
+    int?h1=.5*(j1+j0=s1);
+  );
+  spl0=(m0l=k0*h0-k1*m2l-k2*m1l)+m1l+m1l+m2l;
+  m2l=m1l;m1l=m0l; 
+  spl1=(m0r=k0*h1-k1*m2r-k2*m1r)+m1r+m1r+m2r;
+  m2r=m1r;m1r=m0r; 
+  spl0=min(max(spl0,-lim),lim);
+  spl1=min(max(spl1,-lim),lim);  
+);
+@gfx 100 5
+gfx_x=gfx_y=10;
+gfx_drawnumber(gfxr,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+gfx_x=90;
+gfx_drawchar($'|');
+gfx_drawchar($' ');
+gfx_drawnumber(depth,0);
+gfx_drawchar($' ');
+gfx_drawchar($'B');
+gfx_drawchar($'i');
+gfx_drawchar($'t');
+gfx_drawchar($'s');
+gfx_x=180;
+gfx_drawchar($'|');
+gfx_drawchar($' ');
+gfx_drawnumber(f1,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');

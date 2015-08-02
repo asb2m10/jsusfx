@@ -1,0 +1,218 @@
+// (C) 2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+//**********************************************************
+// Tube Harmonics:
+// Simulates the behaviour of a vacuum tube circuit stage. 
+// Adds odd and even harmonics to the signal.
+// Has flux and program dependent saturation.
+//**********************************************************
+
+desc: Tube Harmonics
+
+slider1:0.3<0,1,0.001>Even Harmonics
+slider2:0.3<0,1,0.001>Odd Harmonics
+slider3:0.1<0,1,0.001>Fluctuation
+slider4:0<-12,12,0.001>TS Input (dB)
+slider5:0<-12,12,0.001>TS Output (dB)
+slider6:0<-12,12,0.001>Output Gain (dB)
+
+@init
+ext_noinit=1;
+seed0=rand(999)|0;
+while(seed1=rand(999)|0;seed1==seed0;);
+sc_y0=sc_y1=1;
+ka=0.97;
+kb=1-ka;
+lim=0.5;
+
+@slider
+tgt_drve=slider1*4;
+drvo=slider2*9;
+kr=slider3;
+kabs=slider3*10;
+ingain=2^(slider4/6);
+hgain=2^(slider5/6);
+trim=2^(slider6/6);
+
+@sample
+// set in gain
+ch0=spl0*ingain;
+ch1=spl1*ingain;
+
+//interpolate
+y0+=d_y0;
+y1+=d_y1;
+abs0+=d_abs0;
+abs1+=d_abs1;
+drve+=d_drve;
+
+//set drive values
+drve_rnd0=drve-abs0;
+drve_rnd1=drve-abs1;
+drvo_rnd0=drvo-abs0-y0;
+drvo_rnd1=drvo-abs1-y1;
+
+//apply harmonics
+h0=sin(ch0)/sin(ch0*2)*drve_rnd0+(ch0-tan(ch0))*drvo_rnd0;
+h1=sin(ch1)/sin(ch1*2)*drve_rnd1+(ch1-tan(ch1))*drvo_rnd1;
+
+//dc filter i
+dc00=h0-(dcf00=h0*kb+dcf00*ka);
+dc01=h1-(dcf01=h1*kb+dcf01*ka);
+
+//limiter
+lim0=min(max(dc00*hgain,-lim),lim);
+lim1=min(max(dc01*hgain,-lim),lim);
+
+//fir filter
+m01=m00;m03=m02;m05=m04;
+fir0=0.5*(m05+m04=0.5*(m03+m02=0.5*(m01+m00=lim0)));
+m11=m10;m13=m12;m15=m14;
+fir1=0.5*(m15+m14=0.5*(m13+m12=0.5*(m11+m10=lim1)));
+
+//dc filter ii
+dc10=fir0-(dcf10=fir0*kb+dcf10*ka);
+dc11=fir1-(dcf11=fir1*kb+dcf11*ka);
+
+//sum
+spl0=(spl0+dc10)*trim;
+spl1=(spl1+dc11)*trim;
+
+@block
+//*** interpolate parameters
+
+d_drve=(tgt_drve-src_drve)/samplesblock;
+drve=src_drve;
+src_drve=tgt_drve;
+
+sc_y0=sin((seed0+=1)*sc_y0);
+tgt_y0=sc_y0*kr;
+d_y0=(tgt_y0-src_y0)/samplesblock;
+y0=src_y0;
+src_y0=tgt_y0;
+
+sc_y1=sin((seed1+=1)*sc_y1);
+tgt_y1=sc_y1*kr;
+d_y1=(tgt_y1-src_y1)/samplesblock;
+y1=src_y1;
+src_y1=tgt_y1;
+
+tgt_abs0=abs(ch0)*kabs;
+d_abs0=(tgt_abs0-src_abs0)/samplesblock;
+abs0=src_abs0;
+src_abs0=tgt_abs0;
+
+tgt_abs1=abs(ch1)*kabs;
+d_abs1=(tgt_abs1-src_abs1)/samplesblock;
+abs1=src_abs1;
+src_abs1=tgt_abs1;
+
+@gfx 200 42
+
+drva=(drve+0.1+drvo*0.2)*0.5;
+
+//draw tube i
+gfx_a=1;
+gfx_r=gfx_g=gfx_b=1;
+ox=10;
+gfx_x=ox;
+gfx_y=10;
+gfx_rectto(ox+20,50);
+gfx_r=gfx_g=gfx_b=0;
+gfx_x=ox+1;
+gfx_y=10+1;
+gfx_rectto(ox+20-1,50-1);
+gfx_g=0.6;
+gfx_r=0.4;
+gfx_b=0.4;
+gfx_x=ox;
+gfx_y=42;
+gfx_rectto(ox+20,gfx_y+5);
+gfx_r=gfx_g=gfx_b=1;
+gfx_x=ox+7;
+gfx_y=8;
+gfx_rectto(ox+13,gfx_y+2);
+gfx_r=gfx_g=gfx_b=0.7;
+gfx_x=ox+4;
+gfx_y=50;
+gfx_rectto(ox+6,gfx_y+4);
+gfx_x=ox+9;
+gfx_y=50;
+gfx_rectto(ox+11,gfx_y+4);
+gfx_x=ox+14;
+gfx_y=50;
+gfx_rectto(ox+16,gfx_y+4);
+gfx_r=gfx_g=1;
+gfx_b=0.4;
+gfx_a=max(min(drva,1)-abs0*0.05,0.7);
+gfx_x=ox+4;
+gfx_y=14;
+gfx_rectto(ox+16,gfx_y+26);
+
+//draw tube ii
+gfx_a=1;
+gfx_r=gfx_g=gfx_b=1;
+ox=gfx_w-30;
+gfx_x=ox;
+gfx_y=10;
+gfx_rectto(ox+20,50);
+gfx_r=gfx_g=gfx_b=0;
+gfx_x=ox+1;
+gfx_y=10+1;
+gfx_rectto(ox+20-1,50-1);
+gfx_g=0.6;
+gfx_r=0.4;
+gfx_b=0.4;
+gfx_x=ox;
+gfx_y=42;
+gfx_rectto(ox+20,gfx_y+5);
+gfx_r=gfx_g=gfx_b=1;
+gfx_x=ox+7;
+gfx_y=8;
+gfx_rectto(ox+13,gfx_y+2);
+gfx_r=gfx_g=gfx_b=0.7;
+gfx_x=ox+4;
+gfx_y=50;
+gfx_rectto(ox+6,gfx_y+4);
+gfx_x=ox+9;
+gfx_y=50;
+gfx_rectto(ox+11,gfx_y+4);
+gfx_x=ox+14;
+gfx_y=50;
+gfx_rectto(ox+16,gfx_y+4);
+gfx_r=gfx_g=1;
+gfx_b=0.4;
+gfx_a=max(min(drva,1)-abs1*0.05,0.7);
+gfx_x=ox+4;
+gfx_y=14;
+gfx_rectto(ox+16,gfx_y+26);
+
+//draw bkg
+gfx_a=1;
+gfx_r=0.7;
+gfx_g=0.35;
+gfx_b=0;
+gfx_x=40;
+gfx_y=10;
+gfx_rectto(gfx_w-40,gfx_y+45);
+gfx_a=0.15;
+gfx_r=gfx_g=gfx_b=0;
+gfx_x=42;
+gfx_y=32;
+gfx_rectto(gfx_w-43,gfx_y+23);
+

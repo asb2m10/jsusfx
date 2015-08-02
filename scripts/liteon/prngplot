@@ -1,0 +1,48 @@
+// (C) 2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+desc:PRNG Plotter
+slider1:1<0,1,1>Run
+slider2:1<0,1,1>Mode
+slider3:3<1,10,1>Amount (*10e+4)
+slider4:1<1,5,1>Size (px)
+slider5:0.5<0,1>Alpha
+@slider
+gfx_clear=slider2-1;
+amount=slider3*10000;
+size=slider4;
+gfx_a=slider5;
+@init
+gfx_r=gfx_g=gfx_b=1;
+//seeds
+x=w0=w1=1;
+@gfx 400 400
+slider1?(
+  loop(amount,
+    //two recursion lanes for non-uniform distribution p-rn
+    //use trigonometric functions such as sin,tan
+    w0=sin((x+=1)*w0);
+    w1=sin((x+=1)*w1);
+    //range for w0 and w1 is [-1,1](tan() requires scalling);
+    w0p=((w0+1)*0.5);
+    w1p=((w1+1)*0.5);
+    //plot
+    gfx_x=w0p*gfx_w;
+    gfx_y=w1p*gfx_h;    
+    gfx_rectto(gfx_x+size,gfx_y+size);
+  );
+);

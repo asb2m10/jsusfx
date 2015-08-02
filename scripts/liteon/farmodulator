@@ -1,0 +1,79 @@
+// (C) 2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+desc:F/A/R Modulator
+//-----------------------------------------------------
+slider1:0<0,1,0.0001>F0 sine (carrier)
+slider2:0.4<0,1,0.0001>F1 sine (mod)
+slider3:0<0,2,1{FM,M1,M2}>Mode
+slider4:0<0,1,1{Sine,Input}>Modulator
+slider5:0<-24,24,0.1>Carrier gain (dB)
+slider6:0<-24,24,0.1>Mod gain (dB)
+slider7:14<1,100,1>Mod Drive (*x)
+slider8:-6<-24,24,0.1>Out gain (dB)
+//-----------------------------------------------------
+@init
+pi2=6.283185307179586476925286766559;     // 2*$pi
+ln22k=9.9987977323404529055331500634764;  // log(22e+3)
+ln11k=9.3056505517805075961159179420182;  // log(11e+3);
+amp=0.11552453009332421823620535357634;   // 1/6/log(2)
+k=pi2/srate;
+gfx_a=1;gfx_r=0.3;gfx_g=0.4;gfx_b=0.6;
+//-----------------------------------------------------
+@slider
+p1t=k*(p1f=exp(slider1*ln11k));
+p0t=k*(p0f=exp(slider2*ln11k));
+cgt=exp((slider5)*amp);
+mgt=exp((slider6)*amp);
+amntt=slider7;
+og=exp((slider8-0.01)*amp);
+//-----------------------------------------------------
+@sample
+s0=sin(a1+=(p1+=p1d));
+slider4?s1=(mg+=mgd)*(spl0+spl1)*0.5:s1=(mg+=mgd)*sin(a0+=(p0+=p0d));
+slider3==0?spl0=spl1=sin((cg+=cgd)*s0+(amnt+=amntd)*sin(s1)):slider3==1?spl0=spl1=sin(s1*(amnt+=amntd)*sin(s0*(cg+=cgd))):spl0=spl1=s0*min(cg+=cgdm,1)*sin((amnt+=amntd)*s1);
+spl0=spl1*=og;
+//-----------------------------------------------------
+@block
+sbd1=1/samplesblock;
+p0d=(p0t-p0s)*sbd1;p0=p0s;p0s=p0t;
+p1d=(p1t-p1s)*sbd1;p1=p1s;p1s=p1t;
+cgd=(cgt-cgs)*sbd1;cg=cgs;cgs=cgt;
+mgd=(mgt-mgs)*sbd1;mg=mgs;mgs=mgt;
+amntd=(amntt-amnts)*sbd1;amnt=amnts;amnts=amntt;
+//-----------------------------------------------------
+@gfx 100 10
+gfx_x=gfx_y=5;
+gfx_drawchar($'F');
+gfx_drawchar($'0');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(p1f,2);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+gfx_x=5;gfx_y+=15;
+gfx_drawchar($'F');
+gfx_drawchar($'1');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+slider4?gfx_drawchar($'-'):gfx_drawnumber(p0f,2);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');

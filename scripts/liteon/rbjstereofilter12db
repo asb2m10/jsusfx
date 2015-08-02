@@ -1,0 +1,345 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+// *****************************************************************************
+// Referances (or uses code) from:
+// RBJ Cookbook filters - implementation by Stillwell (info at bottom)
+// M-S splitter by LOSER
+// Distortion by Bram de Jong
+// *****************************************************************************
+
+desc:RbjStereoFilter 12db - Stereo image filter
+
+slider1:100<0,100,1>S - Filter Amount (%)
+slider2:0<0,100,0.05>S - HP (Scale)
+slider3:100<0,100,0.05>S - LP (Scale)
+slider4:0<0,100>S - Drive 2xOS (%)
+slider5:100<0,200,0.05>Side (%)
+slider6:100<0,200,0.05>Mid (%)
+slider7:0<-25,25,0.05>Output M+S (dB)
+slider8:0<0,1,1{Off,On}>Oversample (x2)
+
+@init
+
+//fir restoration
+c1 = 1;
+c2 = -0.75;
+c3 = 0.17;
+fgain = 4.1;
+
+//fir bandlimit
+bl_c1 = 0.52;
+bl_c2 = 0.54;
+bl_c3 = -0.02;
+
+//hp
+hpf = 0;
+gain1 = 0;
+
+freq1=20;
+
+a1 = 1;
+s1 = 1;
+q1 = 1 / (sqrt((a1 + 1/a1)*(1/s1 - 1) + 2));
+w01 = 2 * $pi * freq1/srate;
+cosw01 = cos(w01);
+sinw01 = sin(w01);
+alpha1 = sinw01 / (2 * q1);
+
+b01 = (1 + cosw01)/2;
+b11 = -(1 + cosw01);
+b21 = (1 + cosw01)/2;
+a01 = 1 + alpha1;
+a11 = -2 * cosw01;
+a21 = 1 - alpha1;
+b01 /= a01;
+b11 /= a01;
+b21 /= a01;
+a11 /= a01;
+a21 /= a01;
+
+//lp
+lpf = 0;
+gain3 = 0;
+freq3 = 20000;
+a3 = 10^(gain3/40);
+s3 = 2;
+q3 = 1 / (sqrt((a3 + 1/a3)*(1/s3 - 1) + 2));
+w03 = 2 * $pi * freq3/srate;
+cosw03 = cos(w03);
+sinw03 = sin(w03);
+alpha3 = sinw03 / (2 * q3);
+
+b03 = (1 - cosw03)/2;
+b13 = (1 - cosw03);
+b23 = (1 - cosw03)/2;
+a03 = 1 + alpha3;
+a13 = -2 * cosw03;
+a23 = 1 - alpha3;
+b03 /= a03;
+b13 /= a03;
+b23 /= a03;
+a13 /= a03;
+a23 /= a03;
+
+@slider
+os = slider8;
+
+amount = (100-slider1)/200;
+drive = 1+slider4/50;
+drvc = 1.2;
+outgain = 10^(slider7/20);
+side = slider5/200;
+mid = slider6/200;
+
+sx1 = 16+slider2*1.20103;
+freq1 = floor(exp(sx1*log(1.059))*8.17742);
+
+sx2 = 16+slider3*1.20103;
+freq3 = floor(exp(sx2*log(1.059))*8.17742);
+
+slider2 == 0 ? hpf = 0 : hpf = 1;
+slider3 == 100 ? lpf = 0 : lpf = 1;
+
+a1 = 1;
+s1 = 1;
+q1 = 1 / (sqrt((a1 + 1/a1)*(1/s1 - 1) + 2));
+w01 = 2 * $pi * freq1/srate;
+cosw01 = cos(w01);
+sinw01 = sin(w01);
+alpha1 = sinw01 / (2 * q1);
+
+b01 = (1 + cosw01)/2;
+b11 = -(1 + cosw01);
+b21 = (1 + cosw01)/2;
+a01 = 1 + alpha1;
+a11 = -2 * cosw01;
+a21 = 1 - alpha1;
+b01 /= a01;
+b11 /= a01;
+b21 /= a01;
+a11 /= a01;
+a21 /= a01;
+
+a3 = 1;
+s3 = 1;
+q3 = 1 / (sqrt((a3 + 1/a3)*(1/s3 - 1) + 2));
+w03 = 2 * $pi * freq3/srate;
+cosw03 = cos(w03);
+sinw03 = sin(w03);
+alpha3 = sinw03 / (2 * q3);
+
+b03 = (1 - cosw03)/2;
+b13 = (1 - cosw03);
+b23 = (1 - cosw03)/2;
+a03 = 1 + alpha3;
+a13 = -2 * cosw03;
+a23 = 1 - alpha3;
+b03 /= a03;
+b13 /= a03;
+b23 /= a03;
+a13 /= a03;
+a23 /= a03;
+
+
+@sample
+s0 = spl0;
+s1 = spl1;
+
+//distortion
+drive > 1 ? (
+
+inl = spl0;
+inr = spl1;
+
+os == 1 ? (
+
+//ps in
+
+ps_out1l = 0.5*(inl+ps_out2l);
+ps_out2l = 0.5*ps_out1l;
+
+ps_out1r = 0.5*(inr+ps_out2r);
+ps_out2r = 0.5*ps_out1r;
+
+//drive
+o_in1l= (ps_out1l)*(abs((ps_out1l)) + drive)/((ps_out1l)^2 + (drive-1)*abs((ps_out1l)) + 1)*(drive/drvc);
+o_in2l= (ps_out2l)*(abs((ps_out2l)) + drive)/((ps_out2l)^2 + (drive-1)*abs((ps_out2l)) + 1)*(drive/drvc);
+
+o_in1r= (ps_out1r)*(abs((ps_out1r)) + drive)/((ps_out1r)^2 + (drive-1)*abs((ps_out1r)) + 1)*(drive/drvc);
+o_in2r= (ps_out2r)*(abs((ps_out2r)) + drive)/((ps_out2r)^2 + (drive-1)*abs((ps_out2r)) + 1)*(drive/drvc);
+
+//---------------------------
+//bandlimit
+bl3_l1 = bl2_l1;
+bl3_r1 = bl2_r1;
+bl3_l2 = bl2_l2;
+bl3_r2 = bl2_r2;
+
+bl2_l1 = bl1_l1;
+bl2_r1 = bl1_r1;
+bl2_l2 = bl1_l2;
+bl2_r2 = bl1_r2;
+
+bl1_l1 = o_in1l;
+bl1_r1 = o_in1r;
+bl1_l2 = o_in2l;
+bl1_r2 = o_in2r;
+
+bl_out1l = (bl1_l1*bl_c1 + bl2_l1*bl_c2 + bl3_l1*bl_c3);
+bl_out1r = (bl1_r1*bl_c1 + bl2_r1*bl_c2 + bl3_r1*bl_c3);
+bl_out2l = (bl1_l2*bl_c1 + bl2_l2*bl_c2 + bl3_l2*bl_c3);
+bl_out2r = (bl1_r2*bl_c1 + bl2_r2*bl_c2 + bl3_r2*bl_c3);
+
+//ps out
+o_out1l = 0.5*(bl_out1l+o_out2l);
+o_out2l = 0.5*(bl_out2l+o_out1l);
+
+o_out1r = 0.5*(bl_out1r+o_out2r);
+o_out2r = 0.5*(bl_out2r+o_out1r);
+
+
+//restore
+s3l = s2l;
+s3r = s2r;
+s2l = s1l;
+s2r = s1r;
+s1l = o_out1l;
+s1r = o_out1r;
+
+spl0 = (s1l*c1+s2l*c2+s3l*c3)*fgain;
+spl1 = (s1r*c1+s2r*c2+s3r*c3)*fgain;
+
+) : (
+
+spl0 = (inl)*(abs((inr)) + drive)/((inl)^2 + (drive-1)*abs((inl)) + 1)*(drive/drvc);
+spl1 = (inr)*(abs((inr)) + drive)/((inr)^2 + (drive-1)*abs((inr)) + 1)*(drive/drvc);
+
+);
+
+);
+
+//filters
+hpf != 0 ? (
+ospl0 = spl0;
+hpspl0 = b01 * spl0 + b11 * xl11 + b21 * xl21 - a11 * yl11 - a21 * yl21;
+spl0 = hpspl0;
+xl21 = xl11;
+xl11 = ospl0;
+yl21 = yl11;
+yl11 = spl0;
+
+ospl1 = spl1;
+hpspl1 = b01 * spl1 + b11 * xr11 + b21 * xr21 - a11 * yr11 - a21 * yr21;
+spl1 = hpspl1;
+xr21 = xr11;
+xr11 = ospl1;
+yr21 = yr11;
+yr11 = spl1;
+);
+
+lpf != 0 ? (
+ospl0 = spl0;
+lpspl0 = b03 * spl0 + b13 * xl13 + b23 * xl23 - a13 * yl13 - a23 * yl23;
+spl0 = lpspl0;
+xl23 = xl13;
+xl13 = ospl0;
+yl23 = yl13;
+yl13 = spl0;
+
+ospl1 = spl1;
+lpspl1 = b03 * spl1 + b13 * xr13 + b23 * xr23 - a13 * yr13 - a23 * yr23;
+spl1 = lpspl1;
+xr23 = xr13;
+xr13 = ospl1;
+yr23 = yr13;
+yr13 = spl1;
+);
+
+s0 -= spl0;
+s1 -= spl1;
+
+mono = (s0 + s1)/2;
+stereo = (s0 - s1);
+
+s0 = (mono + stereo * amount) * max(amount,1);
+s1 = (mono - stereo * amount) * max(amount,1);
+
+spl0 += s0;
+spl1 += s1;
+
+mono = (spl0 + spl1);
+stereo = (spl0 - spl1);
+spl0 = (mono*mid + stereo*side);// / max(side,1);
+spl1 = (mono*mid - stereo*side);// / max(width,1);
+
+spl0 = spl0*outgain;
+spl1 = spl1*outgain;
+
+@gfx 100 10
+gfx_x=gfx_y=5;
+gfx_lineto(gfx_x, gfx_y,0);
+gfx_r=gfx_b=0;
+gfx_g=gfx_a=1;
+gfx_drawchar($'H');
+gfx_drawchar($'P');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(freq1,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+gfx_y += 15;
+gfx_x = 5;
+gfx_drawchar($'L');
+gfx_drawchar($'P');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(freq3,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+
+
+
+//RBJ Filters Implementation
+
+// Copyright 2006, Thomas Scott Stillwell
+// All rights reserved.
+//
+//Redistribution and use in source and binary forms, with or without modification, are permitted 
+//provided that the following conditions are met:
+//
+//Redistributions of source code must retain the above copyright notice, this list of conditions 
+//and the following disclaimer. 
+//
+//Redistributions in binary form must reproduce the above copyright notice, this list of conditions 
+//and the following disclaimer in the documentation and/or other materials provided with the distribution. 
+//
+//The name of Thomas Scott Stillwell may not be used to endorse or 
+//promote products derived from this software without specific prior written permission. 
+//
+//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR 
+//IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
+//FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS 
+//BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
+//PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+//STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+//THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

@@ -16,8 +16,8 @@
 
 
 #include <fstream>
-#include <mutex>
-#include <m_pd.h>
+#include "m_pd.h"
+#include "../WDL/mutex.h"
 #include "../jsusfx.h"
 
 class JsusFxPd : public JsusFx {
@@ -42,7 +42,7 @@ public:
         error(output);
     }
 
-    std::mutex dspLock;
+    WDL_Mutex dspLock;
 };
 
 typedef struct _jsusfx {
@@ -108,14 +108,14 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
         }  
     }
 
-    x->fx->dspLock.lock();
+    x->fx->dspLock.Enter();
     if ( x->fx->compile(*is) ) {
         if ( x->fx->srate != 0 )
             x->fx->prepare(*(x->fx->srate), *(x->fx->blockPerSample));
     } else {
         x->bypass = true;
     }
-    x->fx->dspLock.unlock();
+    x->fx->dspLock.Leave();
 
     delete is;
 
@@ -180,7 +180,7 @@ t_int *jsusfx_perform(t_int *w) {
 
     bool bypass = x->bypass;
     if ( bypass )
-        bypass = ! x->fx->dspLock.try_lock();
+        bypass = ! x->fx->dspLock.TryEnter();
 
     if (bypass) {
         //x->fx->displayMsg("system is bypassed");
@@ -191,7 +191,7 @@ t_int *jsusfx_perform(t_int *w) {
         }
     } else {
     	x->fx->process(ins, outs, n);
-        x->fx->dspLock.unlock();
+        x->fx->dspLock.Leave();
     }
 
     return (w+7);

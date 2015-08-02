@@ -1,0 +1,239 @@
+// (C) 2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+// *****************************************************************************
+// Non-linear processor, which attempts 'dynamic' modeling of fluctuations
+// and frequency response of basic electronic circuit.
+// *****************************************************************************
+
+desc: Non-Linear Processor
+slider1:30<0,100,0.01> Saturation Amount (%)
+slider2:50<0,100,0.01> Fluctuation Amount (%)
+slider3:16<0,32,1>Noise Floor at (Bits)
+slider4:0<-24,24,0.01>Input (dB)
+slider5:0<-24,24,0.01>Output (dB)
+
+//==============================================================================
+@init
+//==============================================================================
+ext_noinit = 1;
+
+//set limits
+n = 100000;
+n2 = 2*n;
+n3 = 3*n;
+n4 = 4*n;
+
+//push ar0
+i = 0;
+loop(n,
+m[i] = (rand(2)-1);
+i += 1;
+);
+
+//push ar1
+i = n;
+loop(n,
+m[i] = (rand(2)-1);
+i += 1;
+);
+
+//push ar2
+i = 2*n;
+loop(n,
+m[i] = (rand(2)-1);
+i += 1;
+);
+
+//push ar3
+i = 3*n;
+loop(n,
+m[i] = (rand(2)-1);
+i += 1;
+);
+
+//sys vars
+pi = 3.1415926535897932384626433832795;
+sr = srate;
+
+//lp coeff
+lpk0 = 0.121;
+lpk1 = -0.56;
+
+//hp coeff
+// - at 30Hz
+hpk1 = exp(-188.49555921538759430775860299677/sr);
+hpk0 = 1 - hpk1;
+
+//nf coeff
+// - at 2000Hz
+nfk1 = exp(-12566.370614359172953850573533118/sr);
+nfk0 = 1 - nfk1;
+
+//ls coeff
+// - at 300Hz
+lsk0 = exp(-1884.9555921538759430775860299677/sr);
+lsk1 = 1 - lsk0;
+
+pdc_delay = 2;
+pdc_bot_ch = 0;
+pdc_top_ch = 2;
+
+//begin
+i = 0;
+
+//==============================================================================
+@slider
+//==============================================================================
+//drive
+drv = slider1/200+0.001;
+pidrv = pi*drv;
+sinpidrv = 1/sin(pidrv);
+
+//ranges
+r1 = slider2/300;
+r2 = 1/2^slider3;
+
+//ingain
+ingain = 10^(slider4/20);
+
+//outgain
+outgain = 10^(slider5/20);
+
+//==============================================================================
+@block
+//==============================================================================
+//average amplitude
+avs = (s0+s1)*0.5;
+
+//interpolate ar2 values
+tgt_min2 = avs*m[i+2*n]*r1;
+d_min2 = (tgt_min2-src_min2)/samplesblock;
+min2 = src_min2;
+src_min2 = tgt_min2;
+
+//interpolate ar3 values
+tgt_min3 = avs*m[i+3*n]*r1;
+d_min3 = (tgt_min3-src_min3)/samplesblock;
+min3 = src_min3;
+src_min3 = tgt_min3;
+
+//average for gfx
+min_av = (tgt_min2+tgt_min3)*0.5;
+
+//==============================================================================
+@sample
+//==============================================================================
+spl0 *= ingain;
+spl1 *= ingain;
+s0 = spl0;
+s1 = spl1;
+
+//seeds
+min0 = m[i]*r2;
+min1 = m[i+n]*r2;
+min2 += d_min2;
+min3 += d_min3;
+min2s = min2*0.05;
+min3s = min3*0.05;
+min2h = min2*0.005;
+min3h = min3*0.005;
+min2d = min2*5;
+min3d = min3*5;
+
+
+//floor reduction
+nfout0 = nfk0*min0 + nfk1*nfout0;
+nfout1 = nfk0*min1 + nfk1*nfout1;
+inl = spl0 + nfout0;
+inr = spl1 + nfout1;
+
+//check if input
+(s0 && s1) == 0 ? (
+  inl = spl0;
+  inr = spl1;
+);
+
+//waveshaper
+wsoutl = sin(pidrv*inl)*(sinpidrv+min2d);
+wsoutr = sin(pidrv*inr)*(sinpidrv+min3d);
+
+//lp
+fs2l = fs1l;
+fs1l = fs0l;
+fs0l = wsoutl;
+lpoutl = (lpk0-min2)*fs0l + (lpk1+min3)*(fs1l+fs2l);
+fs2r = fs1r;
+fs1r = fs0r;
+fs0r = wsoutr;
+lpoutr = (lpk0-min3)*fs0r + (lpk1+min2)*(fs1r+fs2r);
+
+//ls
+ls0l = (lsk1-min2s)*lpoutl + (lsk0+min3s)*ls0l;
+ls0r = (lsk1-min3s)*lpoutr + (lsk0+min2s)*ls0r;
+lsoutl = lpoutl + ls0l*0.25;
+lsoutr = lpoutr + ls0r*0.25;
+
+//hp
+hptmpl = (hpk0+min2h)*lsoutl + (hpk1-min3h)*hptmpl;
+hptmpr = (hpk0+min3h)*lsoutr + (hpk1-min2h)*hptmpr;
+fxoutl = lsoutl - hptmpl;
+fxoutr = lsoutr - hptmpr;
+
+//counter
+i += 1;
+i > n ? i = 0;
+
+//output
+spl0 = -fxoutl*outgain;
+spl1 = -fxoutr*outgain;
+
+//==============================================================================
+@gfx 100 10
+//==============================================================================
+//draw color block
+pd = 5;
+gfx_x=gfx_y=pd;
+gfx_a=0;
+gfx_b=drv*2;
+gfx_r=0.1+r1;
+gfx_g=1.2-slider3/32;
+gfx_a=0.9+1.5*min_av;
+gfx_rectto(gfx_w-pd,gfx_h-pd);
+gfx_a = 1;
+gfx_r=gfx_g=gfx_b=0;
+
+//vertical lines
+vl = slider3;
+vln=0;
+loop(vl,
+gfx_y = 0;
+gfx_x = gfx_w/vl*vln;
+gfx_lineto(gfx_x,gfx_h,1);
+vln+=1;
+);
+
+//shades
+gfx_a = 0.2;
+gfx_x=pd;
+gfx_y=pd;
+gfx_rectto(gfx_w,gfx_h/3);
+gfx_x=pd;
+gfx_y=gfx_h-pd;
+gfx_r=gfx_g=gfx_b=1;
+gfx_a = 0.2;
+gfx_rectto(gfx_w,gfx_h-gfx_h/3);

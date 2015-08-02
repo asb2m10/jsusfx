@@ -1,0 +1,345 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+//******************************************************************************
+// References:
+// 2nd order filter coefficients by Fabio Bizzetti and Robert Bristow-Johnson
+// waveshaper formula by Partice Tarrabia and Bram de Jong
+//******************************************************************************
+
+desc: BassManager (plugin for boosting bass)
+
+slider1:0<0,1,1{Stereo,Mono}>Processing
+slider2:0<0,1,1{Wide,Narrow}>Spread
+slider3:90<30,250,0.05>Frequency (Hz)
+slider4:0<0,24,0.01>Boost (dB)
+slider5:0<0,100,0.05>Drive (%)
+slider6:0<0,100,0.05>Muffle (%)
+slider7:0<-24,24,0.05>Output (dB)
+slider8:0<0,4,1{Off,30,50,70,90,150,200,300}>Hipass (Hz)
+slider9:0<0,1,1{On,Off}>Limiter
+slider10:0<0,1,1{Off,On}>Oversample (x2)
+
+@init
+lp_output = 0;
+nrml=nrml=onrml=onrml=nrmr=nrmr=onrmr=onrmr=0;
+
+@slider
+
+os = slider10;
+
+//fir restoration
+c1 = 1;
+c2 = -0.75;
+c3 = 0.17;
+fgain = 4.5;
+
+//fir bandlimit
+bl_c1 = 0.52;
+bl_c2 = 0.54;
+bl_c3 = -0.02;
+
+//channels
+mono = slider1;
+
+//spread
+slider2 == 0 ? (
+  S = slider2+0.3;
+) : (
+  S = slider2;
+);
+
+//drive
+drive = 0+slider5/99-0.07;
+drv_k = drive/(1-drive);
+
+//outgain
+outgain = 10^(slider7/20);
+
+//ls
+slider4 > 0 ? (
+  A = 10^(slider4/20);
+  omega = (2*$pi * slider3) / srate;
+  sn = sin(omega);
+  cs = cos(omega);
+  temp1 = A + 1.0;
+  temp2 = A - 1.0;
+  temp3 = temp1 * cs;
+  temp4 = temp2 * cs;
+  beta = sn * sqrt((A * A + 1.0 )/ S - temp2 * temp2 );
+  s_a0 = 1.0 / (temp1 + temp4 + beta);
+  s_a1 = (-2.0 * (temp2 + temp3)) * s_a0;
+  s_a2 = (temp1 + temp4 - beta) * s_a0;
+  s_b0 = (A * (temp1 - temp4 + beta)) * s_a0;
+  s_b1 = (2.0 * A * (temp2 - temp3)) * s_a0;
+  s_b2 = (A * (temp1 - temp4 - beta)) * s_a0;
+);
+
+//hp
+slider8 > 0 ? (
+  HPF = 10+40*slider8;
+  omega = (2*$pi * HPF ) / srate; 
+  sn = sin(omega);
+  cs = cos(omega);
+  alpha = sn / (2.0 * 1); // q static = 1
+  h_a0 = 1.0 / (1.0 + alpha);
+  h_a1 = (-2.0 * cs) * h_a0;
+  h_a2 = (1.0 - alpha) * h_a0;
+  h_b1 = -(1.0 + cs) * h_a0 * 1; // gain = 1
+  h_b0 = -h_b1 * 0.5;
+);
+
+//lp
+slider6 > 0 ? (
+  muffle = 20000-(slider6*100+9000);
+  lp_cut = 2*$pi*muffle;
+  lp_n = 1/(lp_cut+ 2*srate);
+  lp_b1 = (2*srate - lp_cut)*lp_n;
+  lp_a0 = lp_a1 = lp_cut*lp_n;
+);
+
+@sample
+
+//===================================
+//stereo
+mono == 0 ? (
+
+//ls
+slider4 > 0  ? (
+  s_input_l = spl0;
+  s_output_l = s_b0*s_input_l + s_b1*s_i1_l + s_b2*s_i2_l - s_a1*s_o1_l - s_a2*s_o2_l;
+  s_o2_l=s_o1_l;
+  s_o1_l=s_output_l;
+  s_i2_l=s_i1_l;
+  s_i1_l=s_input_l;
+  
+  s_input_r = spl1;
+  s_output_r = s_b0*s_input_r + s_b1*s_i1_r + s_b2*s_i2_r - s_a1*s_o1_r - s_a2*s_o2_r;
+  s_o2_r=s_o1_r;
+  s_o1_r=s_output_r;
+  s_i2_r=s_i1_r;
+  s_i1_r=s_input_r;
+) : (
+  s_output_l = spl0;
+  s_output_r = spl1;
+);
+
+slider5 > 0 ? (
+ os == 1 ? (
+  //---------------------------------------
+  //power series in
+  ps_out1l = 0.5*(s_output_l+ps_out2l);
+  ps_out2l = 0.5*ps_out1l;
+  
+  ps_out1r = 0.5*(s_output_r+ps_out2r);
+  ps_out2r = 0.5*ps_out1r;
+  
+  //---------------------------------------
+  //drive  
+  
+  o_in1l = (1+drv_k)*ps_out1l/(1+drv_k*abs(ps_out1l));
+  o_in2l = (1+drv_k)*ps_out2l/(1+drv_k*abs(ps_out2l));
+
+  o_in1r = (1+drv_k)*ps_out1r/(1+drv_k*abs(ps_out1r));
+  o_in2r = (1+drv_k)*ps_out2r/(1+drv_k*abs(ps_out2r));
+  
+  //---------------------------------------
+  //bandlimit
+  bl3_l1 = bl2_l1;
+  bl3_r1 = bl2_r1;
+  bl3_l2 = bl2_l2;
+  bl3_r2 = bl2_r2;
+
+  bl2_l1 = bl1_l1;
+  bl2_r1 = bl1_r1;
+  bl2_l2 = bl1_l2;
+  bl2_r2 = bl1_r2;
+
+  bl1_l1 = o_in1l;
+  bl1_r1 = o_in1r;
+  bl1_l2 = o_in2l;
+  bl1_r2 = o_in2r;
+
+  bl_out1l = (bl1_l1*bl_c1 + bl2_l1*bl_c2 + bl3_l1*bl_c3);
+  bl_out1r = (bl1_r1*bl_c1 + bl2_r1*bl_c2 + bl3_r1*bl_c3);
+  bl_out2l = (bl1_l2*bl_c1 + bl2_l2*bl_c2 + bl3_l2*bl_c3);
+  bl_out2r = (bl1_r2*bl_c1 + bl2_r2*bl_c2 + bl3_r2*bl_c3);
+  
+  //---------------------------------------
+  //power series out
+  o_out1l = 0.5*(bl_out1l+o_out2l);
+  o_out2l = 0.5*(bl_out2l+o_out1l);
+
+  o_out1r = 0.5*(bl_out1r+o_out2r);
+  o_out2r = 0.5*(bl_out2r+o_out1r);
+  
+  //--------------------------------------- 
+  //fir restoration
+  s3l = s2l;
+  s3r = s2r;
+  s2l = s1l;
+  s2r = s1r;
+  s1l = o_out1l;
+  s1r = o_out1r;
+  drv_output_l = (s1l*c1+s2l*c2+s3l*c3)*fgain;
+  drv_output_r = (s1r*c1+s2r*c2+s3r*c3)*fgain;
+  
+  ) : (
+  
+  drv_output_l = (1+drv_k)*s_output_l/(1+drv_k*abs(s_output_l));
+  drv_output_r = (1+drv_k)*s_output_r/(1+drv_k*abs(s_output_r));
+  
+  );
+
+) : (
+  drv_output_l = s_output_l;
+  drv_output_r = s_output_r;
+);
+
+//hp
+slider8 > 0  ? (
+  h_input_l = drv_output_l;
+  h_output_l = h_b0*h_input_l + h_b1*h_i1_l + h_b0*h_i2_l - h_a1*h_o1_l - h_a2*h_o2_l;
+  h_o2_l=h_o1_l;
+  h_o1_l=h_output_l;
+  h_i2_l=h_i1_l;
+  h_i1_l=h_input_l;
+  
+  h_input_r = drv_output_r;
+  h_output_r = h_b0*h_input_r + h_b1*h_i1_r + h_b0*h_i2_r - h_a1*h_o1_r - h_a2*h_o2_r;
+  h_o2_r=h_o1_r;
+  h_o1_r=h_output_r;
+  h_i2_r=h_i1_r;
+  h_i1_r=h_input_r;
+) : (
+  h_output_l = drv_output_l;
+  h_output_r = drv_output_r;
+);
+
+//lp
+slider6 > 0 ? (
+  lp_in_l = h_output_l;
+  lp_output_l = lp_in_l*lp_a0 + lp_in_l*lp_a1 + lp_output_l*lp_b1;
+  
+  lp_in_r = h_output_r;
+  lp_output_r = lp_in_r*lp_a0 + lp_in_r*lp_a1 + lp_output_r*lp_b1;
+) : (
+  lp_output_l = h_output_l;
+  lp_output_r = h_output_r;
+);
+
+//output
+output_l = lp_output_l*outgain;
+output_r = lp_output_r*outgain;
+slider9 == 0 ? (
+  output_l = min(max(output_l,-0.98),0.98);
+  output_r = min(max(output_r,-0.98),0.98);
+);
+
+spl0=output_l;
+spl1=output_r;
+
+//===================================
+//mono
+) : (
+
+//ls
+slider4 > 0  ? (
+  s_input = (spl0+spl1)/2;
+  s_output = s_b0*s_input + s_b1*s_i1 + s_b2*s_i2 - s_a1*s_o1 - s_a2*s_o2;
+  s_o2=s_o1;
+  s_o1=s_output;
+  s_i2=s_i1;
+  s_i1=s_input;
+) : (
+  s_output = (spl0+spl1)/2;
+);
+
+slider5 > 0 ? (
+  os == 1 ? (
+  //power series in
+  ps_out1l = 0.5*(s_output+ps_out2l);
+  ps_out2l = 0.5*ps_out1l;
+  
+  //drive  
+  o_in1l = (1+drv_k)*ps_out1l/(1+drv_k*abs(ps_out1l));
+  o_in2l = (1+drv_k)*ps_out2l/(1+drv_k*abs(ps_out2l));
+
+  //---------------------------
+  //bandlimit
+  bl3_1 = bl2_1;
+  bl3_2 = bl2_2;
+
+  bl2_1 = bl1_1;
+  bl2_2 = bl1_2;
+
+  bl1_1 = o_in1l;
+  bl1_2 = o_in2l;
+
+  bl_out1 = (bl1_1*bl_c1 + bl2_1*bl_c2 + bl3_1*bl_c3);
+  bl_out2 = (bl1_2*bl_c1 + bl2_2*bl_c2 + bl3_2*bl_c3);
+
+  //power series out
+  o_out1l = 0.5*(bl_out1+o_out2l);
+  o_out2l = 0.5*(bl_out2+o_out1l);
+  
+  //fir restoration
+  s3l = s2l;
+  s2l = s1l;  
+  s1l = o_out1l;
+  drv_output = (s1l*c1+s2l*c2+s3l*c3)*fgain;
+  
+  ) : (
+  
+  drv_output = (1+drv_k)*s_output/(1+drv_k*abs(s_output));
+  
+  );
+
+) : (
+  drv_output = s_output;
+);
+
+//hp
+slider8 > 0  ? (
+  h_input = drv_output;
+  h_output = h_b0*h_input + h_b1*h_i1 + h_b0*h_i2 - h_a1*h_o1 - h_a2*h_o2;
+  h_o2=h_o1;
+  h_o1=h_output;
+  h_i2=h_i1;
+  h_i1=h_input;
+) : (
+  h_output = drv_output;
+);
+
+//lp
+slider6 > 0 ? (
+  lp_in = h_output;
+  lp_output = lp_in*lp_a0 + lp_in*lp_a1 + lp_output*lp_b1;
+) : (
+  lp_output = h_output;
+);
+
+//output
+output = lp_output*outgain;
+slider9 == 0 ? (
+  output = min(max(output,-0.98),0.98);
+);
+
+spl0=spl1=output;
+
+);
+            

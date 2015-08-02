@@ -1,0 +1,121 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+//******************************************************************************
+// References:
+// Wikipedia, Google, Cockos
+//******************************************************************************
+
+desc: LorenzAttractor
+
+slider1:3000<1,10000,1>Rate (Fast/Slow))
+slider2:0<0,1,1{Lines,Dots}>Plot (OSC 1+2/1)
+slider3:14<10,28,0.1>Prandtl Number
+slider4:28<14,46,0.1>Rayleigh Number
+slider5:0.5<0,1,0.01>Color (Mod Min/Max)
+slider6:0<-4,4,0.1>Tune
+slider7:0<-25,25,0.05>Gain (-inf/25db)
+
+@init
+gfx_clear = -1;
+gfx_mode = 1;
+n = j = 0;
+x0 = 0.1;
+y0 = 0;
+z0 = 0;
+itm1=itm2=otm1=otm2=0;
+
+@slider
+f = 440;
+t = slider6;
+
+axis = slider2;
+slider7 == -25 ? (
+gain = 0;
+) : (
+gain = 10^(slider7/20);
+);
+step = slider1;
+green = slider5;
+line = slider2;
+h = 0.01;
+a = slider3;
+b = slider4;
+c = 8.0 / 3.0;
+old_a != a || old_b != b ?(
+gfx_clear = 1;
+);
+old_a = a;
+old_b = b;
+
+@sample
+//di/dt
+n = n+1;
+n > step ? (
+n = 0;
+x1 = x0 + h * a * (y0 - x0);
+y1 = y0 + h * (x0 * (b - z0) - y0);
+z1 = z0 + h * (x0 * y0 - c * z0);
+x0 = x1;
+y0 = y1;
+z0 = z1;
+);
+
+//osc
+tone1 = sin(pos1);
+slider2 == 0 ? (
+tone2 = (1-pos2/$pi)/2.5;
+) : (
+tone2 = 0;
+);
+
+out = (tone1+tone2)*z1/15;
+
+adj1 = 2.0*$pi*f*(2^(t))/srate;
+adj1_1 = x1/700*(green);
+adj2 = 2.0*$pi*f*(2^(t+1))/srate;
+adj2_1 = y1/300*(green);
+
+pos1=pos1+adj1+adj1_1;
+pos2=pos2+adj2+adj2_1;
+
+(pos1 >= 2.0*$pi) ? pos1 -= 2.0*$pi;
+(pos2 >= 2.0*$pi) ? pos2 -= 2.0*$pi;
+pos2 = max(pos2,-10);
+
+//limit
+spl0=spl1=min(max(out/16*gain,-0.98),0.98);
+
+@gfx 600 600
+gfx_g=green;
+gfx_b=y1-1;
+size=z0/40;
+gfx_r=size;
+gfx_a=size+0.3;
+gfx_x=x2;
+gfx_y=y2;
+line == 0 ? (
+gfx_lineto((x2+size*size*12),(y2+size*size*12),1);
+) : (
+gfx_rectto(x2+4*size*size,y2+4*size*size);
+);
+gfx_blurto(x2+4,y2+4);
+x2=(x1*15+gfx_w/2);
+y2=(y1*15+gfx_h/2);
+gfx_clear = -1;
+
+

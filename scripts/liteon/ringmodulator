@@ -1,0 +1,382 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+//=================================================
+desc:Ring Modulator
+//=================================================
+
+slider1:0<0,1,1{Stereo,Mono}>Processing
+slider2:0<0,1,1{Off,On}>Mod Input Diode (Waveshaper)
+slider3:40<0,100,0.01>Mod Frequency (Scale)
+slider4:0<0,100,0.01>Feedback (%)
+slider5:10<0,100,0.01>Non-Linearities (%)
+slider6:100<0,100,0.01>Mix (%)
+slider7:0<-40,40,0.01>Output (-inf/+40dB)
+slider8:0<0,1,1{Off,On}>Oversample (x2)
+
+//=================================================
+@init
+//=================================================
+//2*pi
+pi2 = 2*$pi;
+
+//sim resistance
+r = 0.85;
+
+//fir restoration filter
+c1 = 1;
+c2 = -0.75;
+c3 = 0.17;
+fgain = 4;
+
+//fir bandlimit
+bl_c1 = 0.52;
+bl_c2 = 0.54;
+bl_c3 = -0.02;
+
+//=================================================
+@slider
+//=================================================
+mono = slider1;
+
+os = slider8;
+
+sx = 16+slider3*1.20103;
+tgt_f = floor(exp(sx*log(1.059))*8.17742);
+
+fb = slider4/100;
+tgt_mix = slider6/100;
+diode = slider2;
+nl = slider5;
+
+slider7 == -40 ? outgain = 0 : outgain = 10^(slider7/20);
+
+//=================================================
+@block
+//=================================================
+//interpolate 'f'
+d_f = (tgt_f-src_f)/samplesblock;
+tf = src_f;
+src_f = tgt_f;
+
+//interpolate 'mix'
+d_mix = (tgt_mix-src_mix)/samplesblock;
+tmix = src_mix;
+src_mix = tgt_mix;
+
+@sample
+//=================================================
+// set mod signal
+//=================================================
+//a couple of pseudo non-linearities for 'f' and 'fb'
+nl > 0 ? (
+nl_f = rand(4*nl)-2*nl;
+nl_fb = (rand(2*nl)-nl)*0.001;
+) : (
+nl_f = nl_fb = 0;
+);
+
+//interpolate 'f'
+tf += d_f;
+
+//interpolate 'mix'
+tmix += d_mix;
+
+//mod signal gen
+sina = pi2*(tf-nl_f)/srate;
+sinout = sin(sinp);
+sinp = sinp+sina;
+sinp >= pi2 ? sinp -= pi2;
+
+//diode - positive semi-periods
+diode == 0 ? (
+  m_out = sinout;
+) : (
+  //os - diode-ed signal?
+  os == 0 ? (
+    //abs()
+    d_sin = abs(sinout)*2-0.20260;
+  ) : (
+    //power series in
+    ps_sin_out1 = 0.5*(sinout+ps_sin_out2);
+    ps_sin_out2 = 0.5*ps_sin_out1;
+    //abs()
+    ps_d_sin1 = abs(ps_sin_out1)*2-0.20260;
+    ps_d_sin2 = abs(ps_sin_out2)*2-0.20260;
+    //bandlimit    
+    sin_bl3_1 = sin_bl2_1;
+    sin_bl3_2 = sin_bl2_2;
+    sin_bl2_1 = sin_bl1_1;
+    sin_bl2_2 = sin_bl1_2;
+    sin_bl1_1 = ps_d_sin1;
+    sin_bl1_2 = ps_d_sin2;
+    sin_bl_out1 = (sin_bl1_1*bl_c1 + sin_bl2_1*bl_c2 + sin_bl3_1*bl_c3);
+    sin_bl_out2 = (sin_bl1_2*bl_c1 + sin_bl2_2*bl_c2 + sin_bl3_2*bl_c3);
+    //power series out
+    o_sin_out1 = 0.5*(sin_bl_out1+o_sin_out2);
+    o_sin_out2 = 0.5*(sin_bl_out2+o_sin_out1);  
+    //fir restoration
+    s3 = s2;  
+    s2 = s1;
+    s1 = o_sin_out1;
+    d_sin = (s1*c1+s2*c2+s3*c3)*fgain;   
+  );
+  m_out = d_sin
+);
+
+//no feedback?
+fb == 0 ? nl_fb = 0;
+
+//=================================================
+//fx mono
+//=================================================
+mono == 1 ? (
+
+//-------------------------------------------------
+//input
+//-------------------------------------------------
+in_l = (spl0+spl1)/2;
+
+//-------------------------------------------------
+//os - no 
+//-------------------------------------------------
+os == 0 ? (
+
+//feedback ala Paul Kellet
+fp_l = (in_l+(fb-nl_fb)*fp_l)*sinout*r;
+//multiply carrier with mod
+s_out_l = m_out*in_l;
+//apply feedback
+s_out_l += fp_l;
+
+fx_outl = s_out_l;
+
+) : (
+
+//-------------------------------------------------
+//os - yes 
+//-------------------------------------------------
+
+//power series in
+ps_fx_out1l = 0.5*(in_l+ps_fx_out2l);
+ps_fx_out2l = 0.5*ps_fx_out1l;
+
+//------------------------
+//fx
+//------------------------
+fp_l_os_1 = (ps_fx_out1l+(fb-nl_fb)*fp_l_os_1)*sinout*r;
+s_out_l_os_1 = m_out*ps_fx_out1l;
+s_out_l_os_1 += fp_l_os_1;
+
+fp_l_os_2 = (ps_fx_out2l+(fb-nl_fb)*fp_l_os_2)*sinout*r;
+s_out_l_os_2 = m_out*ps_fx_out2l;
+s_out_l_os_2 += fp_l_os_2;
+
+//------------------------
+//bandlimit
+//------------------------
+bl3_1 = bl2_1;
+bl3_2 = bl2_2;
+
+bl2_1 = bl1_1;
+bl2_2 = bl1_2;
+
+bl1_1 = s_out_l_os_1;
+bl1_2 = s_out_l_os_2;
+
+bl_out1 = (bl1_1*bl_c1 + bl2_1*bl_c2 + bl3_1*bl_c3);
+bl_out2 = (bl1_2*bl_c1 + bl2_2*bl_c2 + bl3_2*bl_c3);
+
+//------------------------
+//power series out
+//------------------------
+o_fx_out1l = 0.5*(bl_out1+o_fx_out2l);
+o_fx_out2l = 0.5*(bl_out2+o_fx_out1l);  
+
+//fir restoration
+s3l = s2l;  
+s2l = s1l;
+s1l = o_fx_out1l;
+
+fx_outl = (s1l*c1+s2l*c2+s3l*c3)*fgain;
+
+);
+
+//------------------------
+//mixer
+//------------------------
+out_l = fx_outl*(tmix)+in_l*(1-tmix);
+spl1 = spl0 = out_l*r*outgain;
+
+):(
+//=================================================
+//fx stereo
+//=================================================
+
+in_l = spl0;
+in_r = spl1;
+
+//-------------------------------------------------
+//os - no 
+//-------------------------------------------------
+os == 0 ? (
+
+fp_l = (in_l+(fb-nl_fb)*fp_l)*sinout*r;
+s_out_l = m_out*in_l;
+s_out_l += fp_l;
+out_l = s_out_l*(tmix)+in_l*(1-tmix);
+fx_outl = out_l*r*outgain;
+
+fp_r = (in_r+(fb-nl_fb)*fp_r)*sinout*r;
+s_out_r = m_out*in_r;
+s_out_r += fp_r;
+out_r = s_out_r*(tmix)+in_r*(1-tmix);
+fx_outr = out_r*r*outgain;
+
+) : (
+
+//-------------------------------------------------
+//os - yes 
+//-------------------------------------------------
+
+//power series in
+ps_fx_out1l = 0.5*(in_l+ps_fx_out2l);
+ps_fx_out2l = 0.5*ps_fx_out1l;
+
+ps_fx_out1r = 0.5*(in_r+ps_fx_out2r);
+ps_fx_out2r = 0.5*ps_fx_out1r;
+
+//------------------------
+//fx
+//------------------------
+fp_l_os_1 = (ps_fx_out1l+(fb-nl_fb)*fp_l_os_1)*sinout*r;
+s_out_l_os_1 = m_out*ps_fx_out1l;
+s_out_l_os_1 += fp_l_os_1;
+
+fp_l_os_2 = (ps_fx_out2l+(fb-nl_fb)*fp_l_os_2)*sinout*r;
+s_out_l_os_2 = m_out*ps_fx_out2l;
+s_out_l_os_2 += fp_l_os_2;
+
+fp_r_os_1 = (ps_fx_out1r+(fb-nl_fb)*fp_r_os_1)*sinout*r;
+s_out_r_os_1 = m_out*ps_fx_out1r;
+s_out_r_os_1 += fp_r_os_1;
+
+fp_r_os_2 = (ps_fx_out2r+(fb-nl_fb)*fp_r_os_2)*sinout*r;
+s_out_r_os_2 = m_out*ps_fx_out2r;
+s_out_r_os_2 += fp_r_os_2;
+
+//------------------------
+//bandlimit
+//------------------------
+bl3_l1 = bl2_l1;
+bl3_r1 = bl2_r1;
+bl3_l2 = bl2_l2;
+bl3_r2 = bl2_r2;
+
+bl2_l1 = bl1_l1;
+bl2_r1 = bl1_r1;
+bl2_l2 = bl1_l2;
+bl2_r2 = bl1_r2;
+
+bl1_l1 = s_out_l_os_1;
+bl1_r1 = s_out_r_os_1;
+bl1_l2 = s_out_l_os_2;
+bl1_r2 = s_out_r_os_2;
+
+bl_out1l = (bl1_l1*bl_c1 + bl2_l1*bl_c2 + bl3_l1*bl_c3);
+bl_out1r = (bl1_r1*bl_c1 + bl2_r1*bl_c2 + bl3_r1*bl_c3);
+bl_out2l = (bl1_l2*bl_c1 + bl2_l2*bl_c2 + bl3_l2*bl_c3);
+bl_out2r = (bl1_r2*bl_c1 + bl2_r2*bl_c2 + bl3_r2*bl_c3);
+
+//------------------------
+//power series out
+//------------------------
+o_fx_out1l = 0.5*(bl_out1l+o_fx_out2l);
+o_fx_out2l = 0.5*(bl_out2l+o_fx_out1l);  
+
+o_fx_out1r = 0.5*(bl_out1r+o_fx_out2r);
+o_fx_out2r = 0.5*(bl_out2r+o_fx_out1r);  
+
+//------------------------
+//fir restoration
+//------------------------
+s3l = s2l;  
+s2l = s1l;
+s1l = o_fx_out1l;
+fx_outl = (s1l*c1+s2l*c2+s3l*c3)*fgain;
+
+s3r = s2r;  
+s2r = s1r;
+s1r = o_fx_out1r;
+fx_outr = (s1r*c1+s2r*c2+s3r*c3)*fgain;
+
+);
+
+//------------------------
+//mixer
+//------------------------
+out_l = fx_outl*(tmix)+in_l*(1-tmix);
+out_r = fx_outr*(tmix)+in_r*(1-tmix);
+spl0 = out_l*r*outgain;
+spl1 = out_r*r*outgain;
+
+);
+
+//=================================================
+@gfx 100 10
+//=================================================
+//draw 'f'
+gfx_x=gfx_y=5;
+gfx_lineto(gfx_x, gfx_y,0);
+gfx_r=gfx_b=0.5;
+gfx_g=0.7;
+gfx_a=1;
+gfx_drawchar($'M');
+gfx_drawchar($'O');
+gfx_drawchar($'D');
+gfx_drawchar($' ');
+gfx_drawchar($'F');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(tgt_f,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+//draw diode picture
+diode == 0 ? gfx_r=gfx_g=gfx_b=0.4;
+padx = 385;
+pady = 7;
+gfx_y = gfx_y+8;
+gfx_x = padx-50;
+gfx_drawchar($'M');
+gfx_drawchar($'O');
+gfx_drawchar($'D');
+gfx_drawchar($'~');
+gfx_x = padx;
+gfx_y = pady;
+gfx_lineto(padx,pady+20,0);
+gfx_lineto(padx+15,pady+10,0);
+gfx_lineto(padx,pady,0);
+gfx_x = padx+15;
+gfx_y = pady;
+gfx_lineto(padx+15,pady+20,0);
+gfx_x = padx-10;
+gfx_y = pady+10;
+gfx_lineto(padx,pady+10,0);
+gfx_x = padx+15;
+gfx_lineto(padx+30,pady+10,0);

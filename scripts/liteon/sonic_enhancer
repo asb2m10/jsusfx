@@ -1,0 +1,162 @@
+/*
+
+  sonic enhancer thing
+
+  Copyright (C) 2011 lubomir i. ivanov
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+*/
+
+desc: Sonic Enhancer
+
+slider1:0<-12, 12, 0.1>Input
+slider2:0<0, 10, 0.1>Low Contour
+slider3:0<0, 10, 0.1>Process
+slider4:2<0, 10, 0.1>CV
+slider5:0<-12, 12, 0.1>Output
+slider6:1<0, 1, {Off,On})>Noise Floor
+
+@init
+r_6 = 1/6;
+
+nf_k = pow(2, -96 * r_6);
+
+rc0_k0 = 0.0003;
+rc0_k1 = 1 - rc0_k0;
+
+lp_fc = tan($pi * 0.48);
+lp_r1pfc = 1 / (1 + lp_fc);
+
+fc = 700;
+fs = srate;
+pi2 = 2*$pi;
+q = 0.23;
+
+omega = pi2 * fc / fs;
+sn = sin(omega);
+cs = cos(omega);
+alpha = sn / (2.0 * Q);
+
+b0_ap = 1.0 / (1.0 + alpha);
+b1_ap = (-2.0 * cs) * b0_ap;
+b2_ap = (1.0 - alpha) * b0_ap;
+a0_ap = b2_ap;
+a1_ap = b1_ap;
+a2_ap = 1;
+
+b0_lp = 1.0 / (1.0  + alpha);
+b1_lp = (-2.0 * cs) * b0_lp;
+b2_lp = (1.0 - alpha) * b0_lp;
+a1_lp = (1.0 - cs) * b0_lp;
+a0_lp = a1_lp * 0.5;
+a2_lp = a0_lp;
+
+b0_hp = 1.0 / (1.0 + alpha);
+b1_hp = (-2.0 * cs) * b0_hp;
+b2_hp = (1.0 - alpha) * b0_hp;
+a1_hp = -(1.0 + cs) * b0_hp;
+a0_hp = -a1_hp * 0.5;
+a2_hp = a0_hp;
+
+@slider
+g_in = pow(2, slider1 * r_6);
+g_lp = slider2*0.5;
+g_hp = slider3*0.5;
+cv_k = slider4;
+g_out = pow(2, slider5 * r_6);
+noise_floor = slider6;
+
+@sample
+in0 = spl0*g_in;
+in1 = spl1*g_in;
+
+nf0 = 0.0;
+nf1 = 0.0;
+noise_floor ? (
+  nf0 = (rand(2.0) - 1.0)*nf_k;
+  nf1 = (rand(2.0) - 1.0)*nf_k;
+);
+
+out_ap0 = a0_ap*in0 + a1_ap*x1_ap0 + a2_ap*x2_ap0 - b1_ap*y1_ap0 - b2_ap*y2_ap0;
+x2_ap0 = x1_ap0;
+x1_ap0 = in0;
+y2_ap0 = y1_ap0;
+y1_ap0 = out_ap0;
+
+out_ap1 = a0_ap*in1 + a1_ap*x1_ap1 + a2_ap*x2_ap1 - b1_ap*y1_ap1 - b2_ap*y2_ap1;
+x2_ap1 = x1_ap1;
+x1_ap1 = in1;
+y2_ap1 = y1_ap1;
+y1_ap1 = out_ap1;
+
+out_lp0 = a0_lp*in0 + a1_lp*x1_lp0 + a2_lp*x2_lp0 - b1_lp*y1_lp0 - b2_lp*y2_lp0;
+x2_lp0 = x1_lp0;
+x1_lp0 = in0;
+y2_lp0 = y1_lp0;
+y1_lp0 = out_lp0;
+
+out_lp1 = a0_lp*in1 + a1_lp*x1_lp1 + a2_lp*x2_lp1 - b1_lp*y1_lp1 - b2_lp*y2_lp1;
+x2_lp1 = x1_lp1;
+x1_lp1 = in1;
+y2_lp1 = y1_lp1;
+y1_lp1 = out_lp1;
+
+out_hp0 = a0_hp*in0 + a1_hp*x1_hp0 + a2_hp*x2_hp0 - b1_hp*y1_hp0 - b2_hp*y2_hp0;
+x2_hp0 = x1_hp0;
+x1_hp0 = in0;
+y2_hp0 = y1_hp0;
+y1_hp0 = out_hp0;
+
+out_hp1 = a0_hp*in1 + a1_hp*x1_hp1 + a2_hp*x2_hp1 - b1_hp*y1_hp1 - b2_hp*y2_hp1;
+x2_hp1 = x1_hp1;
+x1_hp1 = in1;
+y2_hp1 = y1_hp1;
+y1_hp1 = out_hp1;
+
+cv0 = 1 - abs(in0)*cv_k;
+cv1 = 1 - abs(in1)*cv_k;
+
+cv_rc0 = rc0_k0*cv0 + rc0_k1*cv_rc0;
+cv_rc1 = rc0_k0*cv1 + rc0_k1*cv_rc1;
+
+out_sv0 = out_ap0 + out_hp0*cv_rc0*g_hp + out_lp0*g_lp;
+out_sv1 = out_ap1 + out_hp1*cv_rc1*g_hp + out_lp1*g_lp;
+
+out_rc0 = rc0_k0*out_sv0 + rc0_k1*out_rc0;
+out_rc1 = rc0_k0*out_sv1 + rc0_k1*out_rc1;
+out_dc0 = out_sv0 - out_rc0;
+out_dc1 = out_sv1 - out_rc1;
+
+out_lp0 = (buf_lp0 + lp_fc*out_dc0) * lp_r1pfc;
+buf_lp0 = lp_fc*(out_dc0 - out_lp0) + out_lp0;
+out_lp1 = (buf_lp1 + lp_fc*out_dc1) * lp_r1pfc;
+buf_lp1 = lp_fc*(out_dc1 - out_lp1) + out_lp1;
+
+spl0 = out_lp0*g_out + nf0;
+spl1 = out_lp1*g_out + nf1;
+
+@gfx 0 10
+gfx_r = 0.8;
+gfx_g = 0.5;
+gfx_b = 0;
+
+gfx_a = min(1, 0.55 + cv_rc0*0.35 + g_hp*0.1);
+gfx_x = 5;
+gfx_y = 5;
+gfx_rectto(gfx_w*0.5 - 3, gfx_h - 5);
+
+gfx_a = min(1, 0.55 + cv_rc1*0.35 + g_hp*0.1);
+gfx_x = gfx_w*0.5 + 3;
+gfx_y = 5;
+gfx_rectto(gfx_w - 5, gfx_h - 5);

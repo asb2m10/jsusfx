@@ -22,12 +22,8 @@
 #include "WDL/ptrlist.h"
 #include "WDL/assocarray.h"
 
-using namespace std;
-
 #define AUTOVAR(name) name = NSEEL_VM_regvar(m_vm, #name); *name = 0
 #define AUTOVARV(name,value) name = NSEEL_VM_regvar(m_vm, #name); *name = value
-
-//#define EEL_STRING_DEBUGOUT
 
 #define EEL_STRING_GET_CONTEXT_POINTER(opaque) (((JsusFx *)opaque)->m_string_context)
 #ifdef EEL_STRING_STDOUT_WRITE
@@ -126,7 +122,7 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
 	return true;
 }
 
-bool JsusFx::compile(istream &input) {
+bool JsusFx::compile(std::istream &input) {
 	releaseCode();
 	
 	WDL_String code;
@@ -243,8 +239,8 @@ void JsusFx::process(float **input, float **output, int size) {
 		return;
 
 	if ( computeSlider ) {
-		computeSlider = false;
 		NSEEL_code_execute(codeSlider);
+		computeSlider = false;		
 	}
 
 	*blockPerSample = size;
@@ -263,8 +259,8 @@ void JsusFx::process64(double **input, double **output, int size) {
 		return;
 
 	if ( computeSlider ) {
-		computeSlider = false;
 		NSEEL_code_execute(codeSlider);
+		computeSlider = false;
 	}
 
 	*blockPerSample = size;

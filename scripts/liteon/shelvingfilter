@@ -1,0 +1,262 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+//******************************************************************************
+// References: "filters3.txt"
+// Shelf Filters as given in
+// James A. Moorer
+// The manifold joys of conformal mappping:
+// applications to digital filtering in the studio
+// JAES, Vol. 31, No. 11, 1983 November
+//******************************************************************************
+
+desc:ShelvingFilter (Moorer)
+
+slider1:0<0,1,1{Stereo,Mono}>Processing
+slider2:50<0,100,0.05>LowShelf (Scale)
+slider3:0<-24,24,0.01>Gain (dB)
+slider4:50<0,100,0.05>HighShelf (Scale)
+slider5:0<-24,24,0.01>Gain (dB)
+slider6:0<-24,24,0.05>Output (dB)
+
+@init
+SPN=0;
+yl_ls=x1l_ls=x2l_ls=y1l_ls=y2l_ls=yr_ls=x1r_ls=x2r_ls=y1r_ls=y2r_ls=0;
+yl_hs=x1l_hs=x2l_hs=y1l_hs=y2l_hs=yr_hs=x1r_hs=x2r_hs=y1r_hs=y2r_hs=0;
+
+@slider
+mono = slider1;
+outgain = 10^(slider6/20);
+
+//*** LS
+sx = 16+slider2*1.20103;
+cf = floor(exp(sx*log(1.059))*8.17742);
+freq1 = cf;
+cf /= srate;
+boost = slider3;
+
+sa = tan($pi*(cf-0.25));
+asq = sa*sa;
+A = 10^(boost/20.0);
+(boost < 6.0) && (boost > -6.0) ? (
+  F = sqrt(A);
+) : (
+  (A > 1.0) ? (
+      F = A/sqrt(2.0);
+    ) : (
+      F = A*sqrt(2.0);
+    );
+);
+F2 = F*F;
+tmp = A*A - F2;
+abs(tmp) <= SPN ? (
+  gammad = 1.0;
+) : (
+  gammad = ((F2-1.0)/tmp)^(0.25);
+);
+gamman = sqrt(A)*gammad;
+gamma2 = gamman*gamman;
+gam2p1 = 1.0 + gamma2;
+siggam2 = 2.0*sqrt(2.0)/2.0*gamman;
+ta0 = gam2p1 + siggam2;
+ta1 = -2.0*(1.0 - gamma2);
+ta2 = gam2p1 - siggam2;
+gamma2 = gammad*gammad;
+gam2p1 = 1.0 + gamma2;
+siggam2 = 2.0*sqrt(2.0)/2.0*gammad;
+tb0 = gam2p1 + siggam2;
+tb1 = -2.0*(1.0 - gamma2);
+tb2 = gam2p1 - siggam2;
+
+aa1 = sa*ta1;
+a0 = ta0 + aa1 + asq*ta2;
+a1 = 2.0*sa*(ta0+ta2)+(1.0+asq)*ta1;
+a2 = asq*ta0 + aa1 + ta2;
+
+ab1 = sa*tb1;
+b0 = tb0 + ab1 + asq*tb2;
+b1 = 2.0*sa*(tb0+tb2)+(1.0+asq)*tb1;
+b2 = asq*tb0 + ab1 + tb2;
+
+recipb0 = 1.0/b0;
+a0 *= recipb0;
+a1 *= recipb0;
+a2 *= recipb0;
+b1 *= recipb0;
+b2 *= recipb0;
+
+a0_ls = a0;  
+a1_ls = a1;
+a2_ls = a2;
+b1_ls = -b1;
+b2_ls = -b2;
+
+//*** HS
+sx = 16+slider4*1.20103;
+cf = floor(exp(sx*log(1.059))*8.17742);
+freq2 = cf;
+cf /= srate;
+boost = -slider5;
+
+sa = tan($pi*(cf-0.25));
+asq = sa*sa;
+A = 10^(boost/20.0);
+(boost < 6.0) && (boost > -6.0) ? (
+  F = sqrt(A);
+) : (
+  (A > 1.0) ? (
+      F = A/sqrt(2.0);
+    ) : (
+      F = A*sqrt(2.0);
+    );
+);
+F2 = F*F;
+tmp = A*A - F2;
+abs(tmp) <= SPN ? (
+  gammad = 1.0;
+) : (
+  gammad = ((F2-1.0)/tmp)^(0.25);
+);
+gamman = sqrt(A)*gammad;
+gamma2 = gamman*gamman;
+gam2p1 = 1.0 + gamma2;
+siggam2 = 2.0*sqrt(2.0)/2.0*gamman;
+ta0 = gam2p1 + siggam2;
+ta1 = -2.0*(1.0 - gamma2);
+ta2 = gam2p1 - siggam2;
+gamma2 = gammad*gammad;
+gam2p1 = 1.0 + gamma2;
+siggam2 = 2.0*sqrt(2.0)/2.0*gammad;
+tb0 = gam2p1 + siggam2;
+tb1 = -2.0*(1.0 - gamma2);
+tb2 = gam2p1 - siggam2;
+
+aa1 = sa*ta1;
+a0 = ta0 + aa1 + asq*ta2;
+a1 = 2.0*sa*(ta0+ta2)+(1.0+asq)*ta1;
+a2 = asq*ta0 + aa1 + ta2;
+
+ab1 = sa*tb1;
+b0 = tb0 + ab1 + asq*tb2;
+b1 = 2.0*sa*(tb0+tb2)+(1.0+asq)*tb1;
+b2 = asq*tb0 + ab1 + tb2;
+
+recipb0 = 1.0/b0;
+a0 *= recipb0;
+a1 *= recipb0;
+a2 *= recipb0;
+b1 *= recipb0;
+b2 *= recipb0;
+  
+gain = 10^(boost/20.0);
+a0_hs = a0/gain;
+a1_hs = a1/gain; 
+a2_hs = a2/gain; 
+b1_hs = -b1;
+b2_hs = -b2;
+
+@sample
+
+//mono
+mono == 1 ? (
+
+//LS
+xl_ls = (spl0+spl1)/2;
+ 
+yl_ls = a0_ls*xl_ls + a1_ls*x1l_ls + a2_ls*x2l_ls + b1_ls*y1l_ls + b2_ls*y2l_ls;
+x2l_ls = x1l_ls;
+x1l_ls = xl_ls;
+y2l_ls = y1l_ls;
+y1l_ls = yl_ls;
+
+//HS
+xl_hs = yl_ls;
+ 
+yl_hs = a0_hs*xl_hs + a1_hs*x1l_hs + a2_hs*x2l_hs + b1_hs*y1l_hs + b2_hs*y2l_hs;
+x2l_hs = x1l_hs;
+x1l_hs = xl_hs;
+y2l_hs = y1l_hs;
+y1l_hs = yl_hs;
+
+spl0=spl1=yl_hs*outgain;
+
+//stereo
+) : (
+
+//LS
+xl_ls = spl0;
+xr_ls = spl1;
+ 
+yl_ls = a0_ls*xl_ls + a1_ls*x1l_ls + a2_ls*x2l_ls + b1_ls*y1l_ls + b2_ls*y2l_ls;
+x2l_ls = x1l_ls;
+x1l_ls = xl_ls;
+y2l_ls = y1l_ls;
+y1l_ls = yl_ls;
+
+yr_ls = a0_ls*xr_ls + a1_ls*x1r_ls + a2_ls*x2r_ls + b1_ls*y1r_ls + b2_ls*y2r_ls;
+x2r_ls = x1r_ls;
+x1r_ls = xr_ls;
+y2r_ls = y1r_ls;
+y1r_ls = yr_ls;
+
+
+//HS
+xl_hs = yl_ls;
+xr_hs = yr_ls;
+ 
+yl_hs = a0_hs*xl_hs + a1_hs*x1l_hs + a2_hs*x2l_hs + b1_hs*y1l_hs + b2_hs*y2l_hs;
+x2l_hs = x1l_hs;
+x1l_hs = xl_hs;
+y2l_hs = y1l_hs;
+y1l_hs = yl_hs;
+
+yr_hs = a0_hs*xr_hs + a1_hs*x1r_hs + a2_hs*x2r_hs + b1_hs*y1r_hs + b2_hs*y2r_hs;
+x2r_hs = x1r_hs;
+x1r_hs = xr_hs;
+y2r_hs = y1r_hs;
+y1r_hs = yr_hs;
+
+spl0 = yl_hs*outgain;
+spl1 = yr_hs*outgain;
+
+);
+
+@gfx 100 10
+gfx_x=gfx_y=5;
+gfx_lineto(gfx_x, gfx_y,0);
+gfx_r=gfx_b=0;
+gfx_g=gfx_a=1;
+gfx_drawchar($'L');
+gfx_drawchar($'S');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(freq1,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+gfx_y += 15;
+gfx_x = 5;
+gfx_drawchar($'H');
+gfx_drawchar($'S');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(freq2,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');

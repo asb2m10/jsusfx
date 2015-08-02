@@ -1,0 +1,435 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+//******************************************************************************
+// butterworth filter implementation - 
+// original port from apple.com au tutorial (c+)
+// added HP version
+// added 12 poles cascade
+// * see note below about efficiency
+//******************************************************************************
+
+desc: AppleFilter v.2 (72dB LP/HP)
+
+slider1:0<0,1,1{Stereo,Mono}>Processing
+slider2:0<0,1,1{Off,12dB,24dB,36dB,48dB,60dB,72dB}>HP Slope (dB/oct)
+slider3:0<0,100,0.01>HP Cut (Scale)
+slider4:0<-16,16,0.01>HP Res (dB)
+slider5:0<0,1,1{Off,12dB,24dB,36dB,48dB,60dB,72dB}>LP Slope (dB/oct)
+slider6:100<0,100,0.01>LP Cut (Scale)
+slider7:0<-16,16,0.01>LP Res (dB)
+slider8:0<-24,24,0.01>Output (dB)
+
+@slider
+mono = slider1;
+outgain = 10^(slider8/20);
+
+//****************************
+//hp
+
+n_hp = slider2;
+sx = 16+slider3*1.20103;
+cx_hp = floor(exp(sx*log(1.059))*8.17742);
+cutoff_hp = 2*cx_hp/srate;
+res_hp = 10^(0.05*(-slider4/n_hp+1.5));
+
+k = 0.5*res_hp*sin($pi*cutoff_hp);
+c1 = 0.5*(1-k)/(1+k);
+c2 = (0.5+c1)*cos($pi*cutoff_hp);
+c3 = (0.5+c1+c2)*0.25;
+
+a0_hp = 2*c3;
+a1_hp = -4*c3;
+a2_hp = 2*c3;
+b1_hp = -2*c2;
+b2_hp = 2*c1;
+
+//****************************
+//lp
+
+n_lp = slider5;
+sx = 16+slider6*1.20103;
+cx_lp = floor(exp(sx*log(1.059))*8.17742);
+cutoff_lp = 2*cx_lp/srate;
+res_lp = 10^(0.05*(-slider7/n_lp+1.5));
+
+k = 0.5*res_lp*sin($pi*cutoff_lp);
+c1 = 0.5*(1-k)/(1+k);
+c2 = (0.5+c1)*cos($pi*cutoff_lp);
+c3 = (0.5+c1-c2)*0.25;
+
+a0_lp = 2*c3;
+a1_lp = 4*c3;
+a2_lp = 2*c3;
+b1_lp = -2*c2;
+b2_lp = 2*c1;
+
+@sample
+
+// *NOTE: You can use 'loop' for the cascade (see example below)
+// however its many times less efficient !
+//
+// comparison for - mono, lp, 72db:
+// --------------------
+// using loop - 13.8% cpu 
+// long version - 3.3% cpu
+/*
+i = 0;
+inl = (spl0+spl1)/2;
+loop(n_lp,
+outl = a0_lp*inl+a1_lp*mem[4*i+1]+a2_lp*mem[4*i+2]-b1_lp*mem[4*i+3]-b2_lp*mem[4*i+4];
+mem[4*i+2] = mem[4*i+1];
+mem[4*i+1] = inl;
+mem[4*i+4] = mem[4*i+3];
+mem[4*i+3] = outl;
+inl = outl;
+i += 1;
+);
+spl0=spl1=outl;
+*/
+
+//***************************************************************************
+//mono
+mono == 1 ? (
+inl = (spl0+spl1)/2;
+//*********************************************
+//hp
+n_hp > 0 ? (
+out_hp_l_1 = a0_hp*inl+a1_hp*mem_hp_l_11+a2_hp*mem_hp_l_12-b1_hp*mem_hp_l_13-b2_hp*mem_hp_l_14;
+mem_hp_l_12 = mem_hp_l_11;
+mem_hp_l_11 = inl;
+mem_hp_l_14 = mem_hp_l_13;
+mem_hp_l_13 = out_hp_l_1;
+out_hp_l = out_hp_l_1;
+n_hp > 1 ? (
+out_hp_l_2 = a0_hp*out_hp_l_1+a1_hp*mem_hp_l_21+a2_hp*mem_hp_l_22-b1_hp*mem_hp_l_23-b2_hp*mem_hp_l_24;
+mem_hp_l_22 = mem_hp_l_21;
+mem_hp_l_21 = out_hp_l_1;
+mem_hp_l_24 = mem_hp_l_23;
+mem_hp_l_23 = out_hp_l_2;
+out_hp_l = out_hp_l_2;
+);
+n_hp > 2 ? (
+out_hp_l_3 = a0_hp*out_hp_l_2+a1_hp*mem_hp_l_31+a2_hp*mem_hp_l_32-b1_hp*mem_hp_l_33-b2_hp*mem_hp_l_34;
+mem_hp_l_32 = mem_hp_l_31;
+mem_hp_l_31 = out_hp_l_2;
+mem_hp_l_34 = mem_hp_l_33;
+mem_hp_l_33 = out_hp_l_3;
+out_hp_l = out_hp_l_3;
+);
+n_hp > 3 ? (
+out_hp_l_4 = a0_hp*out_hp_l_3+a1_hp*mem_hp_l_41+a2_hp*mem_hp_l_42-b1_hp*mem_hp_l_43-b2_hp*mem_hp_l_44;
+mem_hp_l_42 = mem_hp_l_41;
+mem_hp_l_41 = out_hp_l_3;
+mem_hp_l_44 = mem_hp_l_43;
+mem_hp_l_43 = out_hp_l_4;
+out_hp_l = out_hp_l_4;
+);
+n_hp > 4 ? (
+out_hp_l_5 = a0_hp*out_hp_l_4+a1_hp*mem_hp_l_51+a2_hp*mem_hp_l_52-b1_hp*mem_hp_l_53-b2_hp*mem_hp_l_54;
+mem_hp_l_52 = mem_hp_l_51;
+mem_hp_l_51 = out_hp_l_4;
+mem_hp_l_54 = mem_hp_l_53;
+mem_hp_l_53 = out_hp_l_5;
+out_hp_l = out_hp_l_5;
+);
+n_hp > 5 ? (
+out_hp_l_6 = a0_hp*out_hp_l_5+a1_hp*mem_hp_l_61+a2_hp*mem_hp_l_62-b1_hp*mem_hp_l_63-b2_hp*mem_hp_l_64;
+mem_hp_l_62 = mem_hp_l_61;
+mem_hp_l_61 = out_hp_l_5;
+mem_hp_l_64 = mem_hp_l_63;
+mem_hp_l_63 = out_hp_l_6;
+out_hp_l = out_hp_l_6;
+);
+) : (
+out_hp_l = inl;
+);
+//*********************************************
+//lp
+n_lp > 0 ? (
+out_lp_l_1 = a0_lp*out_hp_l+a1_lp*mem_lp_l_11+a2_lp*mem_lp_l_12-b1_lp*mem_lp_l_13-b2_lp*mem_lp_l_14;
+mem_lp_l_12 = mem_lp_l_11;
+mem_lp_l_11 = out_hp_l;
+mem_lp_l_14 = mem_lp_l_13;
+mem_lp_l_13 = out_lp_l_1;
+out_lp_l = out_lp_l_1;
+n_lp > 1 ? (
+out_lp_l_2 = a0_lp*out_lp_l_1+a1_lp*mem_lp_l_21+a2_lp*mem_lp_l_22-b1_lp*mem_lp_l_23-b2_lp*mem_lp_l_24;
+mem_lp_l_22 = mem_lp_l_21;
+mem_lp_l_21 = out_lp_l_1;
+mem_lp_l_24 = mem_lp_l_23;
+mem_lp_l_23 = out_lp_l_2;
+out_lp_l = out_lp_l_2;
+);
+n_lp > 2 ? (
+out_lp_l_3 = a0_lp*out_lp_l_2+a1_lp*mem_lp_l_31+a2_lp*mem_lp_l_32-b1_lp*mem_lp_l_33-b2_lp*mem_lp_l_34;
+mem_lp_l_32 = mem_lp_l_31;
+mem_lp_l_31 = out_lp_l_2;
+mem_lp_l_34 = mem_lp_l_33;
+mem_lp_l_33 = out_lp_l_3;
+out_lp_l = out_lp_l_3;
+);
+n_lp > 3 ? (
+out_lp_l_4 = a0_lp*out_lp_l_3+a1_lp*mem_lp_l_41+a2_lp*mem_lp_l_42-b1_lp*mem_lp_l_43-b2_lp*mem_lp_l_44;
+mem_lp_l_42 = mem_lp_l_41;
+mem_lp_l_41 = out_lp_l_3;
+mem_lp_l_44 = mem_lp_l_43;
+mem_lp_l_43 = out_lp_l_4;
+out_lp_l = out_lp_l_4;
+);
+n_lp > 4 ? (
+out_lp_l_5 = a0_lp*out_lp_l_4+a1_lp*mem_lp_l_51+a2_lp*mem_lp_l_52-b1_lp*mem_lp_l_53-b2_lp*mem_lp_l_54;
+mem_lp_l_52 = mem_lp_l_51;
+mem_lp_l_51 = out_lp_l_4;
+mem_lp_l_54 = mem_lp_l_53;
+mem_lp_l_53 = out_lp_l_5;
+out_lp_l = out_lp_l_5;
+);
+n_lp > 5 ? (
+out_lp_l_6 = a0_lp*out_lp_l_5+a1_lp*mem_lp_l_61+a2_lp*mem_lp_l_62-b1_lp*mem_lp_l_63-b2_lp*mem_lp_l_64;
+mem_lp_l_62 = mem_lp_l_61;
+mem_lp_l_61 = out_lp_l_5;
+mem_lp_l_64 = mem_lp_l_63;
+mem_lp_l_63 = out_lp_l_6;
+out_lp_l = out_lp_l_6;
+);
+) : (
+out_lp_l = out_hp_l;
+);
+
+//out mono
+spl0 = spl1 = out_lp_l*outgain;
+
+//*****************************************************************************
+//stereo
+) : (
+inl = spl0;
+inr = spl1;
+//********************************************* 
+//hp
+n_hp > 0 ? (
+out_hp_l_1 = a0_hp*inl+a1_hp*mem_hp_l_11+a2_hp*mem_hp_l_12-b1_hp*mem_hp_l_13-b2_hp*mem_hp_l_14;
+mem_hp_l_12 = mem_hp_l_11;
+mem_hp_l_11 = inl;
+mem_hp_l_14 = mem_hp_l_13;
+mem_hp_l_13 = out_hp_l_1;
+out_hp_l = out_hp_l_1;
+out_hp_r_1 = a0_hp*inr+a1_hp*mem_hp_r_11+a2_hp*mem_hp_r_12-b1_hp*mem_hp_r_13-b2_hp*mem_hp_r_14;
+mem_hp_r_12 = mem_hp_r_11;
+mem_hp_r_11 = inr;
+mem_hp_r_14 = mem_hp_r_13;
+mem_hp_r_13 = out_hp_r_1;
+out_hp_r = out_hp_r_1;
+n_hp > 1 ? (
+out_hp_l_2 = a0_hp*out_hp_l_1+a1_hp*mem_hp_l_21+a2_hp*mem_hp_l_22-b1_hp*mem_hp_l_23-b2_hp*mem_hp_l_24;
+mem_hp_l_22 = mem_hp_l_21;
+mem_hp_l_21 = out_hp_l_1;
+mem_hp_l_24 = mem_hp_l_23;
+mem_hp_l_23 = out_hp_l_2;
+out_hp_l = out_hp_l_2;
+out_hp_r_2 = a0_hp*out_hp_r_1+a1_hp*mem_hp_r_21+a2_hp*mem_hp_r_22-b1_hp*mem_hp_r_23-b2_hp*mem_hp_r_24;
+mem_hp_r_22 = mem_hp_r_21;
+mem_hp_r_21 = out_hp_r_1;
+mem_hp_r_24 = mem_hp_r_23;
+mem_hp_r_23 = out_hp_r_2;
+out_hp_r = out_hp_r_2;
+);
+n_hp > 2 ? (
+out_hp_l_3 = a0_hp*out_hp_l_2+a1_hp*mem_hp_l_31+a2_hp*mem_hp_l_32-b1_hp*mem_hp_l_33-b2_hp*mem_hp_l_34;
+mem_hp_l_32 = mem_hp_l_31;
+mem_hp_l_31 = out_hp_l_2;
+mem_hp_l_34 = mem_hp_l_33;
+mem_hp_l_33 = out_hp_l_3;
+out_hp_l = out_hp_l_3;
+out_hp_r_3 = a0_hp*out_hp_r_2+a1_hp*mem_hp_r_31+a2_hp*mem_hp_r_32-b1_hp*mem_hp_r_33-b2_hp*mem_hp_r_34;
+mem_hp_r_32 = mem_hp_r_31;
+mem_hp_r_31 = out_hp_r_2;
+mem_hp_r_34 = mem_hp_r_33;
+mem_hp_r_33 = out_hp_r_3;
+out_hp_r = out_hp_r_3;
+);
+n_hp > 3 ? (
+out_hp_l_4 = a0_hp*out_hp_l_3+a1_hp*mem_hp_l_41+a2_hp*mem_hp_l_42-b1_hp*mem_hp_l_43-b2_hp*mem_hp_l_44;
+mem_hp_l_42 = mem_hp_l_41;
+mem_hp_l_41 = out_hp_l_3;
+mem_hp_l_44 = mem_hp_l_43;
+mem_hp_l_43 = out_hp_l_4;
+out_hp_l = out_hp_l_4;
+out_hp_r_4 = a0_hp*out_hp_r_3+a1_hp*mem_hp_r_41+a2_hp*mem_hp_r_42-b1_hp*mem_hp_r_43-b2_hp*mem_hp_r_44;
+mem_hp_r_42 = mem_hp_r_41;
+mem_hp_r_41 = out_hp_r_3;
+mem_hp_r_44 = mem_hp_r_43;
+mem_hp_r_43 = out_hp_r_4;
+out_hp_r = out_hp_r_4;
+);
+n_hp > 4 ? (
+out_hp_l_5 = a0_hp*out_hp_l_4+a1_hp*mem_hp_l_51+a2_hp*mem_hp_l_52-b1_hp*mem_hp_l_53-b2_hp*mem_hp_l_54;
+mem_hp_l_52 = mem_hp_l_51;
+mem_hp_l_51 = out_hp_l_4;
+mem_hp_l_54 = mem_hp_l_53;
+mem_hp_l_53 = out_hp_l_5;
+out_hp_l = out_hp_l_5;
+out_hp_r_5 = a0_hp*out_hp_r_4+a1_hp*mem_hp_r_51+a2_hp*mem_hp_r_52-b1_hp*mem_hp_r_53-b2_hp*mem_hp_r_54;
+mem_hp_r_52 = mem_hp_r_51;
+mem_hp_r_51 = out_hp_r_4;
+mem_hp_r_54 = mem_hp_r_53;
+mem_hp_r_53 = out_hp_r_5;
+out_hp_r = out_hp_r_5;
+);
+n_hp > 5 ? (
+out_hp_l_6 = a0_hp*out_hp_l_5+a1_hp*mem_hp_l_61+a2_hp*mem_hp_l_62-b1_hp*mem_hp_l_63-b2_hp*mem_hp_l_64;
+mem_hp_l_62 = mem_hp_l_61;
+mem_hp_l_61 = out_hp_l_5;
+mem_hp_l_64 = mem_hp_l_63;
+mem_hp_l_63 = out_hp_l_6;
+out_hp_l = out_hp_l_6;
+out_hp_r_6 = a0_hp*out_hp_r_5+a1_hp*mem_hp_r_61+a2_hp*mem_hp_r_62-b1_hp*mem_hp_r_63-b2_hp*mem_hp_r_64;
+mem_hp_r_62 = mem_hp_r_61;
+mem_hp_r_61 = out_hp_r_5;
+mem_hp_r_64 = mem_hp_r_63;
+mem_hp_r_63 = out_hp_r_6;
+out_hp_r = out_hp_r_6;
+);
+) : (
+out_hp_l = inl;
+out_hp_r = inr;
+);
+//*********************************************
+//lp
+n_lp > 0 ? (
+out_lp_l_1 = a0_lp*out_hp_l+a1_lp*mem_lp_l_11+a2_lp*mem_lp_l_12-b1_lp*mem_lp_l_13-b2_lp*mem_lp_l_14;
+mem_lp_l_12 = mem_lp_l_11;
+mem_lp_l_11 = out_hp_l;
+mem_lp_l_14 = mem_lp_l_13;
+mem_lp_l_13 = out_lp_l_1;
+out_lp_l = out_lp_l_1;
+out_lp_r_1 = a0_lp*out_hp_r+a1_lp*mem_lp_r_11+a2_lp*mem_lp_r_12-b1_lp*mem_lp_r_13-b2_lp*mem_lp_r_14;
+mem_lp_r_12 = mem_lp_r_11;
+mem_lp_r_11 = out_hp_r;
+mem_lp_r_14 = mem_lp_r_13;
+mem_lp_r_13 = out_lp_r_1;
+out_lp_r = out_lp_r_1;
+n_lp > 1 ? (
+out_lp_l_2 = a0_lp*out_lp_l_1+a1_lp*mem_lp_l_21+a2_lp*mem_lp_l_22-b1_lp*mem_lp_l_23-b2_lp*mem_lp_l_24;
+mem_lp_l_22 = mem_lp_l_21;
+mem_lp_l_21 = out_lp_l_1;
+mem_lp_l_24 = mem_lp_l_23;
+mem_lp_l_23 = out_lp_l_2;
+out_lp_l = out_lp_l_2;
+out_lp_r_2 = a0_lp*out_lp_r_1+a1_lp*mem_lp_r_21+a2_lp*mem_lp_r_22-b1_lp*mem_lp_r_23-b2_lp*mem_lp_r_24;
+mem_lp_r_22 = mem_lp_r_21;
+mem_lp_r_21 = out_lp_r_1;
+mem_lp_r_24 = mem_lp_r_23;
+mem_lp_r_23 = out_lp_r_2;
+out_lp_r = out_lp_r_2;
+);
+n_lp > 2 ? (
+out_lp_l_3 = a0_lp*out_lp_l_2+a1_lp*mem_lp_l_31+a2_lp*mem_lp_l_32-b1_lp*mem_lp_l_33-b2_lp*mem_lp_l_34;
+mem_lp_l_32 = mem_lp_l_31;
+mem_lp_l_31 = out_lp_l_2;
+mem_lp_l_34 = mem_lp_l_33;
+mem_lp_l_33 = out_lp_l_3;
+out_lp_l = out_lp_l_3;
+out_lp_r_3 = a0_lp*out_lp_r_2+a1_lp*mem_lp_r_31+a2_lp*mem_lp_r_32-b1_lp*mem_lp_r_33-b2_lp*mem_lp_r_34;
+mem_lp_r_32 = mem_lp_r_31;
+mem_lp_r_31 = out_lp_r_2;
+mem_lp_r_34 = mem_lp_r_33;
+mem_lp_r_33 = out_lp_r_3;
+out_lp_r = out_lp_r_3;
+);
+n_lp > 3 ? (
+out_lp_l_4 = a0_lp*out_lp_l_3+a1_lp*mem_lp_l_41+a2_lp*mem_lp_l_42-b1_lp*mem_lp_l_43-b2_lp*mem_lp_l_44;
+mem_lp_l_42 = mem_lp_l_41;
+mem_lp_l_41 = out_lp_l_3;
+mem_lp_l_44 = mem_lp_l_43;
+mem_lp_l_43 = out_lp_l_4;
+out_lp_l = out_lp_l_4;
+out_lp_r_4 = a0_lp*out_lp_r_3+a1_lp*mem_lp_r_41+a2_lp*mem_lp_r_42-b1_lp*mem_lp_r_43-b2_lp*mem_lp_r_44;
+mem_lp_r_42 = mem_lp_r_41;
+mem_lp_r_41 = out_lp_r_3;
+mem_lp_r_44 = mem_lp_r_43;
+mem_lp_r_43 = out_lp_r_4;
+out_lp_r = out_lp_r_4;
+);
+n_lp > 4 ? (
+out_lp_l_5 = a0_lp*out_lp_l_4+a1_lp*mem_lp_l_51+a2_lp*mem_lp_l_52-b1_lp*mem_lp_l_53-b2_lp*mem_lp_l_54;
+mem_lp_l_52 = mem_lp_l_51;
+mem_lp_l_51 = out_lp_l_4;
+mem_lp_l_54 = mem_lp_l_53;
+mem_lp_l_53 = out_lp_l_5;
+out_lp_l = out_lp_l_5;
+out_lp_r_5 = a0_lp*out_lp_r_4+a1_lp*mem_lp_r_51+a2_lp*mem_lp_r_52-b1_lp*mem_lp_r_53-b2_lp*mem_lp_r_54;
+mem_lp_r_52 = mem_lp_r_51;
+mem_lp_r_51 = out_lp_r_4;
+mem_lp_r_54 = mem_lp_r_53;
+mem_lp_r_53 = out_lp_r_5;
+out_lp_r = out_lp_r_5;
+);
+n_lp > 5 ? (
+out_lp_l_6 = a0_lp*out_lp_l_5+a1_lp*mem_lp_l_61+a2_lp*mem_lp_l_62-b1_lp*mem_lp_l_63-b2_lp*mem_lp_l_64;
+mem_lp_l_62 = mem_lp_l_61;
+mem_lp_l_61 = out_lp_l_5;
+mem_lp_l_64 = mem_lp_l_63;
+mem_lp_l_63 = out_lp_l_6;
+out_lp_l = out_lp_l_6;
+out_lp_r_6 = a0_lp*out_lp_r_5+a1_lp*mem_lp_r_61+a2_lp*mem_lp_r_62-b1_lp*mem_lp_r_63-b2_lp*mem_lp_r_64;
+mem_lp_r_62 = mem_lp_r_61;
+mem_lp_r_61 = out_lp_r_5;
+mem_lp_r_64 = mem_lp_r_63;
+mem_lp_r_63 = out_lp_r_6;
+out_lp_r = out_lp_r_6;
+);
+) : (
+out_lp_l = out_hp_l;
+out_lp_r = out_hp_r;
+);
+
+//out stereo
+spl0 = out_lp_l*outgain;
+spl1 = out_lp_r*outgain;
+
+);
+
+@gfx 100 10
+gfx_x=gfx_y=5;
+gfx_lineto(gfx_x, gfx_y,0);
+gfx_r=0.7;
+gfx_b=0.1;
+gfx_g=1;
+gfx_a=1;
+gfx_drawchar($'H');
+gfx_drawchar($'P');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(cx_hp,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+gfx_y += 15;
+gfx_x = 5;
+gfx_drawchar($'L');
+gfx_drawchar($'P');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(cx_lp,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+
+

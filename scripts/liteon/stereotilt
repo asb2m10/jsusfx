@@ -1,0 +1,70 @@
+// (C) 2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+desc:StereoTilt (Mono-to-Stereo)
+
+slider1:50<0,100,0.05>Center Frequency (Scale)
+slider2:0<-6,6,0.05>Tilt (- / +) (dB)
+slider3:0<-100,100,0.05>Balance (Left / Right) (%)
+slider4:0<-16,16,0.05>Output Gain (dB)
+
+@init
+amp = 6/log(2);
+denorm = 10^-30;
+pi = $pi;
+sr3 = 3*srate;
+
+@slider
+//gain
+gain = slider2;
+lgain0 = hgain1 = exp(gain/amp)-1;
+hgain0 = lgain1 = exp(-gain/amp)-1;
+outgain = exp((slider4-sign(gain)*gain)/amp);
+gl = min(1,1-slider3*0.01);
+gr = min(1,1+slider3*0.01);
+
+//f0
+sx = 16+slider1*1.20103;
+f0 = exp(sx*log(1.059))*8.17742|0;
+
+//filter
+omega = 2*pi*f0;
+n = 1/(sr3 + omega);
+a0 = 2*omega*n;
+b1 = (sr3 - omega)*n;
+
+@sample
+//process
+spl0=(output = spl0 + lgain0*(lp_out = a0*spl0 + b1*lp_out) + hgain0*(spl0 - lp_out))*gl*outgain+denorm;
+spl1=(output_r = spl1 + lgain1*(lp_out_r = a0*spl1 + b1*lp_out_r) + hgain1*(spl1 - lp_out_r))*gr*outgain+denorm;
+
+@gfx 100 10
+//draw freq scale numbers
+gfx_x=gfx_y=5;
+gfx_lineto(gfx_x, gfx_y,0);
+gfx_r=0;
+gfx_b=0.8;
+gfx_g=0.6;
+gfx_a=1;
+gfx_drawchar($'F');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(f0,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');

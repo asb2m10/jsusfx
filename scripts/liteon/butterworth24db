@@ -1,0 +1,192 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+//******************************************************************************
+// Reference: posted by Zxform - baltrax@hotmail.com 
+// Warning: Automate the cutoff of this filter at your own risk !!!
+// Note: Limiter automatically kicks in below 300hz for speaker protection!
+//******************************************************************************
+
+desc:Butterworth Filter
+
+slider1:0<0,1,1{Stereo,Mono}>Processing
+slider2:0<0,1,1{LP (24dB/oct),HP (6dB/oct)}>Filter Type
+slider3:100<0,100,0.05>Cutoff (Scale)
+slider4:0<0,0.9>Resonance (Mix/Max)
+slider5:0<-25,25,0.05>Output (dB)
+slider6:0<0,1,1{On,Off}>Limiter
+
+@init
+mv=2^(-0.2/6);
+history1=history2=history3=history4=0;
+history1l=history2l=history3l=history4l=0;
+history1r=history2r=history3r=history4r=0;
+new_hist=new_histl=new_histr=0;
+bq = 6;
+pi = 22/7;
+fs = srate;
+t0 = 4*fs*fs;
+t1 = 8*fs*fs;
+t2 = 2*fs;
+t3 = pi/fs;
+
+@slider
+ftype = slider2;
+mono = slider1;
+limiter = slider6;
+sx = 16+slider3*1.20103;
+cutoff = floor(exp(sx*log(1.059))*8.17742);
+res = slider3;
+outgain = 10^(slider5/20);
+wp = t2*tan(t3*cutoff);
+cutoff > 150 ? (
+  q = (slider4*bq)+1;
+) : (
+  q = (0.1*bq)+1;
+);
+b1 = (0.765367/q)/wp;
+b2 = 1/(wp*wp);
+bd_tmp = t0*b2+1;
+bd = 1/(bd_tmp+t2*b1);
+//bd = 1/(b1+t2*bd_tmp);
+gain = bd;
+coef2 = (2-t1*b2);
+coef0 = coef2*bd;
+coef1 = (bd_tmp-t2*b1)*bd;
+b1 = (1.847759/q)/wp;
+bd = 1/(bd_tmp+t2*b1);
+//bd = 1/(b1+t2*bd_tmp);
+gain *= bd;
+coef2 *= bd;
+coef3 = (bd_tmp-t2*b1)*bd;
+
+@sample 
+
+//stereo 
+mono == 0 ? (
+
+//filter
+inputl = spl0;
+inputr = spl1;
+
+outputl = inputl*gain;
+outputr = inputr*gain;
+outputl -= history1l*coef0;
+outputr -= history1r*coef0;
+new_histl = outputl-history2l*coef1;
+new_histr = outputr-history2r*coef1;
+outputl = new_histl+history1l*2;
+outputr = new_histr+history1r*2;
+outputl += history2l;
+outputr += history2r;
+history2l = history1l;
+history2r = history1r;
+history1l = new_histl;
+history1r = new_histr;
+
+outputl -= history3l*coef2;
+outputr -= history3r*coef2;
+new_histl = outputl-history4l*coef3;
+new_histr = outputr-history4r*coef3;
+outputl = new_histl+history3l*2;
+outputr = new_histr+history3r*2;
+outputl += history4l;
+outputr += history4r;
+history4l = history3l;
+history4r = history3r;
+history3l = new_histl;
+history3r = new_histr;
+
+ftype == 1 ? (  
+  outputl = inputl-outputl;
+  outputr = inputr-outputr;
+);
+
+//auto limit below 300hz
+cutoff < 300 ? (
+  outputl = min(max((outputl),-mv),mv);
+  outputr = min(max((outputr),-mv),mv);  
+);
+
+outputl = outputl*outgain;
+outputr = outputr*outgain;
+
+//limiter
+limiter == 0 ? (
+  spl0 = min(max((outputl),-mv),mv);
+  spl1 = min(max((outputr),-mv),mv);
+) : (
+  spl0 = outputl;
+  spl1 = outputr;
+);
+
+//mono
+) : (
+
+//filter
+input = (spl0+spl1)/2;
+hp_bp = input*gain+history1*coef0;
+
+output = input*gain;
+output -= history1*coef0;
+new_hist = output-history2*coef1;
+output = new_hist+history1*2;
+output += history2;
+history2 = history1;
+history1 = new_hist;
+
+output -= history3*coef2;
+new_hist = output-history4*coef3; 
+output = new_hist+history3*2;
+output += history4;
+history4 = history3;
+history3 = new_hist;
+
+//filter type
+ftype == 1 ? (  
+  output = input-output;
+);
+
+//auto limit below 300hz
+cutoff < 300 ? (
+  output = min(max((output),-mv),mv);  
+);
+
+output = output*outgain;
+
+//limiter
+limiter == 0 ? (
+  spl0 = spl1 = min(max((output),-mv),mv);  
+) : (
+  spl0 = spl1 = (output);
+);
+
+);
+
+@gfx 100 10
+gfx_x=gfx_y=5;
+gfx_lineto(gfx_x, gfx_y,0);
+gfx_r=gfx_b=0;
+gfx_g=gfx_a=1;
+gfx_drawchar($'F');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(cutoff,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');

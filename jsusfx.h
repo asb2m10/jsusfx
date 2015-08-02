@@ -14,16 +14,15 @@
  * limitations under the License.
 */
 
-
 #pragma once
 
 #include <string.h>
-#include <sstream>
 #include <iostream>
 #include <string>
 
 #include "WDL/eel2/ns-eel.h"
 #include "WDL/eel2/ns-eel-int.h"
+
 class eel_string_context_state;
 
 class Slider {
@@ -100,25 +99,20 @@ protected:
     NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample;
     NSEEL_VMCTX m_vm;
 
-	// DAW FUNCTION
-	EEL_F *tempo, *play_state, *play_position, *beat_position, *ts_num, *ts_denom;
-
-	// DUMMY VALUES
-	EEL_F *ext_noinit, *ext_nodenorm, *pdc_delay, *pdc_bot_cd, *pdc_top_ch;
-
 	bool computeSlider;
 	void releaseCode();
 	bool compileSection(int state, const char *code, int line_offset);
 
 public:
+    Slider sliders[64];
+	int normalizeSliders;
+	char desc[64];
+    
+	EEL_F *tempo, *play_state, *play_position, *beat_position, *ts_num, *ts_denom;
+	EEL_F *ext_noinit, *ext_nodenorm, *pdc_delay, *pdc_bot_cd, *pdc_top_ch;
 	EEL_F *srate, *num_ch, *blockPerSample;
 	EEL_F *spl0, *spl1, *trigger;
 
-    Slider sliders[64];
-	int normalizeSliders;
-    
-	eel_string_context_state *m_string_context;
-    
 	JsusFx();
 	virtual ~JsusFx();
 
@@ -135,6 +129,7 @@ public:
     
 	static void init();
     
-	char desc[64];
+    // ==============================================================
+	eel_string_context_state *m_string_context;
 };
 

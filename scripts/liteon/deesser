@@ -1,0 +1,542 @@
+// (C) 2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+//******************************************************************************
+// Includes optimized version of Linkwitz-Riley (LR2) filters
+// by T. Lossius - ttblue project
+//******************************************************************************
+
+//==============================================================================
+// init
+//==============================================================================
+desc: De-Esser
+slider1:1<0,1,1{Stereo,Mono}>Processing
+slider2:1<0,1,1{Bandpass,Hipass}>Target Type
+slider3:0<0,1,1{Off,On}>Monitor
+slider4:4000<1500,12000,1>Frequency (Hz)
+slider5:1.5<0.1,3.1,0.0005>Bandwidth (Oct)
+slider6:-25<-80,0,0.01>Threshold (dB)
+slider7:4<1,20,0.01>Ratio
+slider8:0<0,1,1{A: 3 µs - R: 50 ms,A: 30 µs - R: 100 ms,A: 100 µs - R: 300 ms}>Time Constants
+slider9:0<-24,24,0.001>Gain (-inf/+24dB)
+
+@init
+n = 0;
+sqrt2 = sqrt(2);
+s2 = sqrt2/2;
+cgain = 1;
+cdenorm = 10^-30;
+e10 = 10^-10;
+g_meter = gr_meter = g_reset = 1;
+gr_meter_decay = exp(1/(1*srate));
+
+//==============================================================================
+@slider
+//==============================================================================
+//------------------------------------------------------------------------------
+// settings
+//------------------------------------------------------------------------------
+mono = slider1;
+target = slider2; 
+monitor = slider3;
+fc = slider4;
+bw  = slider5;
+//comp
+thr = pow(10, 2 * (slider6/80+1) - 2);
+rat = (slider7-1)/19;
+slider8 == 0 ? (
+att = pow(10, -0.002 - 3.97772619*(0/100));
+rel = pow(10, -3.11 - 1.8698*(21.20/100));
+);
+slider8 == 1 ? (
+att = pow(10, -0.002 - 3.97772619*(9.71/100));
+rel = pow(10, -3.11 - 1.8698*(37.19/100));
+);
+slider8 == 2 ? (
+att = pow(10, -0.002 - 3.97772619*(20.97/100));
+rel = pow(10, -3.11 - 1.8698*(62.61/100));
+);
+//outgain
+slider9 == -24 ? (
+outgain = 0;
+) : (
+outgain = 10^(slider9/20);
+);
+//------------------------------------------------------------------------------
+// crossover type: 2 or 3 bands
+// this is a bit confusing, but optimized for js !
+//------------------------------------------------------------------------------
+target == 0 ? (
+fh = min((fc + fc*bw/2),20000);
+//------------------------------
+// high-band split - s1 (at fh)
+//------------------------------
+fpi = $pi*fh;
+wc = 2*fpi;
+wc2 = wc*wc;
+wc22 = 2*wc2;
+k = wc/tan(fpi/srate);
+k2 = k*k;
+k22 = 2*k2;
+wck2 = 2*wc*k; 
+tmpk = (k2+wc2+wck2);
+tgt_b1_s1 = (-k22+wc22)/tmpk;
+tgt_b2_s1 = (-wck2+k2+wc2)/tmpk;
+//---------------
+// low-pass (s1)
+//---------------
+tgt_a0_s1_lp = (wc2)/tmpk;
+tgt_a1_s1_lp = (wc22)/tmpk;
+tgt_a2_s1_lp = (wc2)/tmpk;
+//----------------
+// high-pass (s1)
+//----------------
+tgt_a0_s1_hp = (k2)/tmpk;
+tgt_a1_s1_hp = (-k22)/tmpk;
+tgt_a2_s1_hp = (k2)/tmpk;
+//----------------
+// prepare for s0
+//----------------
+fl = fc - fc*bw/4;
+fpi = $pi*fl;
+) : (
+fpi = $pi*fc;
+);
+//---------------------------------------------
+// low-band split - s0 (case: at 'fc' or 'fl')
+// s0 is always processed (2 band split)
+//---------------------------------------------
+wc = 2*fpi;
+wc2 = wc*wc;
+wc22 = 2*wc2;
+k = wc/tan(fpi/srate);
+k2 = k*k;
+k22 = 2*k2;
+wck2 = 2*wc*k; 
+tmpk = (k2+wc2+wck2);
+tgt_b1_s0 = (-k22+wc22)/tmpk;
+tgt_b2_s0 = (-wck2+k2+wc2)/tmpk;
+//---------------
+// low-pass (s0)
+//---------------
+tgt_a0_s0_lp = (wc2)/tmpk;
+tgt_a1_s0_lp = (wc22)/tmpk;
+tgt_a2_s0_lp = (wc2)/tmpk;
+//----------------
+// high-pass (s0)
+//----------------
+tgt_a0_s0_hp = (k2)/tmpk;
+tgt_a1_s0_hp = (-k22)/tmpk;
+tgt_a2_s0_hp = (k2)/tmpk;
+
+//==============================================================================
+@sample
+//==============================================================================
+//------------------------------------------------------------------------------
+// mono
+//------------------------------------------------------------------------------
+mono == 1 ? (
+//----------------------------------
+// s0, b
+//----------------------------------
+b1_s0 += d_b1_s0;
+b2_s0 += d_b2_s0;
+//----------
+// s0, lp 
+//----------
+a0_s0_lp += d_a0_s0_lp;
+a1_s0_lp += d_a1_s0_lp;
+a2_s0_lp += d_a2_s0_lp;
+s0_lp_l_in = (spl0+spl1)*0.5;
+s0_lp_l_output = a0_s0_lp*s0_lp_l_in + s0_lp_l_xm0;
+s0_lp_l_xm0 = a1_s0_lp*s0_lp_l_in - b1_s0*s0_lp_l_output + s0_lp_l_xm1;
+s0_lp_l_xm1 = a2_s0_lp*s0_lp_l_in - b2_s0*s0_lp_l_output;
+//----------
+// s0, hp 
+//----------
+a0_s0_hp += d_a0_s0_hp;
+a1_s0_hp += d_a1_s0_hp;
+a2_s0_hp += d_a2_s0_hp;
+s0_hp_l_in = (spl0+spl1)*0.5;
+s0_hp_l_output = a0_s0_hp*s0_hp_l_in + s0_hp_l_xm0;
+s0_hp_l_xm0 = a1_s0_hp*s0_hp_l_in - b1_s0*s0_hp_l_output + s0_hp_l_xm1;
+s0_hp_l_xm1 = a2_s0_hp*s0_hp_l_in - b2_s0*s0_hp_l_output;
+s0_hp_l_output *= -1;
+//----------------------------------
+// s1, b
+//----------------------------------
+target == 0 ? (
+b1_s1 += d_b1_s1;
+b2_s1 += d_b2_s1;
+//----------
+// s1, lp 
+//----------
+a0_s1_lp += d_a0_s1_lp;
+a1_s1_lp += d_a1_s1_lp;
+a2_s1_lp += d_a2_s1_lp;
+s1_lp_l_in = s0_hp_l_output;
+s1_lp_l_output = a0_s1_lp*s1_lp_l_in + s1_lp_l_xm0;
+s1_lp_l_xm0 = a1_s1_lp*s1_lp_l_in - b1_s1*s1_lp_l_output + s1_lp_l_xm1;
+s1_lp_l_xm1 = a2_s1_lp*s1_lp_l_in - b2_s1*s1_lp_l_output;
+//----------
+// s1, hp 
+//----------
+a0_s1_hp += d_a0_s1_hp;
+a1_s1_hp += d_a1_s1_hp;
+a2_s1_hp += d_a2_s1_hp;
+s1_hp_l_in = s0_hp_l_output;
+s1_hp_l_output = a0_s1_hp*s1_hp_l_in + s1_hp_l_xm0;
+s1_hp_l_xm0 = a1_s1_hp*s1_hp_l_in - b1_s1*s1_hp_l_output + s1_hp_l_xm1;
+s1_hp_l_xm1 = a2_s1_hp*s1_hp_l_in - b2_s1*s1_hp_l_output;
+s1_hp_l_output *= -1;
+//--------------------------- 
+// set process band (cband)
+//---------------------------
+cband_l = s1_lp_l_output;
+) : (
+cband_l = s0_hp_l_output;
+);
+//--------------------------- 
+// compressor 
+//---------------------------
+dtl = abs(cband_l);
+(dtl > envl) ? envl = envl + att*(dtl - envl) : envl = envl*(1 - rel);
+(envl > thr) ? (cgainl = 1+(rat*((envl/thr)-1)); g_reset = 0;) : (cgainl = 1; g_reset = 1);
+(envl < e10) ? envl = 0;
+//--------------------------
+// update gr meter
+//--------------------------
+g_reset == 0 ? g_meter = 1/cgainl : g_meter = 1;
+
+//-----------------------
+// monitor or sum bands
+//-----------------------
+monitor == 1 ? (
+outl = cband_l*outgain/cgainl+cdenorm;
+) : (
+target == 0 ? (
+sum_l = s0_lp_l_output+cband_l/cgainl+s1_hp_l_output;
+) : (
+sum_l = s0_lp_l_output+cband_l/cgainl;
+);
+outl = sum_l*outgain+cdenorm;
+);
+
+//check clip
+(outl < -1 || outl > 1) ? clip = 1;
+
+spl0 = spl1 = outl;
+
+//**********
+// test output
+// spl0 = spl1 = s1_lp_l_output;
+//**********
+
+
+//------------------------------------------------------------------------------
+// stereo
+//------------------------------------------------------------------------------
+) : (
+
+//----------------------------------
+// s0, b
+//----------------------------------
+b1_s0 += d_b1_s0;
+b2_s0 += d_b2_s0;
+//----------
+// s0, lp 
+//----------
+a0_s0_lp += d_a0_s0_lp;
+a1_s0_lp += d_a1_s0_lp;
+a2_s0_lp += d_a2_s0_lp;
+s0_lp_l_in = spl0;
+s0_lp_l_output = a0_s0_lp*s0_lp_l_in + s0_lp_l_xm0;
+s0_lp_l_xm0 = a1_s0_lp*s0_lp_l_in - b1_s0*s0_lp_l_output + s0_lp_l_xm1;
+s0_lp_l_xm1 = a2_s0_lp*s0_lp_l_in - b2_s0*s0_lp_l_output;
+s0_lp_r_in = spl1;
+s0_lp_r_output = a0_s0_lp*s0_lp_r_in + s0_lp_r_xm0;
+s0_lp_r_xm0 = a1_s0_lp*s0_lp_r_in - b1_s0*s0_lp_r_output + s0_lp_r_xm1;
+s0_lp_r_xm1 = a2_s0_lp*s0_lp_r_in - b2_s0*s0_lp_r_output;
+//----------
+// s0, hp 
+//----------
+a0_s0_hp += d_a0_s0_hp;
+a1_s0_hp += d_a1_s0_hp;
+a2_s0_hp += d_a2_s0_hp;
+s0_hp_l_in = spl0;
+s0_hp_l_output = a0_s0_hp*s0_hp_l_in + s0_hp_l_xm0;
+s0_hp_l_xm0 = a1_s0_hp*s0_hp_l_in - b1_s0*s0_hp_l_output + s0_hp_l_xm1;
+s0_hp_l_xm1 = a2_s0_hp*s0_hp_l_in - b2_s0*s0_hp_l_output;
+s0_hp_l_output *= -1;
+s0_hp_r_in = spl1;
+s0_hp_r_output = a0_s0_hp*s0_hp_r_in + s0_hp_r_xm0;
+s0_hp_r_xm0 = a1_s0_hp*s0_hp_r_in - b1_s0*s0_hp_r_output + s0_hp_r_xm1;
+s0_hp_r_xm1 = a2_s0_hp*s0_hp_r_in - b2_s0*s0_hp_r_output;
+s0_hp_r_output *= -1;
+//----------------------------------
+// s1, b
+//----------------------------------
+target == 0 ? (
+b1_s1 += d_b1_s1;
+b2_s1 += d_b2_s1;
+//----------
+// s1, lp 
+//----------
+a0_s1_lp += d_a0_s1_lp;
+a1_s1_lp += d_a1_s1_lp;
+a2_s1_lp += d_a2_s1_lp;
+s1_lp_l_in = s0_hp_l_output;
+s1_lp_l_output = a0_s1_lp*s1_lp_l_in + s1_lp_l_xm0;
+s1_lp_l_xm0 = a1_s1_lp*s1_lp_l_in - b1_s1*s1_lp_l_output + s1_lp_l_xm1;
+s1_lp_l_xm1 = a2_s1_lp*s1_lp_l_in - b2_s1*s1_lp_l_output;
+s1_lp_r_in = s0_hp_r_output;
+s1_lp_r_output = a0_s1_lp*s1_lp_r_in + s1_lp_r_xm0;
+s1_lp_r_xm0 = a1_s1_lp*s1_lp_r_in - b1_s1*s1_lp_r_output + s1_lp_r_xm1;
+s1_lp_r_xm1 = a2_s1_lp*s1_lp_r_in - b2_s1*s1_lp_r_output;
+//----------
+// s1, hp 
+//----------
+a0_s1_hp += d_a0_s1_hp;
+a1_s1_hp += d_a1_s1_hp;
+a2_s1_hp += d_a2_s1_hp;
+s1_hp_l_in = s0_hp_l_output;
+s1_hp_l_output = a0_s1_hp*s1_hp_l_in + s1_hp_l_xm0;
+s1_hp_l_xm0 = a1_s1_hp*s1_hp_l_in - b1_s1*s1_hp_l_output + s1_hp_l_xm1;
+s1_hp_l_xm1 = a2_s1_hp*s1_hp_l_in - b2_s1*s1_hp_l_output;
+s1_hp_l_output *= -1;
+s1_hp_r_in = s0_hp_r_output;
+s1_hp_r_output = a0_s1_hp*s1_hp_r_in + s1_hp_r_xm0;
+s1_hp_r_xm0 = a1_s1_hp*s1_hp_r_in - b1_s1*s1_hp_r_output + s1_hp_r_xm1;
+s1_hp_r_xm1 = a2_s1_hp*s1_hp_r_in - b2_s1*s1_hp_r_output;
+s1_hp_r_output *= -1;
+//--------------------------- 
+// set process band (cband)
+//---------------------------
+cband_l = s1_lp_l_output;
+cband_r = s1_lp_r_output;
+) : (
+cband_l = s0_hp_l_output;
+cband_r = s0_hp_r_output;
+);
+//--------------------------- 
+// compressor 
+//---------------------------
+dtl = abs(cband_l);
+dtr = abs(cband_r);
+dtr > dtl ? dtl = dtr;
+(dtl > envl) ? envl = envl + att*(dtl - envl) : envl = envl*(1 - rel);
+(envl > thr) ? (cgainl = 1+(rat*((envl/thr)-1)); g_reset = 0;) : (cgainl = 1; g_reset = 1);
+(envl < e10) ? envl = 0;
+
+dtr = abs(cband_r);
+//--------------------------
+// update gr meter
+//--------------------------
+g_reset == 0 ? (
+(cgainl > cgainr) ? g_meter = 1/cgainl : g_meter = 1/cgainr;
+) : (
+g_meter = 1;
+);
+
+//-----------------------
+// monitor or sum bands
+//-----------------------
+monitor == 1 ? (
+outl = cband_l*outgain/cgainl+cdenorm;
+outr = cband_r*outgain/cgainl+cdenorm;
+) : (
+target == 0 ? (
+sum_l = s0_lp_l_output+cband_l/cgainl+s1_hp_l_output;
+sum_r = s0_lp_r_output+cband_r/cgainl+s1_hp_r_output;
+) : (
+sum_l = s0_lp_l_output+cband_l/cgainl;
+sum_r = s0_lp_r_output+cband_r/cgainl;
+);
+outl = sum_l*outgain+cdenorm;
+outr = sum_r*outgain+cdenorm;
+);
+
+//check clip
+(outl < -1 || outl > 1) ? clip = 1;
+(outr < -1 || outr > 1) ? clip = 1;
+
+spl0 = outl;
+spl1 = outr;
+
+);
+
+//**********
+// test output
+// spl0 = spl1 = s1_lp_l_output;
+//**********
+
+//-----------------------------------------
+// meter decay
+//-----------------------------------------
+g_meter < gr_meter ? gr_meter=g_meter : gr_meter*=gr_meter_decay;
+
+@block 
+//-----------------------------------------
+// update clip indicator
+//-----------------------------------------
+bps = srate/samplesblock;
+n > bps ? (
+clip = 0;
+n = 0;
+);
+n += 1;
+//==============================================================================
+// interpolate *all* coefficients here
+//==============================================================================
+//------------------------------------------------------------------------------
+// s0
+//------------------------------------------------------------------------------
+//-------------------
+// s0 b
+//-------------------
+d_b1_s0 = (tgt_b1_s0-src_b1_s0)/samplesblock;
+b1_s0 = src_b1_s0;
+src_b1_s0 = tgt_b1_s0;
+d_b2_s0 = (tgt_b2_s0-src_b2_s0)/samplesblock;
+b2_s0 = src_b2_s0;
+src_b2_s0 = tgt_b2_s0;
+//-------------------
+// s0 a lp
+//-------------------
+d_a0_s0_lp = (tgt_a0_s0_lp-src_a0_s0_lp)/samplesblock;
+a0_s0_lp = src_a0_s0_lp;
+src_a0_s0_lp = tgt_a0_s0_lp;
+d_a1_s0_lp = (tgt_a1_s0_lp-src_a1_s0_lp)/samplesblock;
+a1_s0_lp = src_a1_s0_lp;
+src_a1_s0_lp = tgt_a1_s0_lp;
+d_a2_s0_lp = (tgt_a2_s0_lp-src_a2_s0_lp)/samplesblock;
+a2_s0_lp = src_a2_s0_lp;
+src_a2_s0_lp = tgt_a2_s0_lp;
+//-------------------
+// s0 a hp
+//-------------------
+d_a0_s0_hp = (tgt_a0_s0_hp-src_a0_s0_hp)/samplesblock;
+a0_s0_hp = src_a0_s0_hp;
+src_a0_s0_hp = tgt_a0_s0_hp;
+d_a1_s0_hp = (tgt_a1_s0_hp-src_a1_s0_hp)/samplesblock;
+a1_s0_hp = src_a1_s0_hp;
+src_a1_s0_hp = tgt_a1_s0_hp;
+d_a2_s0_hp = (tgt_a2_s0_hp-src_a2_s0_hp)/samplesblock;
+a2_s0_hp = src_a2_s0_hp;
+src_a2_s0_hp = tgt_a2_s0_hp;
+//------------------------------------------------------------------------------
+// s1
+//------------------------------------------------------------------------------
+target == 0 ? (
+//-------------------
+// s1 b
+//-------------------
+d_b1_s1 = (tgt_b1_s1-src_b1_s1)/samplesblock;
+b1_s1 = src_b1_s1;
+src_b1_s1 = tgt_b1_s1;
+d_b2_s1 = (tgt_b2_s1-src_b2_s1)/samplesblock;
+b2_s1 = src_b2_s1;
+src_b2_s1 = tgt_b2_s1;
+
+//-------------------
+// s1 a lp
+//-------------------
+d_a0_s1_lp = (tgt_a0_s1_lp-src_a0_s1_lp)/samplesblock;
+a0_s1_lp = src_a0_s1_lp;
+src_a0_s1_lp = tgt_a0_s1_lp;
+d_a1_s1_lp = (tgt_a1_s1_lp-src_a1_s1_lp)/samplesblock;
+a1_s1_lp = src_a1_s1_lp;
+src_a1_s1_lp = tgt_a1_s1_lp;
+d_a2_s1_lp = (tgt_a2_s1_lp-src_a2_s1_lp)/samplesblock;
+a2_s1_lp = src_a2_s1_lp;
+src_a2_s1_lp = tgt_a2_s1_lp;
+
+//-------------------
+// s1 a hp
+//-------------------
+d_a0_s1_hp = (tgt_a0_s1_hp-src_a0_s1_hp)/samplesblock;
+a0_s1_hp = src_a0_s1_hp;
+src_a0_s1_hp = tgt_a0_s1_hp;
+d_a1_s1_hp = (tgt_a1_s1_hp-src_a1_s1_hp)/samplesblock;
+a1_s1_hp = src_a1_s1_hp;
+src_a1_s1_hp = tgt_a1_s1_hp;
+d_a2_s1_hp = (tgt_a2_s1_hp-src_a2_s1_hp)/samplesblock;
+a2_s1_hp = src_a2_s1_hp;
+src_a2_s1_hp = tgt_a2_s1_hp;
+
+);
+
+//=============================================================================
+@gfx 425 16
+//=============================================================================
+//---------------------------------
+// set gr meter
+//---------------------------------
+gr_meter *= exp(1/30);
+gr_meter > 1 ? gr_meter=1;
+gfx_r=0.6;
+gfx_g=0.4;
+gfx_b=0.5;
+gfx_a=0.8;
+meter_bot=20;
+meter_h=min(gfx_h,21);
+xscale=gfx_w*20/meter_bot;
+gfx_y=0;
+gfx_x=gfx_w + log10(gr_meter)*xscale;
+gfx_rectto(gfx_w,meter_h);
+//---------------------------------
+// draw scale
+//---------------------------------
+gfx_r=1;
+gfx_b=1;
+gfx_g=1;
+gfx_a=0.6;
+g = s2;
+while(
+gfx_x=gfx_w + log10(g)*xscale;
+gfx_x >= 0 ? (
+gfx_y=0;
+gfx_lineto(gfx_x,meter_h-1,0);
+gfx_y=meter_h-gfx_texth-5;
+gfx_x+=4;
+gfx_drawnumber(log10(g)*20,0);
+gfx_drawchar($'d');
+gfx_drawchar($'B');
+);
+g*=s2;
+gfx_x >=0;
+);
+gfx_x=0;
+gfx_y=meter_h;
+gfx_lineto(gfx_w,meter_h,0);
+gfx_a=0.9;
+gfx_x=gfx_w - 61;
+gfx_y=meter_h + gfx_texth - 1;
+
+//---------------------------------
+// clip indicator
+//---------------------------------
+gfx_x = gfx_w/1.1;
+gfx_r=1;
+gfx_g=0;
+gfx_b=0;
+clip == 1 ? (
+gfx_a = 1;
+) : (
+gfx_a = 0.4;
+);
+gfx_drawchar($'*');

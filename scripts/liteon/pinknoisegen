@@ -1,0 +1,148 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+
+// white noise trought 6pole recursive filter
+// works with different sample rates
+
+desc: Pink Noise Generator
+
+slider1:0<0,1,1{Mono,Stereo}> Mode
+slider2:-6<-25,25,0.05> Noise (dB)
+slider3:-6<-25,25,0.05> Dry (dB)
+slider4:0<-25,25,0.05> Output (dB)
+
+@init
+//trc - test rate coeff
+trc = 1;
+sr = srate*trc;
+//******* case1
+sr <= 48000 ? (
+case = 1;
+k0 = exp(-2*$pi*4752.456/sr);
+k1 = exp(-2*$pi*4030.961/sr);
+k2 = exp(-2*$pi*2784.711/sr);
+k3 = exp(-2*$pi*1538.461/sr);
+k4 = exp(-2*$pi*357.681/sr);
+k5 = exp(-2*$pi*70/sr);
+k6 = exp(-2*$pi*30/sr);
+);
+//******* case2
+sr > 48000 && sr <= 96000 ? (
+case = 2;
+k0 = exp(-2*$pi*8227.219/sr);
+k1 = exp(-2*$pi*8227.219/sr);
+k2 = exp(-2*$pi*6388.570/sr);
+k3 = exp(-2*$pi*3302.754/sr);
+k4 = exp(-2*$pi*479.412/sr);
+k5 = exp(-2*$pi*151.070/sr);
+k6 = exp(-2*$pi*54.264/sr);
+);
+//******* case3
+sr > 96000 && sr < 192000? (
+case = 3;
+k0 = exp(-2*$pi*9211.912/sr);
+k1 = exp(-2*$pi*8621.096/sr);
+k2 = exp(-2*$pi*8555.228/sr);
+k3 = exp(-2*$pi*8292.754/sr);
+k4 = exp(-2*$pi*518.334/sr);
+k5 = exp(-2*$pi*163.712/sr);
+k6 = exp(-2*$pi*240.241/sr);
+);
+//******* case4
+sr >= 192000? (
+case = 4;
+k0 = exp(-2*$pi*10000/sr);
+k1 = exp(-2*$pi*10000/sr);
+k2 = exp(-2*$pi*10000/sr);
+k3 = exp(-2*$pi*10000/sr);
+k4 = exp(-2*$pi*544.948/sr);
+k5 = exp(-2*$pi*142.088/sr);
+k6 = exp(-2*$pi*211.616/sr);
+);
+//vector v
+vi = 0;
+loop(17,
+v[vi] = rand(1)*0.001;
+vi+=1;
+);
+vi = 0;
+//vector k
+ki = 0;
+loop(21,
+k[ki] = rand(1)*0.00001;
+ki+=1;
+);
+ki = 0;
+
+@slider
+
+mode = slider1;
+n = 10^((slider2-28)/20);
+d = 10^(slider3/20);
+o = 10^(slider4/20);
+
+@sample
+mode == 0 ? (
+dryl = (spl0+spl1)/2;
+whitel = min(rand(2)-1+v[vi]+k[ki],1);
+
+b0l = k0*whitel+k0*b0l;
+b1l = k1*whitel+k1*b1l;
+b2l = k2*whitel+k2*b2l;
+b3l = k3*whitel+k3*b3l;
+b4l = k4*whitel+k4*b4l;
+b5l = k5*whitel+k5*b5l;
+b6l = k6*whitel+k6*b6l;
+pinkl = (b0l+b1l+b2l+b3l+b4l+b5l+whitel-b6l);
+spl0 = spl1 = (pinkl*n + dryl*d)*o;
+
+vi += 1;
+vi == 17 ? vi = 0;
+ki += 1;
+ki == 21 ? ki = 0;
+
+) : (
+
+dryl = spl0;
+whitel = min(rand(2)-1+v[vi]+k[ki],1);
+b0l = k0*whitel+k0*b0l;
+b1l = k1*whitel+k1*b1l;
+b2l = k2*whitel+k2*b2l;
+b3l = k3*whitel+k3*b3l;
+b4l = k4*whitel+k4*b4l;
+b5l = k5*whitel+k5*b5l;
+b6l = k6*whitel+k6*b6l;
+pinkl = (b0l+b1l+b2l+b3l+b4l+b5l+whitel-b6l);
+spl0 = (pinkl*n+dryl*d)*o;
+
+dryr = spl1;
+whiter = min(rand(2)-1+v[vi]+k[ki],1);
+b0r = k0*whiter+k0*b0r;
+b1r = k1*whiter+k1*b1r;
+b2r = k2*whiter+k2*b2r;
+b3r = k3*whiter+k3*b3r;
+b4r = k4*whiter+k4*b4r;
+b5r = k5*whiter+k5*b5r;
+b6r = k6*whiter+k6*b6r;
+pinkr = (b0r+b1r+b2r+b3r+b4r+b5r+whiter-b6r);
+spl1 = (pinkr*n+dryr*d)*o;
+
+vi += 1;
+vi == 17 ? vi = 0;
+ki += 1;
+ki == 21 ? ki = 0;
+);

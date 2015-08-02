@@ -4,7 +4,7 @@ LFLAGS=-rdynamic -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags -Wl,-so
 CXX=clang++
 PORTABLE=true
 
-OBJS=../jsusfx.o ../WDL/eel2/nseel-caltab.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-lextab.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o jsusfx_pd.o
+OBJS=../jsusfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o jsusfx_pd.o
 OBJS2=
 
 UNAME_S := $(shell uname -s)
@@ -23,7 +23,7 @@ endif
 default: jsusfx~.pd_linux
 
 jsusfx_pd.o: jsusfx_pd.cpp
-	$(CXX) $(CXXFLAGS) -std=c++11 -c -o $@ $^
+	$(CXX) $(CXXFLAGS) -c -o $@ $^
 
 %.o : %.mm
 	$(CXX) $(CXXFLAGS) -c -o $@ $^

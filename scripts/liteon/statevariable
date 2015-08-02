@@ -1,0 +1,566 @@
+// (C) 2008-2009, Lubomir I. Ivanov
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+//******************************************************************************
+// StateVariable (Morphing) filter
+// AppleFilter - butterworth filter implementation 
+// original port from apple.com au tutorial (c++)
+// added coefficients for HP, BP, BR
+// :::NOTE: cutoff glitches when automated fast:::
+// :::Better interpolation or oversampling is required:::
+//******************************************************************************
+
+desc: StateVariable(Morphing) Filter: Use X,Y pads
+
+slider1:0<0,1,1{Stereo,Mono}>Processing
+slider2:0.5<0,1,0.001>X (Morph)
+slider3:0.5<0,1,0.001>Y (Morph)
+slider4:50<0,100,0.01>Frequency (Scale)
+slider5:6<0,24,0.01>Res (dB)
+slider6:100<0,100,0.01>Filter Amount (%)
+//slider7:0<0,100,0.01>Flux (%)
+slider7:0<-26,26,0.01>Output (-inf/+26dB)
+
+@init
+step = 200;
+old_f_x = 39;
+old_f_y = 39;
+old_c_x = step+39;
+old_c_y = 191;
+
+@block
+//---interpolate filters
+//lp
+d_a0_lp = (tgt_a0_lp-src_a0_lp)/samplesblock;
+a0_lp = src_a0_lp;
+src_a0_lp = tgt_a0_lp;
+d_a1_lp = (tgt_a1_lp-src_a1_lp)/samplesblock;
+a1_lp = src_a1_lp;
+src_a1_lp = tgt_a1_lp;
+d_a2_lp = (tgt_a2_lp-src_a2_lp)/samplesblock;
+a2_lp = src_a2_lp;
+src_a2_lp = tgt_a2_lp;
+d_b1_lp = (tgt_b1_lp-src_b1_lp)/samplesblock;
+b1_lp = src_b1_lp;
+src_b1_lp = tgt_b1_lp;
+d_b2_lp = (tgt_b2_lp-src_b2_lp)/samplesblock;
+b2_lp = src_b2_lp;
+src_b2_lp = tgt_b2_lp;
+//hp
+d_a0_hp = (tgt_a0_hp-src_a0_hp)/samplesblock;
+a0_hp = src_a0_hp;
+src_a0_hp = tgt_a0_hp;
+d_a1_hp = (tgt_a1_hp-src_a1_hp)/samplesblock;
+a1_hp = src_a1_hp;
+src_a1_hp = tgt_a1_hp;
+d_a2_hp = (tgt_a2_hp-src_a2_hp)/samplesblock;
+a2_hp = src_a2_hp;
+src_a2_hp = tgt_a2_hp;
+d_b1_hp = (tgt_b1_hp-src_b1_hp)/samplesblock;
+b1_hp = src_b1_hp;
+src_b1_hp = tgt_b1_hp;
+d_b2_hp = (tgt_b2_hp-src_b2_hp)/samplesblock;
+b2_hp = src_b2_hp;
+src_b2_hp = tgt_b2_hp;
+//bp
+d_a0_bp = (tgt_a0_bp-src_a0_bp)/samplesblock;
+a0_bp = src_a0_bp;
+src_a0_bp = tgt_a0_bp;
+d_b1_bp = (tgt_b1_bp-src_b1_bp)/samplesblock;
+b1_bp = src_b1_bp;
+src_b1_bp = tgt_b1_bp;
+d_b2_bp = (tgt_b2_bp-src_b2_bp)/samplesblock;
+b2_bp = src_b2_bp;
+src_b2_bp = tgt_b2_bp;
+//br
+d_a0_br = (tgt_a0_br-src_a0_br)/samplesblock;
+a0_br = src_a0_br;
+src_a0_br = tgt_a0_br;
+d_a1_br = (tgt_a1_br-src_a1_br)/samplesblock;
+a1_br = src_a1_br;
+src_a1_br = tgt_a1_br;
+d_b1_br = (tgt_b1_br-src_b1_br)/samplesblock;
+b1_br = src_b1_br;
+src_b1_br = tgt_b1_br;
+d_b2_br = (tgt_b2_br-src_b2_br)/samplesblock;
+b2_br = src_b2_br;
+src_b2_br = tgt_b2_br;
+
+//----------interpolate x,y
+d_x = (tgt_x-src_x)/samplesblock;
+x = src_x;
+src_x = tgt_x;
+d_y = (tgt_y-src_y)/samplesblock;
+y = src_y;
+src_y = tgt_y;
+
+@sample
+
+//---interpolate filters
+//lp
+a0_lp += d_a0_lp;
+a1_lp += d_a1_lp;
+a2_lp += d_a2_lp;
+b1_lp += d_b1_lp;
+b2_lp += d_b2_lp;
+//hp
+a0_hp += d_a0_hp;
+a1_hp += d_a1_hp;
+a2_hp += d_a2_hp;
+b1_hp += d_b1_hp;
+b2_hp += d_b2_hp;
+//bp
+a0_bp += d_a0_bp;
+b1_bp += d_b1_bp;
+b2_bp += d_b2_bp;
+//br
+a0_br += d_a0_br;
+a1_br += d_a1_br;
+b1_br += d_b1_br;
+b2_br += d_b2_br;
+
+//---------interpolate x,y
+x += d_x;
+y += d_y;
+
+//-----------------------------------------
+//mono
+slider1 == 1 ? (
+inl = (spl0+spl1)/2;
+
+//lp
+out_lp_l = a0_lp*inl+a1_lp*mem1_lp_l+a2_lp*mem2_lp_l-b1_lp*mem3_lp_l-b2_lp*mem4_lp_l;
+mem2_lp_l = mem1_lp_l;
+mem1_lp_l = inl;
+mem4_lp_l = mem3_lp_l;
+mem3_lp_l = out_lp_l;
+
+//hp
+out_hp_l = a0_hp*inl+a1_hp*mem1_hp_l+a2_hp*mem2_hp_l-b1_hp*mem3_hp_l-b2_hp*mem4_hp_l;
+mem2_hp_l = mem1_hp_l;
+mem1_hp_l = inl;
+mem4_hp_l = mem3_hp_l;
+mem3_hp_l = out_hp_l;
+
+//bp
+out_bp_l = a0_bp*inl-a0_bp*mem2_bp_l-b1_bp*mem3_bp_l-b2_bp*mem4_bp_l;
+mem2_bp_l = mem1_bp_l;
+mem1_bp_l = inl;
+mem4_bp_l = mem3_bp_l;
+mem3_bp_l = out_bp_l;
+
+//br
+out_br_l = a0_br*inl+a1_br*mem1_br_l+a0_br*mem2_br_l-b1_br*mem3_br_l-b2_br*mem4_br_l;
+mem2_br_l = mem1_br_l;
+mem1_br_l = inl;
+mem4_br_l = mem3_br_l;
+mem3_br_l = out_br_l;
+
+//out
+
+//hp, lp
+pair1_l = out_lp_l*y+out_hp_l*(1-y);
+//br, bp
+pair2_l = out_bp_l*y+out_br_l*(1-y);
+//out
+outl = pair2_l*x+pair1_l*(1-x);
+
+spl0 = spl1 = (outl*(1-amount)+inl*amount)*outgain;
+) : (
+//---------------------stereo
+
+//-------LEFT
+
+inl = spl0;
+
+//lp
+out_lp_l = a0_lp*inl+a1_lp*mem1_lp_l+a2_lp*mem2_lp_l-b1_lp*mem3_lp_l-b2_lp*mem4_lp_l;
+mem2_lp_l = mem1_lp_l;
+mem1_lp_l = inl;
+mem4_lp_l = mem3_lp_l;
+mem3_lp_l = out_lp_l;
+
+//hp
+out_hp_l = a0_hp*inl+a1_hp*mem1_hp_l+a2_hp*mem2_hp_l-b1_hp*mem3_hp_l-b2_hp*mem4_hp_l;
+mem2_hp_l = mem1_hp_l;
+mem1_hp_l = inl;
+mem4_hp_l = mem3_hp_l;
+mem3_hp_l = out_hp_l;
+
+//bp
+out_bp_l = a0_bp*inl-a0_bp*mem2_bp_l-b1_bp*mem3_bp_l-b2_bp*mem4_bp_l;
+mem2_bp_l = mem1_bp_l;
+mem1_bp_l = inl;
+mem4_bp_l = mem3_bp_l;
+mem3_bp_l = out_bp_l;
+
+//br
+out_br_l = a0_br*inl+a1_br*mem1_br_l+a0_br*mem2_br_l-b1_br*mem3_br_l-b2_br*mem4_br_l;
+mem2_br_l = mem1_br_l;
+mem1_br_l = inl;
+mem4_br_l = mem3_br_l;
+mem3_br_l = out_br_l;
+
+//out
+
+//hp, lp
+pair1_l = out_lp_l*y+out_hp_l*(1-y);
+//br, bp
+pair2_l = out_bp_l*y+out_br_l*(1-y);
+//out
+outl = pair2_l*x+pair1_l*(1-x);
+
+spl0 = (outl*(1-amount)+inl*amount)*outgain;
+
+//----------RIGHT
+
+inr = spl1;
+
+//lp
+out_lp_r = a0_lp*inr+a1_lp*mem1_lp_r+a2_lp*mem2_lp_r-b1_lp*mem3_lp_r-b2_lp*mem4_lp_r;
+mem2_lp_r = mem1_lp_r;
+mem1_lp_r = inr;
+mem4_lp_r = mem3_lp_r;
+mem3_lp_r = out_lp_r;
+
+//hp
+out_hp_r = a0_hp*inr+a1_hp*mem1_hp_r+a2_hp*mem2_hp_r-b1_hp*mem3_hp_r-b2_hp*mem4_hp_r;
+mem2_hp_r = mem1_hp_r;
+mem1_hp_r = inr;
+mem4_hp_r = mem3_hp_r;
+mem3_hp_r = out_hp_r;
+
+//bp
+out_bp_r = a0_bp*inr-a0_bp*mem2_bp_r-b1_bp*mem3_bp_r-b2_bp*mem4_bp_r;
+mem2_bp_r = mem1_bp_r;
+mem1_bp_r = inr;
+mem4_bp_r = mem3_bp_r;
+mem3_bp_r = out_bp_r;
+
+//br
+out_br_r = a0_br*inr+a1_br*mem1_br_r+a0_br*mem2_br_r-b1_br*mem3_br_r-b2_br*mem4_br_r;
+mem2_br_r = mem1_br_r;
+mem1_br_r = inr;
+mem4_br_r = mem3_br_r;
+mem3_br_r = out_br_r;
+
+//out
+
+//hp, lp
+pair1_r = out_lp_r*y+out_hp_r*(1-y);
+//br, bp
+pair2_r = out_bp_r*y+out_br_r*(1-y);
+//out
+outr = pair2_r*x+pair1_r*(1-x);
+
+spl1 = (outr*(1-amount)+inr*amount)*outgain;
+
+);
+
+@gfx 100 200
+gfx_r=0.5;
+gfx_b=0.5;
+gfx_g=1;
+gfx_a=1;
+//amnt
+gfx_x=32;
+gfx_y=12;
+gfx_drawchar($'A');
+gfx_drawchar($'M');
+gfx_drawchar($'N');
+gfx_drawchar($'T');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(slider6,0);
+gfx_drawchar($' ');
+gfx_drawchar($'%');
+//freq
+gfx_x=230;
+gfx_y=12;
+gfx_drawchar($'F');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(cx,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');
+//filter box
+gfx_r=1;
+gfx_b=1;
+gfx_g=1;
+gfx_a=1;
+gfx_y = 30;
+gfx_x = 30;
+gfx_rectto(200,200);
+gfx_r=0;
+gfx_b=0.6;
+gfx_g=0;
+gfx_a=1;
+gfx_y = 32;
+gfx_x = 32;
+gfx_rectto(198,198);
+//filter text
+gfx_r=1;
+gfx_b=1;
+gfx_g=1;
+gfx_a=1;
+gfx_x = 35;
+gfx_y = 35;
+gfx_drawchar($'H');
+gfx_drawchar($'P');
+gfx_x = 35;
+gfx_y = 187;
+gfx_drawchar($'L');
+gfx_drawchar($'P');
+gfx_x = 178;
+gfx_y = 35;
+gfx_drawchar($'B');
+gfx_drawchar($'R');
+gfx_x = 178;
+gfx_y = 187;
+gfx_drawchar($'B');
+gfx_drawchar($'P');
+//cut,res box
+gfx_r=1;
+gfx_b=1;
+gfx_g=1;
+gfx_a=1;
+gfx_y = 30;
+gfx_x = 30+step;
+gfx_rectto(200+step,200);
+gfx_r=0;
+gfx_b=0.6;
+gfx_g=0;
+gfx_a=1;
+gfx_y = 32;
+gfx_x = 32+step;
+gfx_rectto(198+step,198);
+//cut,res text
+gfx_r=1;
+gfx_b=1;
+gfx_g=1;
+gfx_a=1;
+gfx_x = 35+step;
+gfx_y = 35;
+gfx_drawchar($'R');
+gfx_drawchar($'E');
+gfx_drawchar($'S');
+gfx_x = 170+step;
+gfx_y = 187;
+gfx_drawchar($'C');
+gfx_drawchar($'U');
+gfx_drawchar($'T');
+//cut,res lines
+gfx_r=1;
+gfx_b=1;
+gfx_g=1;
+gfx_a=0.7;
+gfx_x = 40+step;
+gfx_y = 90;
+gfx_lineto(40+step,50,0.5);
+gfx_x = 110+step;
+gfx_y = 190;
+gfx_lineto(160+step,190,0.5);
+//cross lines
+gfx_x = 228/2;
+gfx_y = 30;
+gfx_lineto(228/2,198,1);
+gfx_x = 30;
+gfx_y = 228/2;
+gfx_lineto(198,228/2,1);
+gfx_x = step+30;
+gfx_y = 200;
+gfx_lineto(398,30,1);
+gfx_x = step+30;
+gfx_y = 200;
+gfx_lineto(398,30,1);
+
+
+//-------------get mouse
+mouse_cap == 1 && mouse_x < step+15 && target != 2 ? (
+
+target = 1;
+//-------marker1
+old_f_x = mouse_x;
+old_f_y = mouse_y;
+old_f_x = max(39,min(old_f_x,191));
+old_f_y = max(39,min(old_f_y,191));
+
+//update sliders
+slider2 = s2 = (old_f_x-39)/(191-39);
+slider3 = s3 = (old_f_y-39)/(191-39);
+sliderchange(slider2);
+sliderchange(slider3);
+);
+
+mouse_cap == 1 && mouse_x > step+15 && target != 1? (
+
+target = 2;
+//--------marker2
+old_c_x = mouse_x;
+old_c_y = mouse_y;
+old_c_x = max(39+step,min(old_c_x,191+step));
+old_c_y = max(39,min(old_c_y,191));
+
+//update sliders
+slider4 = s4 = (old_c_x-39-step)/(191-39)*100;
+slider5 = s5 = 24-(old_c_y-39)/(191-39)*24;
+sliderchange(slider4);
+sliderchange(slider5);
+);
+
+mouse_cap == 0 ? (
+target = 0;
+//slider to gfx
+old_f_x = slider2*(191-39)+39;
+old_f_y = slider3*(191-39)+39;
+old_c_x = slider4*(191-39)/100+39+step;
+old_c_y = 191-slider5*(191-39)/24;
+
+);
+
+//---------draw markers
+//----marker1
+gfx_r=0;
+gfx_b=0.5;
+gfx_g=1;
+gfx_a=0.7;
+gfx_x = old_f_x-7; 
+gfx_y = old_f_y-7;
+gfx_rectto(old_f_x+7,old_f_y+7);
+//---marker2
+gfx_r=0;
+gfx_b=0.5;
+gfx_g=1;
+gfx_a=0.7;
+gfx_x = old_c_x-7; 
+gfx_y = old_c_y-7;
+gfx_rectto(old_c_x+7,old_c_y+7);
+
+//---------------------------------------------------------------
+//@slider code here
+//---------------mix
+amount = (100-slider6)/100;
+outgain = 10^(slider7/20);
+slider7 == -24 ? outgain = 0;
+//  x,y scheme
+//     
+//  hp - br
+//  |     |
+//  lp - bp
+//
+tgt_x = slider2;
+tgt_y = slider3;
+//-------------filters
+sx = 16+slider4*1.20103;
+cx = floor(exp(sx*log(1.059))*8.17742);
+cutoff = 2*cx/srate;
+cx < 50 ? (
+res = 1;
+) : (
+res = 10^(0.05*(-slider5+1.5));
+);
+//lp
+k = 0.5*res*sin($pi*cutoff);
+c1 = 0.5*(1-k)/(1+k);
+c2 = (0.5+c1)*cos($pi*cutoff);
+c3 = (0.5+c1-c2)*0.25;
+tgt_a0_lp = 2*c3;
+tgt_a1_lp = 4*c3;
+tgt_a2_lp = 2*c3;
+tgt_b1_lp = -2*c2;
+tgt_b2_lp = 2*c1;
+//hp
+c3 = (0.5+c1+c2)*0.25;
+tgt_a0_hp = 2*c3;
+tgt_a1_hp = -4*c3;
+tgt_a2_hp = 2*c3;
+tgt_b1_hp = -2*c2;
+tgt_b2_hp = 2*c1;
+//bp
+c3 = (0.5+c1-c2)*0.25;
+tgt_a0_bp = k/(1+k);
+tgt_b1_bp = -2*c2;
+tgt_b2_bp = 2*c1;
+//br
+k = 2*res*sin($pi*cutoff);
+c1 = 0.5*(1-k)/(1+k);
+c2 = (0.5+c1)*cos($pi*cutoff);
+c3 = (0.5+c1-c2)*0.25;
+tgt_a0_br = 1/(1+k);
+tgt_a1_br = tgt_a0_br*(-2*cos($pi*cutoff));
+tgt_b1_br = -2*c2;
+tgt_b2_br = 2*c1;
+
+
+
+@slider
+
+//---------------mix
+amount = (100-slider6)/100;
+outgain = 10^(slider7/20);
+slider7 == -24 ? outgain = 0;
+//  x,y scheme
+//     
+//  hp - br
+//  |     |
+//  lp - bp
+//
+tgt_x = slider2;
+tgt_y = slider3;
+//-------------filters
+sx = 16+slider4*1.20103;
+cx = floor(exp(sx*log(1.059))*8.17742);
+cutoff = 2*cx/srate;
+cx < 50 ? (
+res = 1;
+) : (
+res = 10^(0.05*(-slider5+1.5));
+);
+//lp
+k = 0.5*res*sin($pi*cutoff);
+c1 = 0.5*(1-k)/(1+k);
+c2 = (0.5+c1)*cos($pi*cutoff);
+c3 = (0.5+c1-c2)*0.25;
+tgt_a0_lp = 2*c3;
+tgt_a1_lp = 4*c3;
+tgt_a2_lp = 2*c3;
+tgt_b1_lp = -2*c2;
+tgt_b2_lp = 2*c1;
+//hp
+c3 = (0.5+c1+c2)*0.25;
+tgt_a0_hp = 2*c3;
+tgt_a1_hp = -4*c3;
+tgt_a2_hp = 2*c3;
+tgt_b1_hp = -2*c2;
+tgt_b2_hp = 2*c1;
+//bp
+c3 = (0.5+c1-c2)*0.25;
+tgt_a0_bp = k/(1+k);
+tgt_b1_bp = -2*c2;
+tgt_b2_bp = 2*c1;
+//br
+k = 2*res*sin($pi*cutoff);
+c1 = 0.5*(1-k)/(1+k);
+c2 = (0.5+c1)*cos($pi*cutoff);
+c3 = (0.5+c1-c2)*0.25;
+tgt_a0_br = 1/(1+k);
+tgt_a1_br = tgt_a0_br*(-2*cos($pi*cutoff));
+tgt_b1_br = -2*c2;
+tgt_b2_br = 2*c1;

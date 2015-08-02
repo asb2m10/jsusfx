@@ -1,0 +1,99 @@
+// (C) 2008, Lubomir Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+//
+//******************************************************************************
+//Reference : Apple.com AU tutorial (port from C++)
+//******************************************************************************
+
+desc: AppleFilter LP 12db
+
+slider1:0<0,1,1{Stereo,Mono}> Processing
+slider2:100<0,100,0.05>Cutoff (Scale)
+slider3:0<-25,25,0.05>Res (dB)
+slider4:0<-25,25,0.05>Output (dB)
+
+@init
+mX1l=mX2l=mY1l=mY2l=mX1r=mX2r=mY1r=mY2r=0;
+
+@slider
+mono = slider1;
+sx = 16+slider2*1.20103;
+cx = floor(exp(sx*log(1.059))*8.17742);
+res = slider3;
+outgain = 10^(slider4/40);
+
+//coeffcients
+cutoff = 2 * cx / srate;
+res = pow(10, 0.05 * -res);
+k = 0.5 * res * sin($pi * cutoff);
+c1 = 0.5 * (1 - k) / (1 + k);
+c2 = (0.5 + c1) * cos($pi * cutoff);
+c3 = (0.5 + c1 - c2) * 0.25;
+    
+mA0 = 2 * c3;
+mA1 = 2 * 2 * c3;
+mA2 = 2 * c3;
+mB1 = 2 * -c2;
+mB2 = 2 * c1;
+
+@sample
+
+//mono
+mono == 1 ? (
+inputl = (spl0+spl1)/2;
+
+outputl = mA0*inputl + mA1*mX1l + mA2*mX2l - mB1*mY1l - mB2*mY2l;
+
+mX2l = mX1l;
+mX1l = inputl;
+mY2l = mY1l;
+mY1l = outputl;
+    
+spl0=spl1 = outputl*outgain;
+
+//stereo
+) : (
+inputl = spl0;
+inputr = spl1;
+
+outputl = mA0*inputl + mA1*mX1l + mA2*mX2l - mB1*mY1l - mB2*mY2l;
+mX2l = mX1l;
+mX1l = inputl;
+mY2l = mY1l;
+mY1l = outputl;
+ 
+outputr = mA0*inputr + mA1*mX1r + mA2*mX2r - mB1*mY1r - mB2*mY2r;
+mX2r = mX1r;
+mX1r = inputr;
+mY2r = mY1r;
+mY1r = outputr;
+
+spl0 = outputl*outgain;
+spl1 = outputr*outgain;
+
+);
+
+@gfx 100 10
+gfx_x=gfx_y=5;
+gfx_lineto(gfx_x, gfx_y,0);
+gfx_r=gfx_b=0;
+gfx_g=gfx_a=1;
+gfx_drawchar($'F');
+gfx_drawchar($' ');
+gfx_drawchar($'=');
+gfx_drawchar($' ');
+gfx_drawnumber(cx,0);
+gfx_drawchar($' ');
+gfx_drawchar($'H');
+gfx_drawchar($'z');

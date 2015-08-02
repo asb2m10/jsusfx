@@ -1,0 +1,567 @@
+// (C) 2009, Lubomir I. Ivanov
+//
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+// 
+// Released under GPL:
+// <http://www.gnu.org/licenses/>.
+//
+// *****************************************************************************
+// NP1136 - Program dependent Peak Limiter.
+//
+// The effect borrows ideas / functionality from some commercial
+// software / hardware products. 
+// Uses code from Paul Kellet (mda) for the compressor envelopes and from
+// Michale Gruhn (loser) for the GR meter - Thanks goes to them.
+// Also to Chritian W. Budde for his VST Plugin Analyzer.
+//
+// Use it wisely and with moderation.
+// *****************************************************************************
+//
+// REDISTRIBUTION AND MODIFICATIONS PERMITED ONLY WHILE PROVIDING
+// FULL CREDIT TO THE ORIGINAL AUTHORS AND INCLUDING THE ABOVE LINES OF TEXT.
+
+//=============================================================================
+desc: NP1136 (Peak Limiter)
+//=============================================================================
+slider1:-12<-40,0,0.01>Threshold (dB)
+slider2:4<1,20,0.01>Ratio (20:1 - PD Mode)
+slider3:30<0,100,0.01>Attack (µs)
+slider4:45<0,100,0.01>Release (ms)
+slider5:0<0,100,0.01>Detector HP (Hz)
+slider6:-18<-40,0,0.01>GR Limit (Off / Y dB)
+slider7:0<0,30,0.01>Makeup Gain (dB)
+slider8:50<0,100,0.01>Tilt EQ Center (Hz)
+slider9:0<-6,6,0.01>Tilt EQ Low/High (dB)
+slider10:100<0,100,0.01>Wet Mix (%)
+slider11:0<0,1,1{Stereo,Mono}>Processing Mode
+slider12:1<0,1,1{Stereo,Mono}>Detector Mode
+slider13:0<0,1,1{Normal (Ch0 - Ch1),Sidechain (Ch2 - Ch3)}>Detector Input
+slider14:0<0,1,1{Off,On}>Hard Clip
+
+//=============================================================================
+@init
+//=============================================================================
+br = 0;
+clip = 0;
+tlt_gain = 0;
+amp = 6/log(2);
+sr3 = 3*srate;
+gfactor = 4;
+n = 0;
+g_reset = 1;
+e10 = 10^-10;
+cdenorm = 10^-30;
+mv = 2^(-0.2/6);
+g_meter = gr_meter = 1;
+gr_meter_decay = exp(1/(1*srate));
+sqrt2 = sqrt(2);
+s2 = sqrt2/2;
+
+//=============================================================================
+@slider
+//=============================================================================
+//-----------------------------------------
+// detector hp (12db/oct)
+//-----------------------------------------
+sx = 16 + slider5*1.20103;
+cutoff = floor(exp(sx*log(1.059))*8.17742);
+cx = 2*cutoff/srate;
+cpi = $pi*cx;
+fk = 0.67*sin(cpi);
+c1 = 0.5*(1 - fk)/(1 + fk);
+c2 = (0.5 + c1)*cos(cpi);
+c3 = (0.5 + c1 + c2)*0.25;
+ hpa0 = 2*c3;
+hpa1 = -4*c3;
+hpa2 = 2*c3;
+hpb1 = -2*c2;
+hpb2 = 2*c1;
+
+//-----------------------------------------
+// compressor
+//-----------------------------------------
+thr = pow(10, 2 * (slider1/40+1) - 2);
+rat = (slider2-1)/19;
+att = pow(10, -0.002 - 3.97772619*(slider3/100));
+rel = pow(10, -3.11 - 1.8698*(slider4/100));
+ascale = -301030.1 / (srate * log10(1 - att));
+rscale = -301.0301 / (srate * log10(1 - rel));
+
+//-----------------------------------------
+// tilt filter
+//-----------------------------------------
+tlt_gain = slider9;
+//conditition
+tlt_gain > 0 ? (
+    g1 = -gfactor*tlt_gain;
+    g2 = tlt_gain;
+) : (
+    g1 = -tlt_gain;
+    g2 = gfactor*tlt_gain;
+);
+//two separate gains
+lgain = exp(g1/amp)-1;
+hgain = exp(g2/amp)-1;
+//f0
+sx = 16+slider8*1.20103;
+tf = floor(exp(sx*log(1.059))*8.17742);
+//filter
+tomega = 2*$pi*tf;
+tn = 1/(sr3 + tomega);
+tgt_ta0 = 2*tomega*tn;
+tgt_tb1 = (sr3 - tomega)*tn;
+
+//-----------------------------------------
+// mix
+//-----------------------------------------
+slider6 == -40 ? grlimit = 10^(-6*64/20) : grlimit = 10^((slider6-0.3)/20);
+outgain = 10^(slider7/20);
+mix = (100-slider10)/100;
+mono = slider11;
+link = slider12;
+sidechain = slider13;
+hardclip = slider14;
+
+//=============================================================================
+@sample
+//=============================================================================
+//-----------------------------------------
+// detector input - sidechain
+//-----------------------------------------
+sidechain == 0 ? (
+det_inl = spl0;
+det_inr = spl1;
+) : (
+det_inl = spl2;
+det_inr = spl3;
+);
+//=========================================
+// 
+// detector mono
+//
+//=========================================
+(link == 1) ? (
+det_inl = (det_inl+det_inr)/2;
+//-----------------------------------------
+// detector hp filter
+//-----------------------------------------
+cutoff > 20 ? (
+inl = hpa0*det_inl + hpa1*meml1 + hpa2*meml2 - hpb1*meml3 - hpb2*meml4;
+meml2 = meml1;
+meml1 = det_inl;
+meml4 = meml3;
+meml3 = inl;
+
+dtl = abs(inl);
+dtr = dtl;
+) : (
+//-----------------------------------------
+// detector no filter
+//-----------------------------------------
+dtl = abs(det_inl);
+dtr = dtl;
+);
+
+//-----------------------------------------
+// program dependency (british mode) 
+//-----------------------------------------
+rat == 1 ? (
+//interpolate envelopes
+pdattl += d_pdattl;
+pdrell += d_pdrell;
+pdratl += d_pdratl;
+) : (
+pdattl = att;
+pdrell = rel;
+pdratl = rat;
+); 
+
+//--------------------------
+// envelope
+//--------------------------
+(dtr > dtl) ? dtl = dtr;
+(dtl > envl) ? envl = envl + pdattl*(dtl - envl) : envl = envl*(1 - pdrell);
+(envl > thr) ? (cgainl = min(1+(pdratl*((envl/thr)-1)), 1/grlimit); g_reset = 0;) : (cgainl = 1; g_reset = 1);
+(envl < e10) ? envl = 0;
+
+//--------------------------
+// update gr meter
+//--------------------------
+g_reset == 0 ? g_meter = max(1/cgainl,grlimit) : g_meter = 1;
+cgainr = cgainl;
+
+) : (
+//=========================================
+// 
+// detector stereo
+//
+//=========================================
+//-----------------------------------------
+// detector hp filter
+//-----------------------------------------
+cutoff > 20 ? (
+inl = hpa0*det_inl + hpa1*meml1 + hpa2*meml2 - hpb1*meml3 - hpb2*meml4;
+meml2 = meml1;
+meml1 = det_inl;
+meml4 = meml3;
+meml3 = inl;
+inr = hpa0*det_inr + hpa1*memr1 + hpa2*memr2 - hpb1*memr3 - hpb2*memr4;
+memr2 = memr1;
+memr1 = det_inr;
+memr4 = memr3;
+memr3 = inr;
+//abs
+dtl = abs(inl);
+dtr = abs(inr);
+) : (
+//-----------------------------------------
+// detector no filter
+//-----------------------------------------
+dtl = abs(det_inl);
+dtr = abs(det_inr);
+);
+
+//------------------------------------
+// program dependency (british mode) 
+//------------------------------------
+rat == 1 ? (
+//interpolate envelopes
+pdattl += d_pdattl;
+pdattr += d_pdattr;
+pdrell += d_pdrell;
+pdrelr += d_pdrelr;
+pdratl += d_pdratl;
+pdratr += d_pdratr;
+) : (
+pdattl = pdattr = att;
+pdrell = pdrelr = rel;
+pdratl = pdratr = rat;
+); 
+//--------------------------
+// envelope
+//--------------------------
+(dtl > envl) ? envl = envl + pdattl*(dtl - envl) : envl = envl*(1 - pdrell);
+(envl > thr) ? (cgainl = min(1+(pdratl*((envl/thr)-1)), 1/grlimit); g_reset = 0;) : (cgainl = 1; g_reset = 1);
+(envl < e10) ? envl = 0;
+
+(dtr > envr) ? envr = envr + pdattr*(dtr - envr) : envr = envr*(1 - pdrelr);
+(envr > thr) ? (cgainr = min(1+(pdratr*((envr/thr)-1)), 1/grlimit); g_reset = 0;) : (cgainr = 1; g_reset = 1);
+(envr < e10) ? envr = 0;
+
+//--------------------------
+// update gr meter
+//--------------------------
+g_reset == 0 ? (
+(cgainl > cgainr) ? g_meter = max(1/cgainl, grlimit) : g_meter = max(1/cgainr, grlimit);
+) : (
+g_meter = 1;
+);
+
+);
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end detector stage
+
+//--------------------------
+// apply gains
+//--------------------------
+coutl = spl0*outgain/cgainl;
+coutr = spl1*outgain/cgainr;
+
+//---------------------------------
+//interpolate tilt coefficients
+//---------------------------------
+ta0 += d_ta0;
+tb1 += d_tb1;
+
+mono == 1 ? (
+//=========================================
+// 
+// process mono out
+//
+//=========================================
+//---------------------------------
+// tilt filter 
+//---------------------------------
+tlt_gain != 0 ? (
+tinput = coutl;
+lp_out = ta0*tinput + tb1*lp_out;
+toutl = tinput + lgain*lp_out + hgain*(tinput - lp_out);
+) : (
+toutl = coutl;
+);
+
+//---------------------------------
+// mix
+//---------------------------------
+outl = mix*spl0 + (1-mix)*toutl;
+
+//---------------------------------
+// hardclip
+//---------------------------------
+(outl < -1 || outl > 1) ? clip = 1;
+hardclip == 1 ? (
+  spl0 = min(max((outl+cdenorm),-mv),mv);
+  spl1 = spl0;   
+) : (  
+  spl0 = outl+cdenorm;
+  spl1 = spl0;
+);
+
+) : (
+//=========================================
+// 
+// process stereo out
+//
+//=========================================
+//---------------------------------
+// tilt filter
+//---------------------------------
+tlt_gain != 0 ? (
+tinput = coutl;
+lp_out = ta0*tinput + tb1*lp_out;
+toutl = tinput + lgain*lp_out + hgain*(tinput - lp_out);
+tinput_r = coutr;
+lp_out_r = ta0*tinput_r + tb1*lp_out_r;
+toutr = tinput_r + lgain*lp_out_r + hgain*(tinput_r - lp_out_r);
+) : (
+toutl = coutl;
+toutr = coutr;
+);
+//---------------------------------
+// mix
+//---------------------------------
+outl = mix*spl0 + (1-mix)*toutl;
+outr = mix*spl1 + (1-mix)*toutr;
+//---------------------------------
+// hardclip
+//---------------------------------
+(outl < -1 || outl > 1) ? clip = 1;
+(outr < -1 || outr > 1) ? clip = 1;
+hardclip == 1 ? (
+  spl0 = min(max((outl+cdenorm),-mv),mv);
+  spl1 = min(max((outr+cdenorm),-mv),mv);   
+) : (  
+  spl0 = outl+cdenorm;
+  spl1 = outr+cdenorm;
+);
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end output stage
+);
+
+//*** test (scope variables)
+//
+//spl0 = spl1 = pdrell*900;
+//spl0 = spl1 = rel;
+//spl0 = spl1 = pdratl;
+//
+//***
+
+//-----------------------------------------
+// meter decay
+//-----------------------------------------
+g_meter < gr_meter ? gr_meter=g_meter : gr_meter*=gr_meter_decay;
+
+//=============================================================================
+@block
+//=============================================================================
+//-----------------------------------------
+// update clip indicator
+//-----------------------------------------
+bps = srate/samplesblock;
+n > bps ? (
+clip = 0;
+n = 0;
+);
+n += 1;
+
+
+//-----------------------------------------
+// interpolate tilt filter coeffcients
+//-----------------------------------------
+tlt_gain != 0 ? (
+d_ta0 = (tgt_ta0-src_ta0)/samplesblock;
+ta0 = src_ta0;
+src_ta0 = tgt_ta0;
+d_tb1 = (tgt_tb1-src_tb1)/samplesblock;
+tb1 = src_tb1;
+src_tb1 = tgt_tb1;
+);
+
+//-----------------------------------------------
+// interpolate ratio, attack, release (PD mode)
+//-----------------------------------------------
+rat == 1 ? (
+//att
+tgt_pdattl = min(att*0.95+att*dtl*7,0.995405);
+d_pdattl = (tgt_pdattl-src_pdattl)/samplesblock;
+pdattl = src_pdattl;
+src_pdattl = tgt_pdattl;
+tgt_pdattr = min(att*0.95+att*dtr*7,0.995405);
+d_pdattr = (tgt_pdattr-src_pdattr)/samplesblock;
+pdattr = src_pdattr;
+src_pdattr = tgt_pdattr;
+//rel
+tgt_pdrell = min(rel*0.9+rel*dtl*4,0.00077625);
+d_pdrell = (tgt_pdrell-src_pdrell)/samplesblock;
+pdrell = src_pdrell;
+src_pdrell = tgt_pdrell;
+tgt_pdrelr = min(rel*0.9+rel*dtr*4,0.00077625);
+d_pdrelr = (tgt_pdrelr-src_pdrelr)/samplesblock;
+pdrelr = src_pdrelr;
+src_pdrelr = tgt_pdrelr;
+//rat
+tgt_pdratl = max(rat-dtl*2,0.57);
+d_pdratl = (tgt_pdratl-src_pdratl)/samplesblock;
+pdratl = src_pdratl;
+src_pdratl = tgt_pdratl;
+tgt_pdratr = max(rat-dtr*2,0.57);
+d_pdratr = (tgt_pdratr-src_pdratr)/samplesblock;
+pdratr = src_pdratr;
+src_pdratr = tgt_pdratr;
+) : (
+tgt_pdattl = tgt_pdattr = att;
+tgt_pdrell = tgt_pdrelr = rel;
+tgt_pdratl = tgt_pdratr = rat;
+);
+
+//=============================================================================
+@gfx 425 16
+//=============================================================================
+//---------------------------------
+// set gr meter
+//---------------------------------
+gr_meter *= exp(1/30);
+gr_meter > 1 ? gr_meter=1;
+gfx_r=0;
+gfx_g=0.3;
+gfx_b=0.8;
+gfx_a=0.8;
+meter_bot=20;
+meter_h=min(gfx_h,21);
+xscale=gfx_w*20/meter_bot;
+gfx_y=0;
+gfx_x=gfx_w + log10(gr_meter)*xscale;
+gfx_rectto(gfx_w,meter_h);
+//---------------------------------
+// draw limit
+//---------------------------------
+gfx_r=1;
+gfx_b=1;
+gfx_g=1;
+gfx_a=0.7;
+gfx_x=gfx_w + log10(grlimit*1.025)*xscale;
+gfx_y=meter_h-3;
+gfx_rectto(gfx_x+4,meter_h);
+//---------------------------------
+// draw scale
+//---------------------------------
+gfx_a=0.6;
+g = s2;
+while(
+gfx_x=gfx_w + log10(g)*xscale;
+gfx_x >= 0 ? (
+gfx_y=0;
+gfx_lineto(gfx_x,meter_h-1,0);
+gfx_y=meter_h-gfx_texth-5;
+gfx_x+=4;
+gfx_drawnumber(log10(g)*20,0);
+gfx_drawchar($'d');
+gfx_drawchar($'B');
+);
+g*=s2;
+gfx_x >=0;
+);
+gfx_x=0;
+gfx_y=meter_h;
+gfx_lineto(gfx_w,meter_h,0);
+gfx_a=0.9;
+gfx_x=gfx_w - 61;
+gfx_y=meter_h + gfx_texth - 1;
+/*
+//---------------------------------
+// draw gr numbers in realtime
+//---------------------------------
+gfx_drawnumber(log10(gr_meter)*20,1);
+gfx_drawchar($'d');
+gfx_drawchar($'B');
+*/
+//---------------------------------
+// hp filter f
+//---------------------------------
+gfx_x = 12;
+cutoff == 20 ? (
+gfx_a = 0.3;
+) : (
+gfx_a = 1;
+);
+gfx_drawchar($'D');
+gfx_drawchar($'H');
+gfx_drawchar($'P');
+gfx_drawchar($':');
+gfx_drawnumber(cutoff,0);
+//---------------------------------
+// attack
+//---------------------------------
+gfx_x = gfx_w/3;
+gfx_a=1;
+gfx_drawchar($'A');
+gfx_drawchar($':');
+gfx_drawnumber(ascale,0);
+//---------------------------------
+// release
+//---------------------------------
+gfx_x = gfx_w/1.9;
+gfx_a=1;
+gfx_drawchar($'R');
+gfx_drawchar($':');
+gfx_drawnumber(rscale,0);
+//---------------------------------
+// tilt filter f
+//---------------------------------
+gfx_x = gfx_w/1.25;
+tlt_gain != 0 ? (
+gfx_a = 1;
+) : (
+gfx_a = 0.3;
+);
+gfx_drawchar($'T');
+gfx_drawchar($'L');
+gfx_drawchar($'T');
+gfx_drawchar($':');
+gfx_drawnumber(tf,0);
+//---------------------------------
+// clip indicator
+//---------------------------------
+gfx_x = gfx_w/1.42;
+gfx_r=1;
+gfx_g=0;
+gfx_b=0;
+clip == 1 ? (
+gfx_a = 1;
+) : (
+gfx_a = 0.4;
+);
+gfx_drawchar($'*');
+//---------------------------------
+// british mode indicator
+//---------------------------------
+gfx_x = gfx_w/3.9;
+gfx_r=0.8;
+gfx_g=0.4;
+gfx_b=0.4;
+rat == 1 ? (
+gfx_a = 1;
+) : (
+gfx_a = 0.4;
+);
+gfx_drawchar($'B');
+

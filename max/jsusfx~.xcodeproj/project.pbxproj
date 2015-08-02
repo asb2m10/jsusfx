@@ -11,11 +11,9 @@
 		22CF115E0EE9A6F40054F513 /* jsusfx_max.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22CF115D0EE9A6F40054F513 /* jsusfx_max.cpp */; };
 		22CF116E0EE9A7700054F513 /* MaxAudioAPI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22CF116D0EE9A7700054F513 /* MaxAudioAPI.framework */; };
 		385AA8A4198685B8004F4164 /* fft.c in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8A3198685B8004F4164 /* fft.c */; };
-		385AA8AC198685C8004F4164 /* nseel-caltab.c in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8A5198685C8004F4164 /* nseel-caltab.c */; };
 		385AA8AD198685C8004F4164 /* nseel-cfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8A6198685C8004F4164 /* nseel-cfunc.c */; };
 		385AA8AE198685C8004F4164 /* nseel-compiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8A7198685C8004F4164 /* nseel-compiler.c */; };
 		385AA8AF198685C8004F4164 /* nseel-eval.c in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8A8198685C8004F4164 /* nseel-eval.c */; };
-		385AA8B0198685C8004F4164 /* nseel-lextab.c in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8A9198685C8004F4164 /* nseel-lextab.c */; };
 		385AA8B1198685C8004F4164 /* nseel-ram.c in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8AA198685C8004F4164 /* nseel-ram.c */; };
 		385AA8B2198685C8004F4164 /* nseel-yylex.c in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8AB198685C8004F4164 /* nseel-yylex.c */; };
 		385AA8B519868709004F4164 /* jsusfx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 385AA8B319868709004F4164 /* jsusfx.cpp */; };
@@ -30,11 +28,9 @@
 		22CF116D0EE9A7700054F513 /* MaxAudioAPI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MaxAudioAPI.framework; path = "../../MaxSDK-6.1.4/c74support/msp-includes/MaxAudioAPI.framework"; sourceTree = SOURCE_ROOT; };
 		2FBBEAE508F335360078DB84 /* jsusfx~.mxo */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "jsusfx~.mxo"; sourceTree = BUILT_PRODUCTS_DIR; };
 		385AA8A3198685B8004F4164 /* fft.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = fft.c; path = ../WDL/fft.c; sourceTree = "<group>"; };
-		385AA8A5198685C8004F4164 /* nseel-caltab.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "nseel-caltab.c"; path = "../WDL/eel2/nseel-caltab.c"; sourceTree = "<group>"; };
 		385AA8A6198685C8004F4164 /* nseel-cfunc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "nseel-cfunc.c"; path = "../WDL/eel2/nseel-cfunc.c"; sourceTree = "<group>"; };
 		385AA8A7198685C8004F4164 /* nseel-compiler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "nseel-compiler.c"; path = "../WDL/eel2/nseel-compiler.c"; sourceTree = "<group>"; };
 		385AA8A8198685C8004F4164 /* nseel-eval.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "nseel-eval.c"; path = "../WDL/eel2/nseel-eval.c"; sourceTree = "<group>"; };
-		385AA8A9198685C8004F4164 /* nseel-lextab.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "nseel-lextab.c"; path = "../WDL/eel2/nseel-lextab.c"; sourceTree = "<group>"; };
 		385AA8AA198685C8004F4164 /* nseel-ram.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "nseel-ram.c"; path = "../WDL/eel2/nseel-ram.c"; sourceTree = "<group>"; };
 		385AA8AB198685C8004F4164 /* nseel-yylex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "nseel-yylex.c"; path = "../WDL/eel2/nseel-yylex.c"; sourceTree = "<group>"; };
 		385AA8B319868709004F4164 /* jsusfx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = jsusfx.cpp; path = ../jsusfx.cpp; sourceTree = "<group>"; };
@@ -79,11 +75,9 @@
 		385AA8A21986858C004F4164 /* eel2 */ = {
 			isa = PBXGroup;
 			children = (
-				385AA8A5198685C8004F4164 /* nseel-caltab.c */,
 				385AA8A6198685C8004F4164 /* nseel-cfunc.c */,
 				385AA8A7198685C8004F4164 /* nseel-compiler.c */,
 				385AA8A8198685C8004F4164 /* nseel-eval.c */,
-				385AA8A9198685C8004F4164 /* nseel-lextab.c */,
 				385AA8AA198685C8004F4164 /* nseel-ram.c */,
 				385AA8AB198685C8004F4164 /* nseel-yylex.c */,
 				385AA8A3198685B8004F4164 /* fft.c */,
@@ -177,11 +171,9 @@
 				22CF115E0EE9A6F40054F513 /* jsusfx_max.cpp in Sources */,
 				22922AD30F38D67900B1EFEA /* commonsyms.c in Sources */,
 				385AA8A4198685B8004F4164 /* fft.c in Sources */,
-				385AA8AC198685C8004F4164 /* nseel-caltab.c in Sources */,
 				385AA8AD198685C8004F4164 /* nseel-cfunc.c in Sources */,
 				385AA8AE198685C8004F4164 /* nseel-compiler.c in Sources */,
 				385AA8AF198685C8004F4164 /* nseel-eval.c in Sources */,
-				385AA8B0198685C8004F4164 /* nseel-lextab.c in Sources */,
 				385AA8B1198685C8004F4164 /* nseel-ram.c in Sources */,
 				385AA8B2198685C8004F4164 /* nseel-yylex.c in Sources */,
 				385AA8B519868709004F4164 /* jsusfx.cpp in Sources */,
