@@ -80,7 +80,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
  
     std::ifstream *is;
 
-    if ( newFile != NULL ) {
+    if ( newFile != NULL && newFile->s_name[0] != 0) {
         char result[1024], *bufptr;
         int fd = open_via_path(x->canvasdir, newFile->s_name, "", result, &bufptr, 1024, 1);
         if ( fd == 0 || result[0] == 0 ) {
@@ -112,6 +112,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
     if ( x->fx->compile(*is) ) {
         if ( x->fx->srate != 0 )
             x->fx->prepare(*(x->fx->srate), *(x->fx->blockPerSample));
+        x->bypass = false;
     } else {
         x->bypass = true;
     }
@@ -139,10 +140,10 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
     outlet_new(&x->x_obj, gensym("signal"));
     outlet_new(&x->x_obj, gensym("signal"));
 
-	if ( argc < 1 || (argv[0]).a_type != A_SYMBOL ) {
-		error("jsusfx~: missing script");
+    if ( argc < 1 || (argv[0]).a_type != A_SYMBOL ) {
+        error("jsusfx~: missing script");
         return x;
-	}
+    }
 
     t_symbol *s = atom_getsymbol(argv);
     jsusfx_compile(x, s);
@@ -151,15 +152,15 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
 }
 
 void jsusfx_free(t_jsusfx *x) {
-	delete x->fx;
+    delete x->fx;
 }
 
 void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
-	int i = (int) id;
-	
-	if ( i > 64 || i < 0 ) 
-		return;
-	
+    int i = (int) id;
+    
+    if ( i > 64 || i < 0 ) 
+        return;
+    
     if ( ! x->fx->sliders[i].exists ) {
         error("jsusfx~: slider number %d is not assigned for this effect", i);
         return;
@@ -169,8 +170,8 @@ void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
 
 t_int *jsusfx_perform(t_int *w) {
     float *ins[2];
-	float *outs[2];
-	
+    float *outs[2];
+    
     t_jsusfx *x = (t_jsusfx *)(w[1]);
     ins[0] = (float *)(w[2]);
     ins[1] = (float *)(w[3]);
@@ -190,7 +191,7 @@ t_int *jsusfx_perform(t_int *w) {
             outs[1][i] = ins[1][i];
         }
     } else {
-    	x->fx->process(ins, outs, n);
+        x->fx->process(ins, outs, n);
         x->fx->dspLock.Leave();
     }
 
@@ -198,19 +199,19 @@ t_int *jsusfx_perform(t_int *w) {
 }
 
 void jsusfx_dsp(t_jsusfx *x, t_signal **sp) {
-	x->fx->prepare(sp[0]->s_sr, sp[0]->s_n);
-	dsp_add(jsusfx_perform, 6, x, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec, sp[3]->s_vec, sp[0]->s_n);
+    x->fx->prepare(sp[0]->s_sr, sp[0]->s_n);
+    dsp_add(jsusfx_perform, 6, x, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec, sp[3]->s_vec, sp[0]->s_n);
 }
 
 extern "C" {
     void jsusfx_tilde_setup(void) {
         jsusfx_class = class_new(gensym("jsusfx~"), (t_newmethod)jsusfx_new, (t_method)jsusfx_free, sizeof(t_jsusfx), 0L, A_GIMME, 0);
-        class_addmethod(jsusfx_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);
+        class_addmethod(jsusfx_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);        
         class_addmethod(jsusfx_class, (t_method)jsusfx_slider, gensym("slider"), A_FLOAT, A_FLOAT, 0);
-        class_addmethod(jsusfx_class, (t_method)jsusfx_compile, gensym("compile"), A_SYMBOL, 0);
+        class_addmethod(jsusfx_class, (t_method)jsusfx_compile, gensym("compile"), A_DEFSYMBOL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_describe, gensym("describe"), A_CANT, 0); 
         class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_CANT, 0);         
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
-    	JsusFx::init();    
+        JsusFx::init();    
     }
 }

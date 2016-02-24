@@ -1,20 +1,20 @@
-#N canvas 798 371 636 487 10;
-#X obj 372 439 dac~;
-#X obj 480 59 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
--262144 -1 -1 2800 1;
-#X obj 479 20 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
--262144 -1 -1 12700 1;
-#X msg 15 44 describe;
-#X obj 478 99 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
-0 10 -262144 -1 -1 7800 1;
-#X obj 477 139 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
-0 10 -262144 -1 -1 10500 1;
-#X obj 260 383 jsusfx~ gain.jsfx;
-#X obj 477 182 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
+#N canvas 454 231 636 487 10;
+#X obj 254 410 dac~;
+#X obj 474 61 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
+-262144 -1 -1 0 1;
+#X obj 473 22 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
+-262144 -1 -1 0 1;
+#X msg 9 46 describe;
+#X obj 472 101 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
 0 10 -262144 -1 -1 0 1;
-#X obj 323 203 oggread~;
-#X msg 323 152 1;
-#X msg 344 172 0;
+#X obj 471 141 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X obj 254 385 jsusfx~ gain.jsfx;
+#X obj 471 184 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X obj 317 205 oggread~;
+#X msg 317 154 1;
+#X msg 338 174 0;
 #N canvas 421 422 844 347 slider_r 0;
 #X obj 199 220 outlet;
 #X obj 45 33 r slider1;
@@ -45,24 +45,25 @@
 #X connect 12 0 0 0;
 #X connect 13 0 14 0;
 #X connect 14 0 0 0;
-#X restore 393 337 pd slider_r;
-#X msg 46 78 dumpvars;
-#X msg 17 382 compile gain.jsfx;
-#X msg 306 122 open test.ogg;
-#X obj 478 226 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
+#X restore 372 241 pd slider_r;
+#X msg 40 80 dumpvars;
+#X msg 122 419 compile gain.jsfx;
+#X obj 472 228 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
 0 10 -262144 -1 -1 0 1;
-#X obj 478 270 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
+#X obj 472 272 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
 0 10 -262144 -1 -1 0 1;
-#X text 108 79 dumpvars output all the variable output to the pd console
+#X text 102 81 dumpvars output all the variable output to the pd console
 ;
-#X text 81 44 describe outputs the assigned slider to the pd console
+#X text 75 46 describe outputs the assigned slider to the pd console
 ;
-#X text 13 445 Use compile to recompile (or change) the current script
+#X text 7 447 Use compile to recompile (or change) the current script
 ;
-#X text 9 6 jsusfx~ : Jesusonic for pure-data ============================================================
+#X text 3 8 jsusfx~ : Jesusonic for pure-data ============================================================
 ;
-#X msg 165 412 compile sweepinglowpass;
-#X msg 57 412 compile octaveup;
+#X msg 8 419 compile octaveup;
+#X msg 6 389 compile butterworth24db;
+#X msg 6 355 compile;
+#X msg 293 124 open test.ogg;
 #X connect 3 0 6 0;
 #X connect 6 0 0 0;
 #X connect 6 1 0 1;
@@ -73,6 +74,7 @@
 #X connect 11 0 6 0;
 #X connect 12 0 6 0;
 #X connect 13 0 6 0;
-#X connect 14 0 8 0;
+#X connect 20 0 6 0;
 #X connect 21 0 6 0;
 #X connect 22 0 6 0;
+#X connect 23 0 8 0;

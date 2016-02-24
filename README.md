@@ -14,6 +14,10 @@ This project comes with a subset of the original eel2 code from Cockos
 While this project could support plugin formats like LV2 or VST, this 
 implementation focuses on Pure Data and Max support.
 
+Version 0.2
+-----------
+* Add OS X as a target for Pure Data external
+
 Pure Data and Max implementation
 --------------------------------
 The external object is called jsusfx~ and the object arguments are the 
@@ -32,9 +36,8 @@ See the pd and max directory to see how to build them.
 
 TODO
 ----
-* Adapt pd Makefile for OS X
 * Fix the gcc bytecode generation bug
-* Make the Intel JIT work 
+* Make the Intel JIT work, the CPU usage is way to high
 
 Limitations
 -----------

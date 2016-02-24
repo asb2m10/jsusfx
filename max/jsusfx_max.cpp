@@ -100,51 +100,51 @@ void jsusfx_dblclick(t_jsusfx *x) {
         t_handle texthandle;
         texthandle = sysmem_newhandle(0);
         sysfile_readtextfile(fh_read, texthandle, 0, TEXT_NULL_TERMINATE);
-		x->m_editor = reinterpret_cast<t_object *>(object_new(CLASS_NOBOX, gensym("jed"), (t_object *)x, 0));
+        x->m_editor = reinterpret_cast<t_object *>(object_new(CLASS_NOBOX, gensym("jed"), (t_object *)x, 0));
         object_attr_setchar(x->m_editor, gensym("scratch"), 1);
         object_method(x->m_editor, gensym("settext"), *texthandle, gensym("utf-8"));
         object_method(x->m_editor, gensym("filename"), x->scriptname, x->path);
         sysmem_freehandle(texthandle);
-		sysfile_close(fh_read);
+        sysfile_close(fh_read);
     } else {
         object_attr_setchar(x->m_editor, gensym("visible"), 1);
     }
 }
 
 void jsusfx_compile(t_jsusfx *x, t_symbol *notused, long argc, t_atom *argv) {
-	// new file
-	if ( argc >= 1 && atom_gettype(argv) == A_SYM ) {
-		t_fourcc filetype = 'TEXT', outtype;
-		short path;
-		char filename[MAX_PATH_CHARS];
-		strcpy(filename, atom_getsym(argv)->s_name);
-		if (locatefile_extended(filename, &path, &outtype, &filetype, 1)) {
-			error("jsusfx~: script %s not found", filename);
-			return;
-		}
+    // new file
+    if ( argc >= 1 && atom_gettype(argv) == A_SYM ) {
+        t_fourcc filetype = 'TEXT', outtype;
+        short path;
+        char filename[MAX_PATH_CHARS];
+        strcpy(filename, atom_getsym(argv)->s_name);
+        if (locatefile_extended(filename, &path, &outtype, &filetype, 1)) {
+            error("jsusfx~: script %s not found", filename);
+            return;
+        }
         
-		if ( x->m_editor ) {
-			object_method(x->m_editor, gensym("w_close"));
-			x->m_editor = NULL;
-		}
+        if ( x->m_editor ) {
+            object_method(x->m_editor, gensym("w_close"));
+            x->m_editor = NULL;
+        }
         
-		strncpy(x->scriptname, filename, MAX_PATH_CHARS);
+        strncpy(x->scriptname, filename, MAX_PATH_CHARS);
         x->path = path;
-	}
+    }
     
     char fullpath[1024];
     path_toabsolutesystempath(x->path, x->scriptname, fullpath);
     std::ifstream is(fullpath);
-	if ( ! is.is_open() ) {
-		error("jsusfx~: error opening file %s", fullpath);
-		return;
-	}
-	
-	critical_enter(x->critical);
-	if ( x->fx->compile(is) == true ) {
-		x->fx->prepare(sys_getsr(), sys_getmaxblksize());
-	}
-	critical_exit(x->critical);
+    if ( ! is.is_open() ) {
+        error("jsusfx~: error opening file %s", fullpath);
+        return;
+    }
+    
+    critical_enter(x->critical);
+    if ( x->fx->compile(is) == true ) {
+        x->fx->prepare(sys_getsr(), sys_getmaxblksize());
+    }
+    critical_exit(x->critical);
 }
 
 long jsusfx_edsave(t_jsusfx *x, char **ht, long size) {
@@ -166,13 +166,13 @@ void jsusfx_edclose(t_jsusfx *x, char **ht, long size) {
 }
 
 void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
-	if ( argc < 1 || atom_gettype(argv) != A_SYM ) {
-		error("jsusfx~: missing script name");
-		return NULL;
-	}
+    if ( argc < 1 || atom_gettype(argv) != A_SYM ) {
+        error("jsusfx~: missing script name");
+        return NULL;
+    }
     
-	t_jsusfx *x = reinterpret_cast<t_jsusfx *>(object_alloc(jsusfx_class));
-	t_symbol *s = atom_getsym(argv);
+    t_jsusfx *x = reinterpret_cast<t_jsusfx *>(object_alloc(jsusfx_class));
+    t_symbol *s = atom_getsym(argv);
     t_fourcc filetype = 'TEXT', outtype;
     short path;
     char filename[MAX_PATH_CHARS];
@@ -218,47 +218,47 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
     char fullpath[MAX_PATH_CHARS];
     path_toabsolutesystempath(path, filename, fullpath);
     std::ifstream is(fullpath);
-	if ( ! is.is_open() ) {
-		error("jsusfx~: error opening file %s", fullpath);
-		return NULL;
-	}
+    if ( ! is.is_open() ) {
+        error("jsusfx~: error opening file %s", fullpath);
+        return NULL;
+    }
     
     x->bypass = false;
     dsp_setup((t_pxobject *)x, 2);
     x->outlet1 = outlet_new((t_object *)x, NULL);
-	outlet_new((t_object *)x, "signal");
+    outlet_new((t_object *)x, "signal");
     outlet_new((t_object *)x, "signal");
     
-	critical_new(&(x->critical));
-	x->m_editor = NULL;
+    critical_new(&(x->critical));
+    x->m_editor = NULL;
     JsusFxMax *fx = new JsusFxMax();
     fx->compile(is);
     x->fx = fx;
 
     /*if ( argc >= 2 && atom_gettype(argv+1) == A_LONG ) {
-		x->fx->normalizeSliders = atom_getlong(argv+1);
-	} else {
+        x->fx->normalizeSliders = atom_getlong(argv+1);
+    } else {
         x->fx->normalizeSliders = 1;
     }
     
     post("normalizer sl %x", x->fx->normalizeSliders);*/
     
-	return (x);
+    return (x);
 }
 
 void jsusfx_free(t_jsusfx *x) {
     if ( x->m_editor )
         object_method(x->m_editor, gensym("w_close"));
-	dsp_free((t_pxobject*)x);
+    dsp_free((t_pxobject*)x);
     
     critical_free(x->critical);
     delete x->fx;
 }
 
 void jsusfx_slider(t_jsusfx *x, t_int id, double value) {
-	if ( id >= 64 || id < 0 ) 
-		return;
-			
+    if ( id >= 64 || id < 0 ) 
+        return;
+            
     if ( ! x->fx->sliders[id].exists ) {
         error("jsusfx~: slider number %d is not assigned for this effect", id);
         return;
@@ -276,7 +276,7 @@ void jsusfx_perform64(t_jsusfx *x, t_object *dsp64, double **ins, long numins, d
     inv[0] = ins[1];
     inv[1] = ins[0];
     
-	if ( x->bypass )
+    if ( x->bypass )
         goto bypass;
     
     if ( critical_tryenter(x->critical) )
@@ -297,29 +297,29 @@ bypass:
 
 void jsusfx_dsp64(t_jsusfx *x, t_object *dsp64, short *count, double samplerate, long maxvectorsize, long flags) {
     x->fx->prepare(samplerate, maxvectorsize);
-	object_method(dsp64, gensym("dsp_add64"), x, jsusfx_perform64, 0, NULL);
+    object_method(dsp64, gensym("dsp_add64"), x, jsusfx_perform64, 0, NULL);
 }
 
 void jsusfx_assist(t_jsusfx *x, void *b, long m, long a, char *s) {
-	if (m == ASSIST_INLET) {
+    if (m == ASSIST_INLET) {
         switch(a) {
-            case 0: sprintf(s,"(signal) Left Input");	break;
-            case 1: sprintf(s,"(signal) Right Input");	break;
+            case 0: sprintf(s,"(signal) Left Input");   break;
+            case 1: sprintf(s,"(signal) Right Input");  break;
         }
-	} else {
-		switch (a) {
-            case 0: sprintf(s,"(signal) Left Output");	break;
-            case 1: sprintf(s,"(signal) Right Output");	break;
-            case 2: sprintf(s,"jsfx info");	break;
-		}
-	}
+    } else {
+        switch (a) {
+            case 0: sprintf(s,"(signal) Left Output");  break;
+            case 1: sprintf(s,"(signal) Right Output"); break;
+            case 2: sprintf(s,"jsfx info"); break;
+        }
+    }
 }
 
 int C74_EXPORT main(void) {
-	t_class *c = class_new("jsusfx~", (method)jsusfx_new, (method)jsusfx_free, sizeof(t_jsusfx), 0L, A_GIMME, 0);
-	
-	class_addmethod(c, (method)jsusfx_dsp64, "dsp64", A_CANT, 0);
-	class_addmethod(c, (method)jsusfx_slider, "slider", A_LONG, A_FLOAT, 0);
+    t_class *c = class_new("jsusfx~", (method)jsusfx_new, (method)jsusfx_free, sizeof(t_jsusfx), 0L, A_GIMME, 0);
+    
+    class_addmethod(c, (method)jsusfx_dsp64, "dsp64", A_CANT, 0);
+    class_addmethod(c, (method)jsusfx_slider, "slider", A_LONG, A_FLOAT, 0);
     class_addmethod(c, (method)jsusfx_assist, "assist", A_CANT, 0);
     class_addmethod(c, (method)jsusfx_compile, "compile", A_GIMME, 0);
     class_addmethod(c, (method)jsusfx_dblclick, "dblclick", A_CANT, 0);
@@ -329,11 +329,11 @@ int C74_EXPORT main(void) {
     class_addmethod(c, (method)jsusfx_describe, "describe", 0);
     class_addmethod(c, (method)jsusfx_showvars, "showvars", 0);
     
-	class_dspinit(c);
-	class_register(CLASS_BOX, c);
-	jsusfx_class = c;
-	
-	JsusFx::init();
+    class_dspinit(c);
+    class_register(CLASS_BOX, c);
+    jsusfx_class = c;
+    
+    JsusFx::init();
 
-	return 0;
+    return 0;
 }
