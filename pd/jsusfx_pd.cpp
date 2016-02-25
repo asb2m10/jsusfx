@@ -19,6 +19,7 @@
 #include "m_pd.h"
 #include "../WDL/mutex.h"
 #include "../jsusfx.h"
+#include <stdarg.h>
 
 class JsusFxPd : public JsusFx {
 public:
