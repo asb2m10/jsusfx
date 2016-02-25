@@ -1,5 +1,3 @@
-CC=clang
-CXX=clang++
 PORTABLE=true
 UNAME_S := $(shell uname -s)
 
@@ -25,7 +23,6 @@ else
   	ARCH := $(shell uname -m)
 	CFLAGS=-O -g -DWDL_FFT_REALSIZE=8 -DPD -fPIC 
 	LFLAGS=-rdynamic -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags -Wl,-soname,jsusfx~.pd_linux -shared
-	CXX=clang++
 	CPU := $(shell uname -m)
 	SOURCES += $(SOURCES_linux)
 	SHARED_EXTENSION = so
