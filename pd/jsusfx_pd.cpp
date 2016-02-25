@@ -86,7 +86,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
         char result[1024], *bufptr;
         result[0] = 0;
         int fd = open_via_path(x->canvasdir, newFile->s_name, "", result, &bufptr, 1024, 1);
-        if ( fd == 0 || result[0] == 0 ) {
+        if ( fd < 0 || result[0] == 0 ) {
             error("jsusfx~: unable to find script %s", newFile->s_name);
             return;
         }
