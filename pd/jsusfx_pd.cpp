@@ -88,6 +88,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
             error("jsusfx~: unable to find script %s", newFile->s_name);
             return;
         }
+        sys_close(fd);
         strncat(result, "/", 1024);
         strncat(result, newFile->s_name, 1024);
 
