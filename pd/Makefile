@@ -1,5 +1,3 @@
-CC=clang
-CXX=clang++
 PORTABLE=true
 UNAME_S := $(shell uname -s)
 
@@ -25,7 +23,6 @@ else
   	ARCH := $(shell uname -m)
 	CFLAGS=-O -g -DWDL_FFT_REALSIZE=8 -DPD -fPIC 
 	LFLAGS=-rdynamic -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags -Wl,-soname,jsusfx~.pd_linux -shared
-	CXX=clang++
 	CPU := $(shell uname -m)
 	SOURCES += $(SOURCES_linux)
 	SHARED_EXTENSION = so
@@ -61,16 +58,19 @@ PD_INCLUDE = $(PD_PATH)/include/pd
 # endif
 # CXXFLAGS=$(CFLAGS)
 
+
+ALL_CFLAGS+= $(CPPFLAGS)
+
 default: jsusfx~.$(EXTENSION)
 
 %.o : %.c
-	$(CC) $(ALL_CFLAGS) -c -o $@ $^
+	$(CC) $(ALL_CFLAGS) $(CFLAGS) -c -o $@ $^
 
 %.o : %.cpp
-	$(CXX) $(ALL_CFLAGS) -c -o $@ $^
+	$(CXX) $(ALL_CFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 jsusfx~.$(EXTENSION): jsusfx_pd.o $(OBJS)
-	$(CXX) $(ALL_LDFLAGS) -o "jsusfx~.$(EXTENSION)" $(OBJS)
+	$(CXX) $(ALL_LDFLAGS) $(LDFLAGS) -o "jsusfx~.$(EXTENSION)" $(OBJS)
 
 clean:
 	rm -f jsusfx~.$(EXTENSION) $(OBJS)
