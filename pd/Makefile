@@ -58,16 +58,19 @@ PD_INCLUDE = $(PD_PATH)/include/pd
 # endif
 # CXXFLAGS=$(CFLAGS)
 
+
+ALL_CFLAGS+= $(CPPFLAGS)
+
 default: jsusfx~.$(EXTENSION)
 
 %.o : %.c
-	$(CC) $(ALL_CFLAGS) -c -o $@ $^
+	$(CC) $(ALL_CFLAGS) $(CFLAGS) -c -o $@ $^
 
 %.o : %.cpp
-	$(CXX) $(ALL_CFLAGS) -c -o $@ $^
+	$(CXX) $(ALL_CFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 jsusfx~.$(EXTENSION): jsusfx_pd.o $(OBJS)
-	$(CXX) $(ALL_LDFLAGS) -o "jsusfx~.$(EXTENSION)" $(OBJS)
+	$(CXX) $(ALL_LDFLAGS) $(LDFLAGS) -o "jsusfx~.$(EXTENSION)" $(OBJS)
 
 clean:
 	rm -f jsusfx~.$(EXTENSION) $(OBJS)
