@@ -210,8 +210,8 @@ extern "C" {
         class_addmethod(jsusfx_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_slider, gensym("slider"), A_FLOAT, A_FLOAT, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_compile, gensym("compile"), A_DEFSYMBOL, 0);
-        class_addmethod(jsusfx_class, (t_method)jsusfx_describe, gensym("describe"), A_CANT, 0);
-        class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_CANT, 0);
+        class_addmethod(jsusfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
+        class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
         JsusFx::init();
     }
