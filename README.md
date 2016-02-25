@@ -14,6 +14,11 @@ This project comes with a subset of the original eel2 code from Cockos
 While this project could support plugin formats like LV2 or VST, this 
 implementation focuses on Pure Data and Max support.
 
+Version 0.3 (WIP)
+-----------------
+* GCC now works
+* OS X now uses JIT (10 times faster than portable)
+
 Version 0.2
 -----------
 * Add OS X as a target for Pure Data external
@@ -33,10 +38,6 @@ script to run. This script is search trough your pd/max path.
 * Double click on the object and you can edit the JSFX script (Max only)
 
 See the pd and max directory to see how to build them.
-
-TODO
-----
-* Fix the gcc bytecode generation bug
 
 Limitations
 -----------

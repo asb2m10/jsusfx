@@ -1,10 +1,5 @@
-#CC=clang
-#CXX=clang++
-DEBUG=-g
-=======
-PORTABLE=true
+#DEBUG_OPT=-g
 UNAME_S := $(shell uname -s)
-#PORTABLE=true
 
 ALL_CFLAGS = -I"$(PD_INCLUDE)" -DWDL_FFT_REALSIZE=8 $(DEBUG_OPT)
 ALL_LDFLAGS = $(DEBUG_OPT)
@@ -23,6 +18,7 @@ ifeq ($(UNAME_S),Darwin)
     STRIP = strip -x
 else
 	## Linux
+	PORTABLE=true	
 	EXTENSION=pd_linux
   	ARCH := $(shell uname -m)
 	CFLAGS=-O -g -DWDL_FFT_REALSIZE=8 -DPD -fPIC 
@@ -41,7 +37,8 @@ OBJS=../jsusfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/ee
 OBJS2=
 PD_INCLUDE = $(PD_PATH)/include/pd
 
-# I WOULD LIKE TO KNOW WHAT THIS DOES... cause the build (without the PROTABLE flag) works without those ???
+# I WOULD LIKE TO KNOW WHAT THIS DOES... cause the build (without the PROTABLE flag) 
+# works without those on OS X ??? ... I need to ask this question to the WDL forum
 ifdef PORTABLE
   CFLAGS +=  -DEEL_TARGET_PORTABLE
 else
@@ -56,8 +53,6 @@ else
 	endif
   endif
 endif
-# CXXFLAGS=$(CFLAGS)
-
 
 ALL_CFLAGS+= $(CPPFLAGS)
 
@@ -70,7 +65,7 @@ default: jsusfx~.$(EXTENSION)
 	$(CXX) $(ALL_CFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 jsusfx~.$(EXTENSION): jsusfx_pd.o $(OBJS) $(OBJS2)
-	$(CXX) $(ALL_LDFLAGS) $(LDFLAGS) -o "jsusfx~.$(EXTENSION)" $(OBJS)
+	$(CXX) $(ALL_LDFLAGS) $(LDFLAGS) -o "jsusfx~.$(EXTENSION)" $(OBJS) $(OBJS2)
 
 clean:
 	rm -f jsusfx~.$(EXTENSION) $(OBJS)
