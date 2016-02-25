@@ -37,7 +37,6 @@ See the pd and max directory to see how to build them.
 TODO
 ----
 * Fix the gcc bytecode generation bug
-* Make the Intel JIT work, the CPU usage is way to high
 
 Limitations
 -----------

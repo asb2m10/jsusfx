@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 Pascal Gauthier
+ * Copyright 2014-2016 Pascal Gauthier
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ typedef struct _jsusfx {
     char canvasdir[2048];
     char scriptpath[2048];
     bool bypass;
+    bool user_bypass;
 } t_jsusfx;
 
 static t_class *jsusfx_class;
@@ -134,6 +135,7 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
     strcpy(x->canvasdir, dir->s_name);
     x->fx = fx;
     x->bypass = true;
+    x->user_bypass = false;
     x->scriptpath[0] = 0;
 
     inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
@@ -168,6 +170,10 @@ void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
     x->fx->moveSlider(i, value);
 }
 
+void jsusfx_bypass(t_jsusfx *x, t_float id) {
+    x->user_bypass = id != 0;
+}
+
 t_int *jsusfx_perform(t_int *w) {
     float *ins[2];
     float *outs[2];
@@ -179,7 +185,7 @@ t_int *jsusfx_perform(t_int *w) {
     outs[1] = (float *)(w[5]);
     int n = (int)(w[6]);
 
-    bool bypass = x->bypass;
+    bool bypass = x->bypass || x->user_bypass;
     if ( bypass )
         bypass = ! x->fx->dspLock.TryEnter();
 
@@ -210,7 +216,9 @@ extern "C" {
         class_addmethod(jsusfx_class, (t_method)jsusfx_slider, gensym("slider"), A_FLOAT, A_FLOAT, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_compile, gensym("compile"), A_DEFSYMBOL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_describe, gensym("describe"), A_CANT, 0); 
-        class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_CANT, 0);         
+        class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_CANT, 0);
+        class_addmethod(jsusfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
+
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
         JsusFx::init();    
     }
