@@ -1,36 +1,35 @@
-#N canvas 454 231 636 487 10;
-#X obj 254 410 dac~;
-#X obj 474 61 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
--262144 -1 -1 0 1;
-#X obj 473 22 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
--262144 -1 -1 0 1;
-#X msg 9 46 describe;
-#X obj 472 101 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
-0 10 -262144 -1 -1 0 1;
-#X obj 471 141 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
-0 10 -262144 -1 -1 0 1;
-#X obj 254 385 jsusfx~ gain.jsfx;
-#X obj 471 184 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
-0 10 -262144 -1 -1 0 1;
-#X obj 317 205 oggread~;
-#X msg 317 154 1;
-#X msg 338 174 0;
-#N canvas 421 422 844 347 slider_r 0;
-#X obj 199 220 outlet;
+#N canvas 215 136 702 566 10;
+#X obj 99 403 dac~;
+#X obj 14 508 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
+-262144 -1 -1 700 1;
+#X obj 15 472 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
+-262144 -1 -1 1200 1;
+#X msg 260 257 describe;
+#X obj 164 472 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
+0 10 -262144 -1 -1 6400 1;
+#X obj 163 508 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
+0 10 -262144 -1 -1 3400 1;
+#X obj 21 365 jsusfx~ gain.jsfx;
+#X obj 314 473 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
+0 10 -262144 -1 -1 1600 1;
+#N canvas 488 418 644 279 slider_r 0;
+#X obj 311 245 outlet;
 #X obj 45 33 r slider1;
 #X obj 114 34 r slider2;
 #X obj 180 37 r slider3;
 #X obj 245 30 r slider4;
 #X msg 44 87 slider 1 \$1;
-#X obj 323 26 r slider5;
-#X msg 326 87 slider 5 \$1;
+#X obj 308 37 r slider5;
+#X msg 307 92 slider 5 \$1;
 #X msg 242 114 slider 4 \$1;
 #X msg 180 89 slider 3 \$1;
 #X msg 111 114 slider 2 \$1;
-#X obj 412 25 r slider6;
-#X msg 417 86 slider 6 \$1;
-#X obj 516 22 r slider7;
-#X msg 518 83 slider 7 \$1;
+#X obj 382 31 r slider6;
+#X msg 383 113 slider 6 \$1;
+#X obj 467 30 r slider7;
+#X msg 468 91 slider 7 \$1;
+#X obj 549 33 r slider8;
+#X msg 549 112 slider 8 \$1;
 #X connect 1 0 5 0;
 #X connect 2 0 10 0;
 #X connect 3 0 9 0;
@@ -45,36 +44,60 @@
 #X connect 12 0 0 0;
 #X connect 13 0 14 0;
 #X connect 14 0 0 0;
-#X restore 372 241 pd slider_r;
-#X msg 40 80 dumpvars;
-#X msg 122 419 compile gain.jsfx;
-#X obj 472 228 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
+#X connect 15 0 16 0;
+#X connect 16 0 0 0;
+#X restore 132 294 pd slider_r;
+#X msg 262 302 dumpvars;
+#X msg 53 166 compile gain.jsfx;
+#X obj 315 508 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
 0 10 -262144 -1 -1 0 1;
-#X obj 472 272 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
+#X obj 463 508 hsl 128 15 0.011 1 0 0 slider8 slider8 slider8 -2 -8
 0 10 -262144 -1 -1 0 1;
-#X text 102 81 dumpvars output all the variable output to the pd console
+#X msg 73 232 compile octaveup;
+#X msg 54 203 compile butterworth24db;
+#X msg 47 129 compile;
+#X obj 464 473 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
+0 10 -262144 -1 -1 0 1;
+#N canvas 742 60 450 300 test_tones 1;
+#X obj 52 246 outlet~;
+#X obj 76 182 phasor~;
+#X obj 78 123 *~ 110;
+#X obj 77 152 +~ 220;
+#X obj 77 87 phasor~ 0.1;
+#X connect 1 0 0 0;
+#X connect 2 0 3 0;
+#X connect 3 0 1 0;
+#X connect 4 0 2 0;
+#X restore 121 263 pd test_tones;
+#X obj 225 339 s jsfxmsg;
+#X obj 137 323 r jsfxmsg;
+#X msg 229 214 bypass \$1;
+#X obj 229 174 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X text 331 213 bypass is used to bypass the fx processing;
+#X text 10 10 jsusfx~ : Jesusonic for pure-data ============================================================
 ;
-#X text 75 46 describe outputs the assigned slider to the pd console
+#X text 131 116 Use compile to recompile (or change) the current script.
+Optionally \, you can specify another jsfx script.;
+#X text 12 51 jsusfx~ takes as an argument the jsfx script to load.
+The file will be searched in the pd path.;
+#X text 329 252 describe outputs the assigned slider to the pd console
 ;
-#X text 7 447 Use compile to recompile (or change) the current script
+#X text 328 296 dumpvars output all the variable output to the pd console
 ;
-#X text 3 8 jsusfx~ : Jesusonic for pure-data ============================================================
-;
-#X msg 8 419 compile octaveup;
-#X msg 6 389 compile butterworth24db;
-#X msg 6 355 compile;
-#X msg 293 124 open test.ogg;
-#X connect 3 0 6 0;
+#X text 193 411 slider <num> <value 0..1> is used to change the value
+of a parameter of the jsfx script.;
+#X connect 3 0 18 0;
 #X connect 6 0 0 0;
 #X connect 6 1 0 1;
 #X connect 8 0 6 0;
-#X connect 8 1 6 1;
-#X connect 9 0 8 0;
-#X connect 10 0 8 0;
-#X connect 11 0 6 0;
-#X connect 12 0 6 0;
+#X connect 9 0 18 0;
+#X connect 10 0 6 0;
 #X connect 13 0 6 0;
-#X connect 20 0 6 0;
-#X connect 21 0 6 0;
-#X connect 22 0 6 0;
-#X connect 23 0 8 0;
+#X connect 14 0 6 0;
+#X connect 15 0 6 0;
+#X connect 17 0 6 0;
+#X connect 17 0 6 1;
+#X connect 19 0 6 0;
+#X connect 20 0 18 0;
+#X connect 21 0 20 0;
