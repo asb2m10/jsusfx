@@ -1,4 +1,8 @@
-#DEBUG_OPT=-g3 
+#DEBUG_OPT=-g
+OBJS=jsusfx_pd.o ../jsusfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o 
+OBJS2=
+PD_INCLUDE = $(PD_PATH)/include/pd
+
 ALL_CFLAGS = -I"$(PD_INCLUDE)" -DWDL_FFT_REALSIZE=8 $(DEBUG_OPT)
 ALL_LDFLAGS = $(DEBUG_OPT)
 
@@ -18,22 +22,17 @@ ifeq ($(UNAME_S),Darwin)
     STRIP = strip -x
 else
 	## Linux
-	PORTABLE=true	
+	# USE TO native (non-portable) flag with caution, it requires php, nasm and execstack must be run on pd
+	#PORTABLE=true	
 	EXTENSION=pd_linux
   	ARCH := $(shell uname -m)
-	CFLAGS=-O -g -DWDL_FFT_REALSIZE=8 -DPD -fPIC 
 	OS = linux
 	PD_PATH = /usr
-	OPT_CFLAGS = -funroll-loops -fomit-frame-pointer # -O6
+	OPT_CFLAGS = -funroll-loops -fomit-frame-pointer -O6
 	ALL_CFLAGS += -fPIC $(OPT_CFLAGS)
-	ALL_LDFLAGS += -rdynamic -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags
-	SHARED_LDFLAGS += -Wl,-soname,$(SHARED_LIB) -shared
+	ALL_LDFLAGS += -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags -rdynamic 
 	STRIP = strip --strip-unneeded -R .note -R .comment
 endif
-
-OBJS=jsusfx_pd.o ../jsusfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o 
-OBJS2=
-PD_INCLUDE = $(PD_PATH)/include/pd
 
 ifdef PORTABLE
 	CFLAGS +=  -DEEL_TARGET_PORTABLE
@@ -48,8 +47,6 @@ else
 		endif
 	endif
 endif
-
-ALL_CFLAGS+= $(CPPFLAGS)
 
 default: jsusfx~.$(EXTENSION)
 
@@ -70,10 +67,14 @@ jsusfx~.$(EXTENSION): jsusfx_pd.o $(OBJS) $(OBJS2)
 	cd ../WDL/eel2 && php a2x64.php elf64
 
 clean:
-	rm -f jsusfx~.$(EXTENSION) $(OBJS) $(OBJS2)
+	rm -f jsusfx~.$(EXTENSION) $(OBJS) $(OBJS2) jsusfx_$(EXTENSION).zip
 
 test: jsusfx~.$(EXTENSION)
 	pd jsusfx_test.pd
 
 debug: jsusfx~.$(EXTENSION)
-	ddd pd test.pd
+	gdb --args pd -batch jsusfx_test.pd
+
+dist: default
+	zip jsusfx_$(EXTENSION).zip -j ../scripts/liteon/*
+	zip jsusfx_$(EXTENSION).zip -j ../README.md jsusfx~.$(EXTENSION) jsusfx_test.pd gain.jsfx

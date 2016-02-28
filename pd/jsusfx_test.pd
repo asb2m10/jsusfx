@@ -1,18 +1,18 @@
-#N canvas 215 136 702 566 10;
-#X obj 99 403 dac~;
+#N canvas 218 151 701 545 10;
+#X obj 113 406 dac~;
 #X obj 14 508 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
--262144 -1 -1 700 1;
+-262144 -1 -1 0 1;
 #X obj 15 472 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
--262144 -1 -1 1200 1;
-#X msg 260 257 describe;
+-262144 -1 -1 0 1;
+#X msg 261 249 describe;
 #X obj 164 472 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
-0 10 -262144 -1 -1 6400 1;
+0 10 -262144 -1 -1 0 1;
 #X obj 163 508 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
-0 10 -262144 -1 -1 3400 1;
+0 10 -262144 -1 -1 0 1;
 #X obj 21 365 jsusfx~ gain.jsfx;
 #X obj 314 473 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
-0 10 -262144 -1 -1 1600 1;
-#N canvas 488 418 644 279 slider_r 0;
+0 10 -262144 -1 -1 0 1;
+#N canvas 489 423 644 279 slider_r 0;
 #X obj 311 245 outlet;
 #X obj 45 33 r slider1;
 #X obj 114 34 r slider2;
@@ -47,7 +47,7 @@
 #X connect 15 0 16 0;
 #X connect 16 0 0 0;
 #X restore 132 294 pd slider_r;
-#X msg 262 302 dumpvars;
+#X msg 266 295 dumpvars;
 #X msg 53 166 compile gain.jsfx;
 #X obj 315 508 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
 0 10 -262144 -1 -1 0 1;
@@ -58,7 +58,7 @@
 #X msg 47 129 compile;
 #X obj 464 473 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
 0 10 -262144 -1 -1 0 1;
-#N canvas 742 60 450 300 test_tones 1;
+#N canvas 744 70 450 300 test_tones 0;
 #X obj 52 246 outlet~;
 #X obj 76 182 phasor~;
 #X obj 78 123 *~ 110;
@@ -69,21 +69,21 @@
 #X connect 3 0 1 0;
 #X connect 4 0 2 0;
 #X restore 121 263 pd test_tones;
-#X obj 225 339 s jsfxmsg;
+#X obj 229 339 s jsfxmsg;
 #X obj 137 323 r jsfxmsg;
 #X msg 229 214 bypass \$1;
 #X obj 229 174 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
-#X text 331 213 bypass is used to bypass the fx processing;
+#X text 309 216 bypass is used to bypass the fx processing;
 #X text 10 10 jsusfx~ : Jesusonic for pure-data ============================================================
 ;
-#X text 131 116 Use compile to recompile (or change) the current script.
+#X text 126 110 Use compile to recompile (or change) the current script.
 Optionally \, you can specify another jsfx script.;
-#X text 12 51 jsusfx~ takes as an argument the jsfx script to load.
+#X text 9 44 jsusfx~ takes as an argument the jsfx script to load.
 The file will be searched in the pd path.;
-#X text 329 252 describe outputs the assigned slider to the pd console
+#X text 277 272 describe outputs the assigned slider to the pd console
 ;
-#X text 328 296 dumpvars output all the variable output to the pd console
+#X text 277 319 dumpvars output all the variable output to the pd console
 ;
 #X text 193 411 slider <num> <value 0..1> is used to change the value
 of a parameter of the jsfx script.;

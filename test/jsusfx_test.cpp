@@ -57,15 +57,14 @@ void test_script(char *path) {
     fx->dumpvars();
 	delete fx;
 }
+extern "C" void test_jsfx();
 
+void test_jsfx() {
+    JsusFx::init();
+    test_script("/home/asb2m10/src/jsusfx/pd/gain.jsfx");   
+}
 
 int main(int argc, char *argv[]) {
-	
-	JsusFx::init();
-    
-    //getchar();
-    test_script("/home/asb2m10/src/jsusfx/scripts/liteon/np1136peaklimiter");
-
-    test_script("/home/asb2m10/src/jsusfx/pd/gain.jsfx");	
+    test_jsfx();	
 	return 0;
 }

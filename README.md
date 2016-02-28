@@ -14,10 +14,10 @@ This project comes with a subset of the original eel2 code from Cockos
 While this project could support plugin formats like LV2 or VST, this 
 implementation focuses on Pure Data and Max support.
 
-Version 0.3 (WIP)
------------------
-* GCC now works
-* OS X now uses JIT (10 times faster than portable)
+Version 0.3
+-----------
+* Native x86 x86_64 for OS X and Linux (10 times faster than portable)
+* gcc generated code now works at runtime
 
 Version 0.2
 -----------
@@ -39,11 +39,21 @@ script to run. This script is search trough your pd/max path.
 
 See the pd and max directory to see how to build them.
 
+TODO
+----
+* Make Linux native x86 EEL2 work without the requirement of execstack on pure-data !?!
+
 Limitations
 -----------
 * Only supports 2 in / 2 out
 * @gfx, @serialize and @import section is ignored
 * No midi support
+* On native Linux (portable run fine withtout this limitation), ```execstack -s /usr/bin/pd``` must be run to let pd execute x86 code on the stack. Otherwise it will SIGSEGV upon first script execution. In case of doubt, compile it in portable mode
+
+BUILDING
+--------
+* PHP and nasm is required to build native x86_64 support code
+* [prelink (that contains execstack)](http://people.redhat.com/jakub/prelink/) is required for native x86/x86_64 Linux support
 
 Credits
 -------

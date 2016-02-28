@@ -1,6 +1,7 @@
-CFLAGS=-O -g -DWDL_FFT_REALSIZE=8 -funroll-loops -fomit-frame-pointer
-LFLAGS=-fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags
+CFLAGS=-O -g -fPIC -DWDL_FFT_REALSIZE=8 
+LFLAGS=-fPIC 
 #PORTABLE=true
+CXXFLAGS=-fPIC
 
 OBJS=../jsusfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o jsusfx_test.o
 OBJS2=
@@ -20,33 +21,25 @@ endif
 
 default: jsusfx_test
 
-%.o : %.mm
-	$(CXX) $(CXXFLAGS) -c -o $@ $^
-
 #asm-nseel-x64.o: ../WDL/eel2/a2x64.php ../WDL/eel2/asm-nseel-x86-gcc.c
 #	php ../WDL/eel2/a2x64.php elf64
 
-ifdef PORTABLE
-  CFLAGS +=  -DEEL_TARGET_PORTABLE
-else
-  ifeq ($(UNAME_S),Darwin)
-    ifeq ($(ARCH),x86_64)
-      OBJS2 += asm-nseel-x64-macho.o
-    endif
-  endif
-  ifeq ($(UNAME_S),Linux)
-    ifeq ($(ARCH),x86_64)
-      OBJS2 += ../WDL/eel2/asm-nseel-x64.o
-    endif
-  endif
-endif
-CXXFLAGS=$(CFLAGS)
+OBJS2 += ../WDL/eel2/asm-nseel-x64.o
+
+jsusfx_shared: 
+	cc jsusfx_shared.c -o jsusfx_shared -ldl
 
 jsusfx_test: jsusfx_test.o $(OBJS) $(OBJS2)
-	clang++ -o $@ $^ $(CXXFLAGS) $(LFLAGS)
+	g++ -o $@ $^ $(CXXFLAGS) $(LFLAGS)
+
+jsusfx_test.so: jsusfx_test.o $(OBJS) $(OBJS2)
+	g++ -shared -o $@ $^ $(CFLAGS) $(LFLAGS)
 
 test: jsusfx_test
 	./jsusfx_test
 
+testso: jsusfx_shared jsusfx_test.so
+	gdb ./jsusfx_shared
+
 clean:
-	-rm jsusfx_test $(OBJS)
+	rm -f jsusfx_test jsusfx_test.so jsusfx_shared
