@@ -1,8 +1,6 @@
-CC=clang	
-CFLAGS=-O -g -DWDL_FFT_REALSIZE=8
-LFLAGS=
-CXX=clang++
-PORTABLE=true
+CFLAGS=-O -g -DWDL_FFT_REALSIZE=8 -funroll-loops -fomit-frame-pointer
+LFLAGS=-fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags
+#PORTABLE=true
 
 OBJS=../jsusfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o jsusfx_test.o
 OBJS2=
@@ -38,7 +36,7 @@ else
   endif
   ifeq ($(UNAME_S),Linux)
     ifeq ($(ARCH),x86_64)
-      OBJS2 += asm-nseel-x64.o
+      OBJS2 += ../WDL/eel2/asm-nseel-x64.o
     endif
   endif
 endif

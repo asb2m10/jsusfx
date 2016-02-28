@@ -1,4 +1,4 @@
-#ifdef _EEL_NET_H_
+#ifndef _EEL_NET_H_
 #define _EEL_NET_H_
 
 // x = tcp_listen(port[,interface, connected_ip_out]) poll this, returns connection id  > 0, or <0 on error, or 0 if no new connect -- interface only valid on first call (or after tcp_listen_end(port))

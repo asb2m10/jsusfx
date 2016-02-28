@@ -1,8 +1,8 @@
-#DEBUG_OPT=-g
-UNAME_S := $(shell uname -s)
-
+#DEBUG_OPT=-g3 
 ALL_CFLAGS = -I"$(PD_INCLUDE)" -DWDL_FFT_REALSIZE=8 $(DEBUG_OPT)
 ALL_LDFLAGS = $(DEBUG_OPT)
+
+UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
 	## OS X
@@ -22,10 +22,9 @@ else
 	EXTENSION=pd_linux
   	ARCH := $(shell uname -m)
 	CFLAGS=-O -g -DWDL_FFT_REALSIZE=8 -DPD -fPIC 
-	LFLAGS=-rdynamic -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags -Wl,-soname,jsusfx~.pd_linux -shared
 	OS = linux
 	PD_PATH = /usr
-	OPT_CFLAGS = -O6 -funroll-loops -fomit-frame-pointer
+	OPT_CFLAGS = -funroll-loops -fomit-frame-pointer # -O6
 	ALL_CFLAGS += -fPIC $(OPT_CFLAGS)
 	ALL_LDFLAGS += -rdynamic -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags
 	SHARED_LDFLAGS += -Wl,-soname,$(SHARED_LIB) -shared
@@ -71,7 +70,7 @@ jsusfx~.$(EXTENSION): jsusfx_pd.o $(OBJS) $(OBJS2)
 	cd ../WDL/eel2 && php a2x64.php elf64
 
 clean:
-	rm -f jsusfx~.$(EXTENSION) $(OBJS)
+	rm -f jsusfx~.$(EXTENSION) $(OBJS) $(OBJS2)
 
 test: jsusfx~.$(EXTENSION)
 	pd jsusfx_test.pd

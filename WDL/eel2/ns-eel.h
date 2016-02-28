@@ -147,6 +147,11 @@ void NSEEL_VM_SetCustomFuncThis(NSEEL_VMCTX ctx, void *thisptr);
 
 EEL_F *NSEEL_VM_getramptr(NSEEL_VMCTX ctx, unsigned int offs, int *validCount);
 
+
+// set 0 to query. returns actual value used (limits, granularity apply -- see NSEEL_RAM_BLOCKS)
+int NSEEL_VM_setramsize(NSEEL_VMCTX ctx, int maxent);
+
+
 struct eelStringSegmentRec {
   struct eelStringSegmentRec *_next;
   const char *str_start; // escaped characters, including opening/trailing characters
@@ -170,7 +175,7 @@ char *NSEEL_code_getcodeerror(NSEEL_VMCTX ctx);
 int NSEEL_code_geterror_flag(NSEEL_VMCTX ctx);
 void NSEEL_code_execute(NSEEL_CODEHANDLE code);
 void NSEEL_code_free(NSEEL_CODEHANDLE code);
-int *EEL_STRING_DEBUGOUT(NSEEL_CODEHANDLE code); // 4 ints...source bytes, static code bytes, call code bytes, data bytes
+int *NSEEL_code_getstats(NSEEL_CODEHANDLE code); // 4 ints...source bytes, static code bytes, call code bytes, data bytes
   
 
 // global memory control/view
@@ -215,10 +220,16 @@ extern int NSEEL_RAM_memused_errors;
 //  php a2x64.php macho64x
 // this will regenerate the .asm files and object files
 
-// 128*65536 = ~8million entries. (64MB RAM used)
+// 512 * 65536 = 32 million entries maximum (256MB RAM)
+// default is limited to 128 * 65536 = 8 million entries (64MB RAM)
 
+// default to 8 million entries, use NSEEL_VM_setramsize() to change at runtime
+#define NSEEL_RAM_BLOCKS_DEFAULTMAX 128
 
-#define NSEEL_RAM_BLOCKS_LOG2 7
+// 512 entry block table maximum (2k/4k per VM)
+#define NSEEL_RAM_BLOCKS_LOG2 9
+
+ // 65536 items per block (512KB)
 #define NSEEL_RAM_ITEMSPERBLOCK_LOG2 16
 
 #define NSEEL_RAM_BLOCKS (1 << NSEEL_RAM_BLOCKS_LOG2)
