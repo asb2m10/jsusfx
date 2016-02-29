@@ -11,15 +11,15 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	## OS X
 	EXTENSION=pd_darwin
-    OS = macosx
-    PD_PATH = /Applications/Pd-extended.app/Contents/Resources
-    OPT_CFLAGS = -ftree-vectorize -fast
-    FAT_FLAGS = -arch i386 -arch x86_64 -mmacosx-version-min=10.5    
-    ALL_CFLAGS += $(FAT_FLAGS) -fPIC $(OPT_CFLAGS)
-    BUNDLE_LOADER = $(shell test ! -e $(PD_PATH)/bin/pd || echo -bundle_loader $(PD_PATH)/bin/pd)
-    ALL_LDFLAGS += $(FAT_FLAGS) -headerpad_max_install_names -bundle $(BUNDLE_LOADER) -undefined dynamic_lookup
-    SHARED_LDFLAGS += $(FAT_FLAGS) -dynamiclib -undefined dynamic_lookup -compatibility_version 1 -current_version 1.0
-    STRIP = strip -x
+	OS = macosx
+	PD_PATH = /Applications/Pd-extended.app/Contents/Resources
+	OPT_CFLAGS = -ftree-vectorize -fast
+	FAT_FLAGS = -arch i386 -arch x86_64 -mmacosx-version-min=10.5
+	ALL_CFLAGS += $(FAT_FLAGS) -fPIC $(OPT_CFLAGS)
+	BUNDLE_LOADER = $(shell test ! -e $(PD_PATH)/bin/pd || echo -bundle_loader $(PD_PATH)/bin/pd)
+	ALL_LDFLAGS += $(FAT_FLAGS) -headerpad_max_install_names -bundle $(BUNDLE_LOADER) -undefined dynamic_lookup
+	SHARED_LDFLAGS += $(FAT_FLAGS) -dynamiclib -undefined dynamic_lookup -compatibility_version 1 -current_version 1.0
+	STRIP = strip -x
 else
 	## Linux
 	# USE TO native (non-portable) flag with caution, it requires php, nasm and execstack must be run on pd
@@ -30,7 +30,7 @@ else
 	PD_PATH = /usr
 	OPT_CFLAGS = -funroll-loops -fomit-frame-pointer -O6
 	ALL_CFLAGS += -fPIC $(OPT_CFLAGS)
-	ALL_LDFLAGS += -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags -rdynamic 
+	ALL_LDFLAGS += -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags -rdynamic
 	STRIP = strip --strip-unneeded -R .note -R .comment
 endif
 
@@ -76,5 +76,5 @@ debug: jsusfx~.$(EXTENSION)
 	gdb --args pd -batch jsusfx_test.pd
 
 dist: default
-	zip jsusfx_$(EXTENSION).zip -j ../scripts/liteon/*
-	zip jsusfx_$(EXTENSION).zip -j ../README.md jsusfx~.$(EXTENSION) jsusfx_test.pd gain.jsfx
+	zip -j jsusfx_$(EXTENSION).zip ../scripts/liteon/*
+	zip -j jsusfx_$(EXTENSION).zip ../README.md ../LICENSE jsusfx~.$(EXTENSION) jsusfx_test.pd gain.jsfx

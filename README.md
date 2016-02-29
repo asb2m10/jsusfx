@@ -39,21 +39,15 @@ script to run. This script is search trough your pd/max path.
 
 See the pd and max directory to see how to build them.
 
-TODO
-----
-* Make Linux native x86 EEL2 work without the requirement of execstack on pure-data !?!
-
 Limitations
 -----------
 * Only supports 2 in / 2 out
 * @gfx, @serialize and @import section is ignored
 * No midi support
-* On native Linux (portable run fine withtout this limitation), ```execstack -s /usr/bin/pd``` must be run to let pd execute x86 code on the stack. Otherwise it will SIGSEGV upon first script execution. In case of doubt, compile it in portable mode
 
 BUILDING
 --------
 * PHP and nasm is required to build native x86_64 support code
-* [prelink (that contains execstack)](http://people.redhat.com/jakub/prelink/) is required for native x86/x86_64 Linux support
 
 Credits
 -------

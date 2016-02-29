@@ -37,10 +37,11 @@
 
 #ifdef __APPLE__
   #include <AvailabilityMacros.h>
+#endif
 
-  #if defined(__LP64__) || defined(MAC_OS_X_VERSION_10_6) // using 10.6+ SDK, force mprotect use
-    #define EEL_USE_MPROTECT
-  #endif
+// Modified for LINUX support (for jsusfx)
+#if __unix__
+  #define EEL_USE_MPROTECT
 #endif
 
 #ifdef EEL_USE_MPROTECT
@@ -708,6 +709,7 @@ static void freeBlocks(llBlock **start)
     s=llB;
   }
 }
+
 
 //---------------------------------------------------------------------------------------------------------------
 static void *__newBlock(llBlock **start, int size, int wantMprotect)
