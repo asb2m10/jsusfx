@@ -37,6 +37,7 @@
 
 #ifdef __APPLE__
   #include <AvailabilityMacros.h>
+  #define EEL_USE_MPROTECT  
 #endif
 
 // Modified for LINUX support (for jsusfx)
