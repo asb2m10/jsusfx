@@ -188,11 +188,7 @@ t_int *jsusfx_perform(t_int *w) {
     outs[1] = (float *)(w[5]);
     int n = (int)(w[6]);
 
-    bool bypass = x->bypass || x->user_bypass;
-    if ( bypass )
-        bypass = ! x->fx->dspLock.TryEnter();
-
-    if (bypass) {
+    if ( (x->bypass || x->user_bypass) || x->fx->dspLock.TryEnter() ) {
         //x->fx->displayMsg("system is bypassed");
 
         for(int i=0;i<n;i++) {

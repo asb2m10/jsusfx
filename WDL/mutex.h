@@ -106,14 +106,11 @@ class WDL_Mutex {
 
     bool TryEnter()
     {
-#ifdef _DEBUG
-      _debug_cnt++;
-#endif
 
 #ifdef _WIN32
-      TryEnterCriticalSection(&m_cs);
+      return ! TryEnterCriticalSection(&m_cs);
 #else
-      pthread_mutex_trylock(&m_mutex);
+      return pthread_mutex_trylock(&m_mutex);
 #endif
     }
 
