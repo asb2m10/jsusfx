@@ -90,8 +90,6 @@ The file will be searched in the pd path.;
 #X text 193 411 slider <num> <value 0..1> is used to change the value
 of a parameter of the jsfx script.;
 #X connect 3 0 18 0;
-#X connect 6 0 0 0;
-#X connect 6 1 0 1;
 #X connect 8 0 6 0;
 #X connect 9 0 18 0;
 #X connect 10 0 6 0;

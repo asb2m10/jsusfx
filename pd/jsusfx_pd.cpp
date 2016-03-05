@@ -57,6 +57,14 @@ typedef struct _jsusfx {
 } t_jsusfx;
 
 static t_class *jsusfx_class;
+static t_class *jxrt_class;
+static t_class *inlet_proxy;
+
+typedef struct _inlet_proxy {
+    t_object x_obj;
+    t_jsusfx *peer;
+    int idx;
+} t_inlet_proxy;
 
 void jsusfx_describe(t_jsusfx *x) {
     post("jsusfx~ script %s : %s", x->scriptpath, x->fx->desc);
@@ -67,7 +75,6 @@ void jsusfx_describe(t_jsusfx *x) {
                 post(" slider%d: %g %g %s [%g]", i, s->min, s->max, s->desc, *(s->owner));
             else
                 post(" slider%d: %g %g (%g) %s [%g]", i, s->min, s->max, s->inc, s->desc, *(s->owner));
-
         }
     }
 }
@@ -128,38 +135,6 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
         jsusfx_describe(x);
 }
 
-void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
-    JsusFxPd *fx = new JsusFxPd();
-
-    fx->normalizeSliders = 1;
-    t_jsusfx *x = (t_jsusfx *)pd_new(jsusfx_class);
-
-    t_symbol *dir = canvas_getcurrentdir();
-    strcpy(x->canvasdir, dir->s_name);
-    x->fx = fx;
-    x->bypass = true;
-    x->user_bypass = false;
-    x->scriptpath[0] = 0;
-
-    inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
-    outlet_new(&x->x_obj, gensym("signal"));
-    outlet_new(&x->x_obj, gensym("signal"));
-
-    if ( argc < 1 || (argv[0]).a_type != A_SYMBOL ) {
-        error("jsusfx~: missing script");
-        return x;
-    }
-
-    t_symbol *s = atom_getsymbol(argv);
-    jsusfx_compile(x, s);
-
-    return (x);
-}
-
-void jsusfx_free(t_jsusfx *x) {
-    delete x->fx;
-}
-
 void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
     int i = (int) id;
 
@@ -208,6 +183,84 @@ void jsusfx_dsp(t_jsusfx *x, t_signal **sp) {
     dsp_add(jsusfx_perform, 6, x, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec, sp[3]->s_vec, sp[0]->s_n);
 }
 
+void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
+    JsusFxPd *fx = new JsusFxPd();
+
+    fx->normalizeSliders = 1;
+    t_jsusfx *x = (t_jsusfx *)pd_new(jsusfx_class);
+
+    t_symbol *dir = canvas_getcurrentdir();
+    strcpy(x->canvasdir, dir->s_name);
+    x->fx = fx;
+    x->bypass = true;
+    x->user_bypass = false;
+    x->scriptpath[0] = 0;
+
+    inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
+    outlet_new(&x->x_obj, gensym("signal"));
+    outlet_new(&x->x_obj, gensym("signal"));
+
+    if ( argc < 1 || (argv[0]).a_type != A_SYMBOL ) {
+        error("jsusfx~: missing script");
+        return x;
+    }
+
+    t_symbol *s = atom_getsymbol(argv);
+    jsusfx_compile(x, s);
+
+    return (x);
+}
+
+void jsusfx_free(t_jsusfx *x) {
+    delete x->fx;
+}
+
+void *jxrt_new(t_symbol *script) {
+    JsusFxPd *fx = new JsusFxPd();
+
+    fx->normalizeSliders = 0;
+    t_jsusfx *x = (t_jsusfx *)pd_new(jxrt_class);
+    
+    t_symbol *dir = canvas_getcurrentdir();
+    strcpy(x->canvasdir, dir->s_name);
+    x->fx = fx;
+    x->bypass = true;
+    x->user_bypass = false;
+
+    jsusfx_compile(x, script);
+    if ( x->bypass == true ) {
+        delete fx;
+        return NULL;
+    }
+    
+    // TODO: support multiple signal inlets/outlets
+    inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
+    outlet_new(&x->x_obj, gensym("signal"));
+    outlet_new(&x->x_obj, gensym("signal"));
+
+    for(int i=1;i<64;i++) {
+        if ( x->fx->sliders[i].exists ) {
+            t_inlet_proxy *proxy = (t_inlet_proxy *) pd_new(inlet_proxy);
+            proxy->idx = i;
+            proxy->peer = x;
+            inlet_new(&x->x_obj, &proxy->x_obj.ob_pd, 0, 0);
+        } else {
+            break;
+        }
+    }
+
+    return (x);
+}
+
+void jxrt_free(t_jsusfx *x) {
+    // TODO: free signal inlets/outlets ; also the proxy inlets ?
+    delete x->fx;
+}
+
+static void inlet_float(t_inlet_proxy *proxy, t_float f) {
+    proxy->peer->fx->moveSlider(proxy->idx, f);
+}
+
 extern "C" {
     void jsusfx_tilde_setup(void) {
         jsusfx_class = class_new(gensym("jsusfx~"), (t_newmethod)jsusfx_new, (t_method)jsusfx_free, sizeof(t_jsusfx), 0L, A_GIMME, 0);
@@ -217,8 +270,18 @@ extern "C" {
         class_addmethod(jsusfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
-
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
+
+        jxrt_class = class_new(gensym("jxrt~"), (t_newmethod)jxrt_new, (t_method)jxrt_free, sizeof(t_jsusfx), 0L, A_SYMBOL, 0);
+        class_addmethod(jxrt_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);
+        class_addmethod(jxrt_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
+        class_addmethod(jxrt_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
+        class_addmethod(jxrt_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
+        CLASS_MAINSIGNALIN(jxrt_class, t_jsusfx, x_f);
+
+        inlet_proxy = class_new(gensym("jxrt_inlet_proxy"), NULL,NULL, sizeof(t_inlet_proxy), CLASS_PD|CLASS_NOINLET, A_NULL);
+        class_addfloat(inlet_proxy, (t_method)inlet_float);
+
         JsusFx::init();
     }
 }
