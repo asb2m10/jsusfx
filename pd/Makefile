@@ -28,8 +28,8 @@ else
   	ARCH := $(shell uname -m)
 	OS = linux
 	PD_PATH = /usr
-	OPT_CFLAGS = -funroll-loops -fomit-frame-pointer -O6
-	ALL_CFLAGS += -fPIC $(OPT_CFLAGS)
+	OPT_CFLAGS = -funroll-loops -fomit-frame-pointer -O6 
+	ALL_CFLAGS += -fPIC $(OPT_CFLAGS) -Wformat -Werror=format-security
 	ALL_LDFLAGS += -shared -fPIC -Wl,-rpath,"\$$ORIGIN",--enable-new-dtags -rdynamic
 	STRIP = strip --strip-unneeded -R .note -R .comment
 endif

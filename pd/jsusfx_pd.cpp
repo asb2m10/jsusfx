@@ -40,7 +40,7 @@ public:
         vsnprintf(output, 4095, fmt, argptr);
         va_end(argptr);
 
-        error(output);
+        error("%s", output);
     }
 
     WDL_Mutex dspLock;
