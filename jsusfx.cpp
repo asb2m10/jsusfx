@@ -136,10 +136,12 @@ bool JsusFx::compile(std::istream &input) {
                     // 5 desc
 
     for(int lnumber=0;;lnumber++) {
-        input.getline(line, sizeof(line), '\n');
-
-        bool end = input.eof();
-
+    	bool end = input.eof();
+		
+		if ( ! end ) {
+			input.getline(line, sizeof(line), '\n');
+		}
+		
         if ( end || line[0] == '@' ) {          
             if ( ! compileSection(state, code.Get(), lnumber) ) 
                 return false;
