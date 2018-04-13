@@ -27,8 +27,6 @@ default: jsusfx_test
 ../WDL/eel2/asm-nseel-x64.o: 
 	cd ../WDL/eel2 && php a2x64.php elf64
 
-OBJS2 += ../WDL/eel2/asm-nseel-x64.o
-
 jsusfx_shared: 
 	cc jsusfx_shared.c -o jsusfx_shared -ldl
 
