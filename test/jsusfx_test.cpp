@@ -65,7 +65,7 @@ extern "C" void test_jsfx();
 
 void test_jsfx() {
     JsusFx::init();
-    test_script("/home/asb2m10/src/jsusfx/pd/gain.jsfx");   
+    test_script("../pd/gain.jsfx");   
 }
 
 int main(int argc, char *argv[]) {
