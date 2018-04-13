@@ -9,17 +9,6 @@ OBJS2=
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
-  ifdef ARCH
-    CFLAGS += -arch $(ARCH)
-  else
-    ARCH = i686
-    CFLAGS += -arch i686
-  endif
-else
-  ARCH := $(shell uname -m)
-endif
-
-ifeq ($(UNAME_S),Darwin)
 	# by default, we take for granted that OS X builds are FAT (i386 + x86_64)
 	OBJS2 += ../WDL/eel2/asm-nseel-x64-macho.o    
 endif
