@@ -18,7 +18,7 @@ public:
         vsnprintf(output, 4095, fmt, argptr);
         va_end(argptr);
 
-        printf(output);
+        printf("%s", output);
         printf("\n");
     }
 
@@ -29,13 +29,13 @@ public:
         vsnprintf(output, 4095, fmt, argptr);
         va_end(argptr);
 
-        printf(output);
+        printf("%s", output);
         printf("\n");
     }
 };
 
 
-void test_script(char *path) {
+void test_script(const char *path) {
 	JsusFxTest *fx;
     float *in[2];
     float *out[2];
