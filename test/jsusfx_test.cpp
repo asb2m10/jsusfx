@@ -50,12 +50,16 @@ void test_script(const char *path) {
 	
 	std::ifstream is(path);
     
-	printf("compile %d: %s\n", fx->compile(is), path);
-    
-    fx->prepare(44100, 64);
-    fx->process(in, out, 64);
-    fx->dumpvars();
-	delete fx;
+    if (!is.is_open()) {
+        printf("failed to open jsfx file (%s)\n", path);
+    } else {
+    	printf("compile %d: %s\n", fx->compile(is), path);
+        
+        fx->prepare(44100, 64);
+        fx->process(in, out, 64);
+        fx->dumpvars();
+    	delete fx;
+    }
 }
 extern "C" void test_jsfx();
 
