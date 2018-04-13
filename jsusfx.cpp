@@ -202,7 +202,10 @@ bool JsusFx::compile(std::istream &input) {
                 continue;
             }
             if ( ! strncmp(line, "desc:", 5) ) {
-                strncpy(desc, line+5, 64);
+            	char *src = line+5;
+            	while (*src && *src == ' ')
+            		src++;
+                strncpy(desc, src, 64);
                 continue;
             }
         }
