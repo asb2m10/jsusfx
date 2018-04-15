@@ -19,7 +19,29 @@
 #include "WDL/eel2/ns-eel.h"
 
 struct JsusFxGfx {
-	void init();
+	EEL_F *m_gfx_r;
+	EEL_F *m_gfx_g;
+	EEL_F *m_gfx_b;
+	EEL_F *m_gfx_a;
+	
+	EEL_F *m_gfx_w;
+	EEL_F *m_gfx_h;
+	
+	EEL_F *m_gfx_x;
+	EEL_F *m_gfx_y;
+	
+	//EEL_F *m_gfx_mode;
+	EEL_F *m_gfx_clear;
+	//EEL_F *m_gfx_texth;
+	//EEL_F *m_gfx_dest;
+	
+	EEL_F *m_mouse_x;
+	EEL_F *m_mouse_y;
+	EEL_F *m_mouse_cap;
+	
+	void init(NSEEL_VMCTX vm);
+	
+	virtual void setup() { };
 	
 	virtual void gfx_line(int np, EEL_F ** params) { }
 	virtual void gfx_rect(int np, EEL_F ** params) { }
