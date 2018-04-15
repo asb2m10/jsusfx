@@ -96,6 +96,21 @@ public:
     }
 };
 
+struct JsusFx_Sections;
+
+struct JsusFxPathLibrary {
+	virtual bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
+		return false;
+	}
+	
+	virtual std::istream* open(const std::string &path) {
+		return nullptr;
+	}
+	
+	virtual void close(std::istream *&stream) {
+	}
+};
+
 class JsusFx {
 protected:
     NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample, codeGfx;
@@ -104,6 +119,9 @@ protected:
     bool computeSlider;
     void releaseCode();
     bool compileSection(int state, const char *code, int line_offset);
+    bool processImport(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, const std::string &importPath, JsusFx_Sections &sections);
+    bool readSections(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input, JsusFx_Sections &sections);
+    bool compileSections(JsusFx_Sections &sections);
 
 public:
     Slider sliders[64];
@@ -121,6 +139,7 @@ public:
     virtual ~JsusFx();
 
     bool compile(std::istream &input);
+    bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
     void moveSlider(int idx, float value);
     void process(float **input, float **output, int size);

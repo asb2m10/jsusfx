@@ -36,6 +36,21 @@
 #include "WDL/eel2/eel_fft.h"
 #include "WDL/eel2/eel_mdct.h"
 
+#include <fstream> // to check if files exist
+
+struct JsusFx_Section {
+	WDL_String code;
+	int lineOffset;
+};
+
+struct JsusFx_Sections {
+	JsusFx_Section init;
+	JsusFx_Section slider;
+	JsusFx_Section block;
+	JsusFx_Section sample;
+	JsusFx_Section gfx;
+};
+
 JsusFx::JsusFx() {
     m_vm = NSEEL_VM_alloc();
     codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
@@ -75,6 +90,9 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         return true;
 
     char errorMsg[4096];
+
+	//printf("section code:\n");
+	//printf("%s", code);
 
     switch(state) {
     case 0:
@@ -131,71 +149,87 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
     return true;
 }
 
-bool JsusFx::compile(std::istream &input) {
-    releaseCode();
-    
-    WDL_String code;
+bool JsusFx::processImport(JsusFxPathLibrary &pathLibrary, const std::string &path, const std::string &importPath, JsusFx_Sections &sections) {
+	bool result = true;
+	
+	//displayMsg("Importing %s", import.c_str());
+	
+	std::string resolvedPath;
+	if ( ! pathLibrary.resolveImportPath(importPath, path, resolvedPath) ) {
+		displayError("Failed to resolve import file path %s", importPath.c_str());
+		return false;
+	}
+
+	std::istream *is = pathLibrary.open(resolvedPath);
+
+	if ( is != nullptr ) {
+		result &= readSections(pathLibrary, resolvedPath, *is, sections);
+	} else {
+		displayError("Failed to open imported file %s", importPath.c_str());
+		result &= false;
+	}
+	
+	pathLibrary.close(is);
+	
+	return result;
+}
+
+bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &path, std::istream &input, JsusFx_Sections &sections) {
+    WDL_String * code = nullptr;
     char line[4096];
-
-    int state = 5;  // 0 init
-                    // 1 slider
-                    // 2 block
-                    // 3 sample
-                    // 4 gfx
-                    // 5 unknown
-                    // 6 desc
-
-    for(int lnumber=0;;lnumber++) {
-    	bool end = input.eof();
+	
+	// are we reading the header or sections?
+	bool isHeader = true;
+	
+    for(int lnumber=1; ! input.eof(); lnumber++) {
+		input.getline(line, sizeof(line), '\n');
 		
-		if ( ! end ) {
-			input.getline(line, sizeof(line), '\n');
-		}
-		
-        if ( end || line[0] == '@' ) {          
-            if ( ! compileSection(state, code.Get(), lnumber) ) 
-                return false;
-
-            if ( end )
-                break;
-
+        if ( line[0] == '@' ) {
             char *b = line + 1;
             char *w = b;
             while(isspace(*w))
                 w++;
             w = 0;
-
-            code.Set("");
-            if ( ! strnicmp(b, "init", 4) ) {
-                state = 0;
-            } else if ( ! strnicmp(b, "slider", 6) ) {
-                state = 1;
-            } else if ( ! strnicmp(b, "block", 5) ) {
-                state = 2;
-            } else if ( ! strnicmp(b, "sample", 6) ) {
-                state = 3;
-            } else if ( gfx != nullptr && ! strnicmp(b, "gfx", 3) ) {
-                state = 4;
-            } else {
-                state = 5;
-            }
+			
+			// we've begun reading sections now
+			isHeader = false;
+			
+			JsusFx_Section *section = nullptr;
+            if ( ! strnicmp(b, "init", 4) )
+                section = &sections.init;
+            else if ( ! strnicmp(b, "slider", 6) )
+                section = &sections.slider;
+            else if ( ! strnicmp(b, "block", 5) )
+                section = &sections.block;
+            else if ( ! strnicmp(b, "sample", 6) )
+                section = &sections.sample;
+            else if ( ! strnicmp(b, "gfx", 3) )
+                section = &sections.gfx;
+			
+            if ( section != nullptr ) {
+				code = &section->code;
+				section->lineOffset = lnumber;
+			} else {
+				code = nullptr;
+			}
+			
             continue;
         }
         
-        if ( state < 5 ) {
+        if ( code != nullptr ) {
             int l = strlen(line);
-            
-            if ( line[l-1] == '\r' )
+			
+            if ( l > 0 && line[l-1] == '\r' )
                 line[l-1] = 0;
             
             if ( line[0] != 0 ) {
-                code.Append(line);
+                code->Append(line);
             }
-            code.Append("\n");
+            code->Append("\n");
             continue;
         }
 
-        if (state == 6) {
+        if (isHeader) {
             if ( ! strnicmp(line, "slider", 6) ) {
                 int target = 0;
                 if ( ! sscanf(line, "slider%d:", &target) )
@@ -208,7 +242,6 @@ bool JsusFx::compile(std::istream &input) {
 
                 if ( ! sliders[target].config(p) ) {
                     displayError("Incomplete slider line %d", lnumber);
-                    releaseCode();                  
                     return false;
                 }
                 continue;
@@ -220,11 +253,95 @@ bool JsusFx::compile(std::istream &input) {
                 strncpy(desc, src, 64);
                 continue;
             }
+            if ( ! strncmp(line, "import ", 5) ) {
+				char *src = line+7;
+            	while (*src && *src == ' ')
+            		src++;
+				if (*src) {
+					processImport(pathLibrary, path, src, sections);
+				}
+                continue;
+            }
         }
     }
+	
+	return true;
+}
 
-    computeSlider = 1;
-    return true;
+bool JsusFx::compileSections(JsusFx_Sections &sections) {
+	bool result = true;
+	
+	// 0 init
+	// 1 slider
+	// 2 block
+	// 3 sample
+	// 4 gfx
+	
+	if (sections.init.code.GetLength() != 0)
+		result &= compileSection(0, sections.init.code.Get(), sections.init.lineOffset);
+	if (sections.slider.code.GetLength() != 0)
+		result &= compileSection(1, sections.slider.code.Get(), sections.slider.lineOffset);
+	if (sections.block.code.GetLength() != 0)
+		result &= compileSection(2, sections.block.code.Get(), sections.block.lineOffset);
+	if (sections.sample.code.GetLength() != 0)
+		result &= compileSection(3, sections.sample.code.Get(), sections.sample.lineOffset);
+	if (sections.gfx.code.GetLength() != 0)
+		result &= compileSection(4, sections.gfx.code.Get(), sections.gfx.lineOffset);
+	
+	return result;
+}
+
+bool JsusFx::compile(std::istream &input) {
+	releaseCode();
+	
+	JsusFxPathLibrary pathLibrary;
+	std::string path;
+	
+	// read code for the various sections inside the jsusfx script
+	
+	JsusFx_Sections sections;
+	if ( ! readSections(pathLibrary, path, input, sections) )
+		return false;
+	
+	// compile the sections
+	
+	if ( ! compileSections(sections) ) {
+		releaseCode();
+		return false;
+	}
+	
+	computeSlider = 1;
+	
+	return true;
+}
+
+bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
+	releaseCode();
+	
+	std::istream *input = pathLibrary.open(path);
+	if ( input == nullptr ) {
+		displayError("Failed to open %s", path.c_str());
+		return false;
+	}
+	
+	// read code for the various sections inside the jsusfx script
+	
+	JsusFx_Sections sections;
+	if ( ! readSections(pathLibrary, path, *input, sections) )
+		return false;
+	
+	pathLibrary.close(input);
+	
+	// compile the sections
+	
+	if ( ! compileSections(sections) ) {
+		releaseCode();
+		return false;
+	}
+	
+	computeSlider = 1;
+	
+	return true;
 }
 
 void JsusFx::prepare(int sampleRate, int blockSize) {    
