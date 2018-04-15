@@ -11,9 +11,17 @@
 
 #define ENABLE_INOUT_TEST 1
 
+#define TEST_GFX 1
+
 #if ENABLE_INOUT_TEST
 	#include <math.h>
 #endif
+
+#if TEST_GFX
+	#include "../jsusfx_gfx.h"
+#endif
+
+
 
 struct JsusFxPathLibraryTest : JsusFxPathLibrary {
 	static bool fileExists(const std::string &filename) {
@@ -84,6 +92,12 @@ void test_script(const char *path) {
         
     fx = new JsusFxTest();
 	
+#if TEST_GFX
+	JsusFxGfx_Log gfx;
+	fx->gfx = &gfx;
+	gfx.init();
+#endif
+	
 	JsusFxPathLibraryTest pathLibrary;
 	printf("compile %d: %s\n", fx->compile(pathLibrary, path), path);
 	
@@ -113,13 +127,22 @@ void test_script(const char *path) {
 #endif
 
 	fx->dumpvars();
+		
+	#if TEST_GFX
+        fx->draw();
+	#endif
+		
 	delete fx;
 }
 extern "C" void test_jsfx();
 
 void test_jsfx() {
     JsusFx::init();
+#if TEST_GFX
+    test_script("../scripts/liteon/3bandpeakfilter");
+#else
     test_script("../pd/gain.jsfx");
+#endif
 }
 
 int main(int argc, char *argv[]) {

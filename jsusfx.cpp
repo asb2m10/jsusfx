@@ -48,11 +48,12 @@ struct JsusFx_Sections {
 	JsusFx_Section slider;
 	JsusFx_Section block;
 	JsusFx_Section sample;
+	JsusFx_Section gfx;
 };
 
 JsusFx::JsusFx() {
     m_vm = NSEEL_VM_alloc();
-    codeInit = codeSlider = codeBlock = codeSample = NULL;
+    codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
     NSEEL_VM_SetCustomFuncThis(m_vm,this);
 
     m_string_context = new eel_string_context_state();
@@ -130,6 +131,15 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
             return false;
         }
         break;
+    case 4:
+        codeGfx = NSEEL_code_compile_ex(m_vm, code, line_offset, NSEEL_CODE_COMPILE_FLAG_COMMONFUNCS);
+        if ( codeGfx == NULL ) {
+            snprintf(errorMsg, 4096, "@gfx line %s", NSEEL_code_getcodeerror(m_vm));
+            displayError(errorMsg);
+            releaseCode();
+            return false;
+        }
+        break;
     default:
         //printf("unknown block");
         break;
@@ -192,6 +202,8 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
             else if ( ! strnicmp(b, "block", 5) )
                 section = &sections.block;
             else if ( ! strnicmp(b, "sample", 6) )
+                section = &sections.sample;
+            else if ( ! strnicmp(b, "gfx", 3) )
                 section = &sections.sample;
 			
             if ( section != nullptr ) {
@@ -263,6 +275,7 @@ bool JsusFx::compileSections(JsusFx_Sections &sections) {
 	// 1 slider
 	// 2 block
 	// 3 sample
+	// 4 gfx
 	
 	if (sections.init.code.GetLength() != 0)
 		result &= compileSection(0, sections.init.code.Get(), sections.init.lineOffset);
@@ -272,6 +285,8 @@ bool JsusFx::compileSections(JsusFx_Sections &sections) {
 		result &= compileSection(2, sections.block.code.Get(), sections.block.lineOffset);
 	if (sections.sample.code.GetLength() != 0)
 		result &= compileSection(3, sections.sample.code.Get(), sections.sample.lineOffset);
+	if (sections.gfx.code.GetLength() != 0)
+		result &= compileSection(4, sections.gfx.code.Get(), sections.gfx.lineOffset);
 	
 	return result;
 }
@@ -393,6 +408,13 @@ void JsusFx::process64(double **input, double **output, int size) {
     }
 }
 
+void JsusFx::draw() {
+    if ( codeGfx == NULL )
+        return;
+
+    NSEEL_code_execute(codeGfx);
+}
+
 void JsusFx::releaseCode() {
     desc[0] = 0;
     
@@ -404,8 +426,10 @@ void JsusFx::releaseCode() {
         NSEEL_code_free(codeBlock);
     if ( codeSample ) 
         NSEEL_code_free(codeSample);
+	if ( codeGfx )
+		NSEEL_code_free(codeGfx);
         
-    codeInit = codeSlider = codeBlock = codeSample = NULL;
+    codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
 
     for(int i=0;i<64;i++)
         sliders[i].exists = false;
