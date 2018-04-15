@@ -18,7 +18,6 @@
 
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include "WDL/ptrlist.h"
 #include "WDL/assocarray.h"
@@ -36,10 +35,8 @@
 #include "WDL/eel2/eel_misc.h"
 #include "WDL/eel2/eel_fft.h"
 #include "WDL/eel2/eel_mdct.h"
-#include <fstream>
-#include <libgen.h>
-#include <string>
-#include <vector>
+
+#include <fstream> // to check if files exist
 
 struct JsusFx_Section {
 	WDL_String code;
@@ -171,7 +168,7 @@ static std::string resolveImportFilename(const char * filename) {
 bool JsusFx::processImport(const std::string &import, JsusFx_Sections &sections) {
 	bool result = true;
 	
-	displayMsg("Importing %s", import.c_str());
+	//displayMsg("Importing %s", import.c_str());
 
 	const std::string filename = resolveImportFilename(import.c_str());
 
@@ -180,7 +177,7 @@ bool JsusFx::processImport(const std::string &import, JsusFx_Sections &sections)
 	if (is.is_open()) {
 		result &= readSections(is, sections);
 	} else {
-		displayError("Failed to open import file %s", import.c_str());
+		displayError("Failed to open imported file %s", import.c_str());
 		result &= false;
 	}
 	
