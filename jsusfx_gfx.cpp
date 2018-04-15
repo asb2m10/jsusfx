@@ -346,6 +346,12 @@ static EEL_F NSEEL_CGEN_CALL _gfx_setimgdim(void *opaque, EEL_F *img, EEL_F *w, 
 
 //
 
+// todo : remove
+static EEL_F NSEEL_CGEN_CALL __stub(void *opaque, INT_PTR np, EEL_F **parms)
+{
+  return 0.0;
+}
+
 void JsusFxGfx::init(NSEEL_VMCTX vm) {
 	m_gfx_r = NSEEL_VM_regvar(vm,"gfx_r");
 	m_gfx_g = NSEEL_VM_regvar(vm,"gfx_g");
@@ -363,7 +369,8 @@ void JsusFxGfx::init(NSEEL_VMCTX vm) {
 	m_mouse_x = NSEEL_VM_regvar(vm,"mouse_x");
 	m_mouse_y = NSEEL_VM_regvar(vm,"mouse_y");
 	m_mouse_cap = NSEEL_VM_regvar(vm,"mouse_cap");
-
+	
+	// LICE
 	NSEEL_addfunc_retptr("gfx_lineto",3,NSEEL_PProc_THIS,&_gfx_lineto);
 	NSEEL_addfunc_retptr("gfx_lineto",2,NSEEL_PProc_THIS,&_gfx_lineto2);
 	NSEEL_addfunc_retptr("gfx_rectto",2,NSEEL_PProc_THIS,&_gfx_rectto);
@@ -397,4 +404,8 @@ void JsusFxGfx::init(NSEEL_VMCTX vm) {
 	NSEEL_addfunc_varparm("gfx_setfont",1,NSEEL_PProc_THIS,&_gfx_setfont);
 	NSEEL_addfunc_varparm("gfx_getfont",1,NSEEL_PProc_THIS,&_gfx_getfont);
 	NSEEL_addfunc_varparm("gfx_set",1,NSEEL_PProc_THIS,&_gfx_set);
+	
+	// Reaper
+	NSEEL_addfunc_varparm("slider_automate",1,NSEEL_PProc_THIS,&__stub);
+	NSEEL_addfunc_varparm("sliderchange",1,NSEEL_PProc_THIS,&__stub);
 }

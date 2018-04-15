@@ -41,7 +41,7 @@ struct JsusFxGfx {
 	
 	void init(NSEEL_VMCTX vm);
 	
-	virtual void setup() { };
+	virtual void setup(const int w, const int h) { };
 	
 	virtual void gfx_line(int np, EEL_F ** params) { }
 	virtual void gfx_rect(int np, EEL_F ** params) { }
