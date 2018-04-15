@@ -364,7 +364,9 @@ void JsusFxGfx::init(NSEEL_VMCTX vm) {
 	m_gfx_x = NSEEL_VM_regvar(vm,"gfx_x");
 	m_gfx_y = NSEEL_VM_regvar(vm,"gfx_y");
 	
+	m_gfx_mode = NSEEL_VM_regvar(vm,"gfx_mode");
 	m_gfx_clear = NSEEL_VM_regvar(vm,"gfx_clear");
+	m_gfx_dest = NSEEL_VM_regvar(vm,"gfx_dest");
 	
 	m_mouse_x = NSEEL_VM_regvar(vm,"mouse_x");
 	m_mouse_y = NSEEL_VM_regvar(vm,"mouse_y");

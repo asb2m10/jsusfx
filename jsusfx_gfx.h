@@ -30,10 +30,10 @@ struct JsusFxGfx {
 	EEL_F *m_gfx_x;
 	EEL_F *m_gfx_y;
 	
-	//EEL_F *m_gfx_mode;
+	EEL_F *m_gfx_mode;
 	EEL_F *m_gfx_clear;
 	//EEL_F *m_gfx_texth;
-	//EEL_F *m_gfx_dest;
+	EEL_F *m_gfx_dest;
 	
 	EEL_F *m_mouse_x;
 	EEL_F *m_mouse_y;
