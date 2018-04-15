@@ -114,7 +114,6 @@ struct JsusFxPathLibrary {
 class JsusFx {
 protected:
     NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample, codeGfx;
-    NSEEL_VMCTX m_vm;
 
     bool computeSlider;
     void releaseCode();
@@ -124,6 +123,7 @@ protected:
     bool compileSections(JsusFx_Sections &sections);
 
 public:
+    NSEEL_VMCTX m_vm;
     Slider sliders[64];
     int normalizeSliders;
     char desc[64];
