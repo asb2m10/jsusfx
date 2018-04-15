@@ -204,7 +204,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
             else if ( ! strnicmp(b, "sample", 6) )
                 section = &sections.sample;
             else if ( ! strnicmp(b, "gfx", 3) )
-                section = &sections.sample;
+                section = &sections.gfx;
 			
             if ( section != nullptr ) {
 				code = &section->code;
