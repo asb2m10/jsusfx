@@ -94,6 +94,8 @@ public:
     }
 };
 
+struct JsusFx_SectionSources;
+
 class JsusFx {
 protected:
     NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample;
@@ -102,6 +104,8 @@ protected:
     bool computeSlider;
     void releaseCode();
     bool compileSection(int state, const char *code, int line_offset);
+    bool processImport(const std::string &import, JsusFx_SectionSources &sources);
+    bool readSectionSources(std::istream &input, JsusFx_SectionSources &sources);
 
 public:
     Slider sliders[64];

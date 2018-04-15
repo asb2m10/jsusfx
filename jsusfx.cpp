@@ -18,6 +18,7 @@
 
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "WDL/ptrlist.h"
 #include "WDL/assocarray.h"
@@ -35,6 +36,22 @@
 #include "WDL/eel2/eel_misc.h"
 #include "WDL/eel2/eel_fft.h"
 #include "WDL/eel2/eel_mdct.h"
+#include <fstream>
+#include <libgen.h>
+#include <string>
+#include <vector>
+
+struct JsusFx_SectionSource {
+	WDL_String code;
+	int lineOffset;
+};
+
+struct JsusFx_SectionSources {
+	JsusFx_SectionSource init;
+	JsusFx_SectionSource slider;
+	JsusFx_SectionSource block;
+	JsusFx_SectionSource sample;
+};
 
 JsusFx::JsusFx() {
     m_vm = NSEEL_VM_alloc();
@@ -75,6 +92,9 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         return true;
 
     char errorMsg[4096];
+
+	//printf("section code:\n");
+	//printf("%s", code);
 
     switch(state) {
     case 0:
@@ -122,68 +142,105 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
     return true;
 }
 
-bool JsusFx::compile(std::istream &input) {
-    releaseCode();
-    
-    WDL_String code;
+static bool fileExists(const char * filename) {
+	std::ifstream is(filename);
+	return is.is_open();
+}
+
+static std::string resolveImportFilename(const char * filename) {
+	// relative path?
+	if (strstr(filename, "..") == filename)
+		return filename;
+	// file exists locally?
+	if (fileExists(filename))
+		return filename;
+	// file exists in a search path?
+	{
+		std::string spath = std::string("/Users/thecat/atk-reaper/plugins/libraries/") + filename;
+		if (fileExists(spath.c_str()))
+			return spath;
+	}
+	{
+		std::string spath = std::string("/Users/thecat/atk-reaper/plugins/libraries/atk/") + filename;
+		if (fileExists(spath.c_str()))
+			return spath;
+	}
+	return filename;
+}
+
+bool JsusFx::processImport(const std::string &import, JsusFx_SectionSources &sources) {
+	bool result = true;
+	
+	displayMsg("Importing %s", import.c_str());
+
+	const std::string filename = resolveImportFilename(import.c_str());
+
+	std::ifstream is(filename);
+
+	if (is.is_open()) {
+		result &= readSectionSources(is, sources);
+	} else {
+		displayError("Failed to open import file %s", import.c_str());
+		result &= false;
+	}
+	
+	return result;
+}
+
+bool JsusFx::readSectionSources(std::istream &input, JsusFx_SectionSources &sources) {
+    WDL_String * code = nullptr;
     char line[4096];
-
-    int state = 5;  // 0 init
-                    // 1 slider
-                    // 2 block
-                    // 3 sample
-                    // 4 unknown
-                    // 5 desc
-
-    for(int lnumber=0;;lnumber++) {
-    	bool end = input.eof();
+	
+	// are we reading the header or sections?
+	bool isHeader = true;
+	
+	std::vector<std::string> imports;
+	
+    for(int lnumber=1; ! input.eof(); lnumber++) {
+		input.getline(line, sizeof(line), '\n');
 		
-		if ( ! end ) {
-			input.getline(line, sizeof(line), '\n');
-		}
-		
-        if ( end || line[0] == '@' ) {          
-            if ( ! compileSection(state, code.Get(), lnumber) ) 
-                return false;
-
-            if ( end )
-                break;
-
+        if ( line[0] == '@' ) {
             char *b = line + 1;
             char *w = b;
             while(isspace(*w))
                 w++;
             w = 0;
-
-            code.Set("");
-            if ( ! strnicmp(b, "init", 4) ) {
-                state = 0;
-            } else if ( ! strnicmp(b, "slider", 6) ) {
-                state = 1;
-            } else if ( ! strnicmp(b, "block", 5) ) {
-                state = 2;
-            } else if ( ! strnicmp(b, "sample", 6) ) {
-                state = 3;
+			
+			// we've begun reading sections now
+			isHeader = false;
+			
+            if ( ! strnicmp(b, "init", 4) /*&& sources.init.code.GetLength() == 0*/ ) {
+                code = &sources.init.code;
+                sources.init.lineOffset = lnumber;
+            } else if ( ! strnicmp(b, "slider", 6) /*&& sources.slider.code.GetLength() == 0*/ ) {
+                code = &sources.slider.code;
+                sources.slider.lineOffset = lnumber;
+            } else if ( ! strnicmp(b, "block", 5) /*&& sources.block.code.GetLength() == 0*/ ) {
+                code = &sources.block.code;
+                sources.block.lineOffset = lnumber;
+            } else if ( ! strnicmp(b, "sample", 6) /*&& sources.sample.code.GetLength() == 0*/ ) {
+                code = &sources.sample.code;
+                sources.sample.lineOffset = lnumber;
             } else {
-                state = 4;
+                code = nullptr;
             }
             continue;
         }
         
-        if ( state < 4 ) {
+        if ( code != nullptr ) {
             int l = strlen(line);
-            
-            if ( line[l-1] == '\r' )
+			
+            if ( l > 0 && line[l-1] == '\r' )
                 line[l-1] = 0;
             
             if ( line[0] != 0 ) {
-                code.Append(line);
+                code->Append(line);
             }
-            code.Append("\n");
+            code->Append("\n");
             continue;
         }
 
-        if (state == 5) {
+        if (isHeader) {
             if ( ! strnicmp(line, "slider", 6) ) {
                 int target = 0;
                 if ( ! sscanf(line, "slider%d:", &target) )
@@ -196,7 +253,6 @@ bool JsusFx::compile(std::istream &input) {
 
                 if ( ! sliders[target].config(p) ) {
                     displayError("Incomplete slider line %d", lnumber);
-                    releaseCode();                  
                     return false;
                 }
                 continue;
@@ -208,11 +264,64 @@ bool JsusFx::compile(std::istream &input) {
                 strncpy(desc, src, 64);
                 continue;
             }
+            if ( ! strncmp(line, "import ", 5) ) {
+				char *src = line+7;
+            	while (*src && *src == ' ')
+            		src++;
+				if (*src) {
+					//imports.push_back(src);
+					processImport(src, sources);
+				}
+                continue;
+            }
         }
     }
+	
+	bool result = true;
+	
+#if 0
+    for (std::string & import : imports) {
+		result &= processImport(import, sources);
+	}
+#endif
 
-    computeSlider = 1;
-    return true;
+    return result;
+}
+
+bool JsusFx::compile(std::istream &input) {
+	releaseCode();
+	
+	// read code for the various sections inside the jsusfx script
+	
+	JsusFx_SectionSources sources;
+	if ( ! readSectionSources(input, sources) )
+		return false;
+	
+	// compile the sections
+	
+	bool result = true;
+	
+	// 0 init
+	// 1 slider
+	// 2 block
+	// 3 sample
+	
+	if (sources.init.code.GetLength() != 0)
+		result &= compileSection(0, sources.init.code.Get(), sources.init.lineOffset);
+	if (sources.slider.code.GetLength() != 0)
+		result &= compileSection(1, sources.slider.code.Get(), sources.slider.lineOffset);
+	if (sources.block.code.GetLength() != 0)
+		result &= compileSection(2, sources.block.code.Get(), sources.block.lineOffset);
+	if (sources.sample.code.GetLength() != 0)
+		result &= compileSection(3, sources.sample.code.Get(), sources.sample.lineOffset);
+	
+	if ( ! result ) {
+		releaseCode();
+	} else {
+		computeSlider = 1;
+	}
+	
+	return result;
 }
 
 void JsusFx::prepare(int sampleRate, int blockSize) {    
