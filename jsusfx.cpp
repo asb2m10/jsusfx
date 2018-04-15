@@ -139,52 +139,32 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
     return true;
 }
 
-static bool fileExists(const char * filename) {
-	std::ifstream is(filename);
-	return is.is_open();
-}
-
-static std::string resolveImportFilename(const char * filename) {
-	// relative path?
-	if (strstr(filename, "..") == filename)
-		return filename;
-	// file exists locally?
-	if (fileExists(filename))
-		return filename;
-	// file exists in a search path?
-	{
-		std::string spath = std::string("/Users/thecat/atk-reaper/plugins/libraries/") + filename;
-		if (fileExists(spath.c_str()))
-			return spath;
-	}
-	{
-		std::string spath = std::string("/Users/thecat/atk-reaper/plugins/libraries/atk/") + filename;
-		if (fileExists(spath.c_str()))
-			return spath;
-	}
-	return filename;
-}
-
-bool JsusFx::processImport(const std::string &import, JsusFx_Sections &sections) {
+bool JsusFx::processImport(JsusFxPathLibrary &pathLibrary, const std::string &path, const std::string &importPath, JsusFx_Sections &sections) {
 	bool result = true;
 	
 	//displayMsg("Importing %s", import.c_str());
+	
+	std::string resolvedPath;
+	if ( ! pathLibrary.resolveImportPath(importPath, path, resolvedPath) ) {
+		displayError("Failed to resolve import file path %s", importPath.c_str());
+		return false;
+	}
 
-	const std::string filename = resolveImportFilename(import.c_str());
+	std::istream *is = pathLibrary.open(resolvedPath);
 
-	std::ifstream is(filename);
-
-	if (is.is_open()) {
-		result &= readSections(is, sections);
+	if ( is != nullptr ) {
+		result &= readSections(pathLibrary, resolvedPath, *is, sections);
 	} else {
-		displayError("Failed to open imported file %s", import.c_str());
+		displayError("Failed to open imported file %s", importPath.c_str());
 		result &= false;
 	}
+	
+	pathLibrary.close(is);
 	
 	return result;
 }
 
-bool JsusFx::readSections(std::istream &input, JsusFx_Sections &sections) {
+bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &path, std::istream &input, JsusFx_Sections &sections) {
     WDL_String * code = nullptr;
     char line[4096];
 	
@@ -266,7 +246,7 @@ bool JsusFx::readSections(std::istream &input, JsusFx_Sections &sections) {
             	while (*src && *src == ' ')
             		src++;
 				if (*src) {
-					processImport(src, sections);
+					processImport(pathLibrary, path, src, sections);
 				}
                 continue;
             }
@@ -276,17 +256,7 @@ bool JsusFx::readSections(std::istream &input, JsusFx_Sections &sections) {
 	return true;
 }
 
-bool JsusFx::compile(std::istream &input) {
-	releaseCode();
-	
-	// read code for the various sections inside the jsusfx script
-	
-	JsusFx_Sections sections;
-	if ( ! readSections(input, sections) )
-		return false;
-	
-	// compile the sections
-	
+bool JsusFx::compileSections(JsusFx_Sections &sections) {
 	bool result = true;
 	
 	// 0 init
@@ -303,13 +273,60 @@ bool JsusFx::compile(std::istream &input) {
 	if (sections.sample.code.GetLength() != 0)
 		result &= compileSection(3, sections.sample.code.Get(), sections.sample.lineOffset);
 	
-	if ( ! result ) {
+	return result;
+}
+
+bool JsusFx::compile(std::istream &input) {
+	releaseCode();
+	
+	JsusFxPathLibrary pathLibrary;
+	std::string path;
+	
+	// read code for the various sections inside the jsusfx script
+	
+	JsusFx_Sections sections;
+	if ( ! readSections(pathLibrary, path, input, sections) )
+		return false;
+	
+	// compile the sections
+	
+	if ( ! compileSections(sections) ) {
 		releaseCode();
-	} else {
-		computeSlider = 1;
+		return false;
 	}
 	
-	return result;
+	computeSlider = 1;
+	
+	return true;
+}
+
+bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
+	releaseCode();
+	
+	std::istream *input = pathLibrary.open(path);
+	if ( input == nullptr ) {
+		displayError("Failed to open %s", path.c_str());
+		return false;
+	}
+	
+	// read code for the various sections inside the jsusfx script
+	
+	JsusFx_Sections sections;
+	if ( ! readSections(pathLibrary, path, *input, sections) )
+		return false;
+	
+	pathLibrary.close(input);
+	
+	// compile the sections
+	
+	if ( ! compileSections(sections) ) {
+		releaseCode();
+		return false;
+	}
+	
+	computeSlider = 1;
+	
+	return true;
 }
 
 void JsusFx::prepare(int sampleRate, int blockSize) {    
