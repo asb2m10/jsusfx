@@ -38,7 +38,7 @@
 
 JsusFx::JsusFx() {
     m_vm = NSEEL_VM_alloc();
-    codeInit = codeSlider = codeBlock = codeSample = NULL;
+    codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
     NSEEL_VM_SetCustomFuncThis(m_vm,this);
 
     m_string_context = new eel_string_context_state();
@@ -113,6 +113,15 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
             return false;
         }
         break;
+    case 4:
+        codeGfx = NSEEL_code_compile_ex(m_vm, code, line_offset, NSEEL_CODE_COMPILE_FLAG_COMMONFUNCS);
+        if ( codeGfx == NULL ) {
+            snprintf(errorMsg, 4096, "@gfx line %s", NSEEL_code_getcodeerror(m_vm));
+            displayError(errorMsg);
+            releaseCode();
+            return false;
+        }
+        break;
     default:
         //printf("unknown block");
         break;
@@ -132,8 +141,9 @@ bool JsusFx::compile(std::istream &input) {
                     // 1 slider
                     // 2 block
                     // 3 sample
-                    // 4 unknown
-                    // 5 desc
+                    // 4 gfx
+                    // 5 unknown
+                    // 6 desc
 
     for(int lnumber=0;;lnumber++) {
     	bool end = input.eof();
@@ -164,13 +174,15 @@ bool JsusFx::compile(std::istream &input) {
                 state = 2;
             } else if ( ! strnicmp(b, "sample", 6) ) {
                 state = 3;
-            } else {
+            } else if ( gfx != nullptr && ! strnicmp(b, "gfx", 3) ) {
                 state = 4;
+            } else {
+                state = 5;
             }
             continue;
         }
         
-        if ( state < 4 ) {
+        if ( state < 5 ) {
             int l = strlen(line);
             
             if ( line[l-1] == '\r' )
@@ -183,7 +195,7 @@ bool JsusFx::compile(std::istream &input) {
             continue;
         }
 
-        if (state == 5) {
+        if (state == 6) {
             if ( ! strnicmp(line, "slider", 6) ) {
                 int target = 0;
                 if ( ! sscanf(line, "slider%d:", &target) )
@@ -279,6 +291,13 @@ void JsusFx::process64(double **input, double **output, int size) {
     }
 }
 
+void JsusFx::draw() {
+    if ( codeGfx == NULL )
+        return;
+
+    NSEEL_code_execute(codeGfx);
+}
+
 void JsusFx::releaseCode() {
     desc[0] = 0;
     
@@ -290,8 +309,10 @@ void JsusFx::releaseCode() {
         NSEEL_code_free(codeBlock);
     if ( codeSample ) 
         NSEEL_code_free(codeSample);
+	if ( codeGfx )
+		NSEEL_code_free(codeGfx);
         
-    codeInit = codeSlider = codeBlock = codeSample = NULL;
+    codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
 
     for(int i=0;i<64;i++)
         sliders[i].exists = false;

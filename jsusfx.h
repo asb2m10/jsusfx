@@ -25,6 +25,8 @@
 
 class eel_string_context_state;
 
+struct JsusFxGfx;
+
 class Slider {
 public:
     float def, min, max, inc;
@@ -96,7 +98,7 @@ public:
 
 class JsusFx {
 protected:
-    NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample;
+    NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample, codeGfx;
     NSEEL_VMCTX m_vm;
 
     bool computeSlider;
@@ -112,6 +114,8 @@ public:
     EEL_F *ext_noinit, *ext_nodenorm, *pdc_delay, *pdc_bot_cd, *pdc_top_ch;
     EEL_F *srate, *num_ch, *blockPerSample;
     EEL_F *spl0, *spl1, *trigger;
+	
+    JsusFxGfx *gfx;
 
     JsusFx();
     virtual ~JsusFx();
@@ -121,6 +125,7 @@ public:
     void moveSlider(int idx, float value);
     void process(float **input, float **output, int size);
     void process64(double **input, double **output, int size);
+    void draw();
     
     virtual void displayMsg(const char *fmt, ...) = 0;
     virtual void displayError(const char *fmt, ...) = 0;
