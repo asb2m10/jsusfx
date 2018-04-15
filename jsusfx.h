@@ -27,6 +27,8 @@ class eel_string_context_state;
 
 struct JsusFxGfx;
 
+class WDL_FastString;
+
 class Slider {
 public:
     float def, min, max, inc;
@@ -50,7 +52,10 @@ public:
 
         char *tmp = strchr(buffer, '>');
         if ( tmp != NULL ) {
-            strncpy(desc, tmp+1, 64);
+        	tmp++;
+        	while (*tmp == ' ')
+        		tmp++;
+            strncpy(desc, tmp, 64);
             tmp = 0;
         } else {
             desc[0] = 0;
@@ -156,6 +161,8 @@ public:
     void process(float **input, float **output, int size);
     void process64(double **input, double **output, int size);
     void draw();
+	
+    const WDL_FastString * getString(int index);
     
     virtual void displayMsg(const char *fmt, ...) = 0;
     virtual void displayError(const char *fmt, ...) = 0;

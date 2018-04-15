@@ -179,6 +179,24 @@ bool JsusFx::processImport(JsusFxPathLibrary &pathLibrary, const std::string &pa
 	return result;
 }
 
+static char *trim(char *line, bool trimStart, bool trimEnd)
+{
+	if (trimStart) {
+		while (*line && isspace(*line))
+			line++;
+	}
+	
+	if (trimEnd) {
+		char *last = line;
+		while (last[0] && last[1])
+			last++;
+		for (char *b = last; isspace(*b) && b >= line; b--)
+			*b = 0;
+	}
+	
+	return line;
+}
+
 bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &path, std::istream &input, JsusFx_Sections &sections) {
     WDL_String * code = nullptr;
     char line[4096];
@@ -191,10 +209,8 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 		
         if ( line[0] == '@' ) {
             char *b = line + 1;
-            char *w = b;
-            while(isspace(*w))
-                w++;
-            w = 0;
+			
+			b = trim(b, false, true);
 			
 			// we've begun reading sections now
 			isHeader = false;
@@ -208,8 +224,13 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 section = &sections.block;
             else if ( ! strnicmp(b, "sample", 6) )
                 section = &sections.sample;
-            else if ( ! strnicmp(b, "gfx", 3) && sscanf(b+3, "%d %d", &gfx_w, &gfx_h) == 2 )
+            else if ( ! strnicmp(b, "gfx", 3) ) {
+            	if ( sscanf(b+3, "%d %d", &gfx_w, &gfx_h) != 2 ) {
+            		gfx_w = 0;
+            		gfx_h = 0;
+				}
                 section = &sections.gfx;
+			}
 			
             if ( section != nullptr ) {
 				code = &section->code;
@@ -249,19 +270,19 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                     displayError("Incomplete slider line %d", lnumber);
                     return false;
                 }
+                trim(sliders[target].desc, false, true);
                 continue;
             }
             if ( ! strncmp(line, "desc:", 5) ) {
             	char *src = line+5;
-            	while (*src && *src == ' ')
-            		src++;
+            	src = trim(src, true, true);
                 strncpy(desc, src, 64);
                 continue;
             }
             if ( ! strncmp(line, "import ", 5) ) {
 				char *src = line+7;
-            	while (*src && *src == ' ')
-            		src++;
+				src = trim(src, true, true);
+					
 				if (*src) {
 					processImport(pathLibrary, path, src, sections);
 				}
@@ -421,6 +442,13 @@ void JsusFx::draw() {
         return;
 
     NSEEL_code_execute(codeGfx);
+}
+
+const WDL_FastString * JsusFx::getString(const int index) {
+	void * opaque = this;
+	WDL_FastString * result = nullptr;
+	EEL_STRING_GET_FOR_INDEX(index, &result);
+	return result;
 }
 
 void JsusFx::releaseCode() {
