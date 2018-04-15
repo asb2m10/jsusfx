@@ -61,12 +61,17 @@ JsusFx::JsusFx() {
     computeSlider = false;
     normalizeSliders = 0;
     srate = 0;
+	
+	gfx = nullptr;
+    gfx_w = 0;
+    gfx_h = 0;
 
     AUTOVAR(spl0);
     AUTOVAR(spl1);
     AUTOVAR(srate);
     AUTOVARV(num_ch, 2);
     AUTOVAR(blockPerSample);
+    AUTOVAR(samplesblock);
     AUTOVARV(tempo, 120);
     AUTOVARV(play_state, 1);
 
@@ -203,7 +208,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 section = &sections.block;
             else if ( ! strnicmp(b, "sample", 6) )
                 section = &sections.sample;
-            else if ( ! strnicmp(b, "gfx", 3) )
+            else if ( ! strnicmp(b, "gfx", 3) && sscanf(b+3, "%d %d", &gfx_w, &gfx_h) == 2 )
                 section = &sections.gfx;
 			
             if ( section != nullptr ) {
@@ -347,6 +352,7 @@ bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 void JsusFx::prepare(int sampleRate, int blockSize) {    
     *srate = (double) sampleRate;
     *blockPerSample = blockSize;
+    *samplesblock = blockSize;
     NSEEL_code_execute(codeInit);
 }
 
@@ -361,7 +367,7 @@ void JsusFx::moveSlider(int idx, float value) {
     }
 
     if ( sliders[idx].inc != 0 ) {
-        int tmp = value / sliders[idx].inc;
+        int tmp = value / sliders[idx].inc + .5f;
         value = sliders[idx].inc * tmp;
     }
 
@@ -378,6 +384,7 @@ void JsusFx::process(float **input, float **output, int size) {
     }
 
     *blockPerSample = size;
+    *samplesblock = size;
     NSEEL_code_execute(codeBlock);
     for(int i=0;i<size;i++) {
         *spl0 = input[0][i];
@@ -398,6 +405,7 @@ void JsusFx::process64(double **input, double **output, int size) {
     }
 
     *blockPerSample = size;
+    *samplesblock = size;
     NSEEL_code_execute(codeBlock);
     for(int i=0;i<size;i++) {
         *spl0 = input[0][i];
