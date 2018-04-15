@@ -81,11 +81,19 @@ public:
      * Return true if the value has changed
      */
     bool setValue(float v) {
-        if ( v < min ) {
-            v = min;
-        } else if ( v > max ) {
-            v = max;
-        }
+    	if ( min < max ) {
+			if ( v < min ) {
+				v = min;
+			} else if ( v > max ) {
+				v = max;
+			}
+		} else {
+			if ( v < max ) {
+				v = max;
+			} else if ( v > min ) {
+				v = min;
+			}
+		}
         if ( v == *owner )
             return false;
         *owner = v;
