@@ -52,9 +52,6 @@ public:
         if ( tmp != NULL ) {
             strncpy(desc, tmp+1, 64);
             tmp = 0;
-
-            int l = strlen(desc);
-            desc[l-1] = 0;
         } else {
             desc[0] = 0;
         }
@@ -94,6 +91,10 @@ public:
         *owner = v;
         return true;
     }
+	
+    float getValue() const {
+    	return *owner;
+	}
 };
 
 struct JsusFx_Sections;
