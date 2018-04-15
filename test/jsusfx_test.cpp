@@ -9,6 +9,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define TEST_GFX 1
+
+#if TEST_GFX
+	#include "../jsusfx_gfx.h"
+#endif
+
 class JsusFxTest : public JsusFx {
 public:
     void displayMsg(const char *fmt, ...) {
@@ -48,6 +54,12 @@ void test_script(const char *path) {
         
     fx = new JsusFxTest();
 	
+#if TEST_GFX
+	JsusFxGfx_Log gfx;
+	fx->gfx = &gfx;
+	gfx.init();
+#endif
+	
 	std::ifstream is(path);
     
     if (!is.is_open()) {
@@ -58,6 +70,11 @@ void test_script(const char *path) {
         fx->prepare(44100, 64);
         fx->process(in, out, 64);
         fx->dumpvars();
+		
+	#if TEST_GFX
+        fx->draw();
+	#endif
+		
     	delete fx;
     }
 }
@@ -65,7 +82,11 @@ extern "C" void test_jsfx();
 
 void test_jsfx() {
     JsusFx::init();
-    test_script("../pd/gain.jsfx");   
+#if TEST_GFX
+    test_script("../scripts/liteon/3bandpeakfilter");
+#else
+    test_script("../pd/gain.jsfx");
+#endif
 }
 
 int main(int argc, char *argv[]) {
