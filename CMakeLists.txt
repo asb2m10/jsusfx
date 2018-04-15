@@ -23,6 +23,8 @@ add_library(jsusfx ${sources} ${headers} WDL/eel2/asm-nseel-x64-macho.o)
 
 target_compile_definitions(jsusfx PUBLIC WDL_FFT_REALSIZE=8)
 
+target_include_directories(jsusfx PUBLIC "${PROJECT_SOURCE_DIR}")
+
 # -- JSUSFX test app --
 
 add_executable(jsusfx_test test/jsusfx_test.cpp)
