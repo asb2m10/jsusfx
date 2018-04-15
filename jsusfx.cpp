@@ -41,16 +41,16 @@
 #include <string>
 #include <vector>
 
-struct JsusFx_SectionSource {
+struct JsusFx_Section {
 	WDL_String code;
 	int lineOffset;
 };
 
-struct JsusFx_SectionSources {
-	JsusFx_SectionSource init;
-	JsusFx_SectionSource slider;
-	JsusFx_SectionSource block;
-	JsusFx_SectionSource sample;
+struct JsusFx_Sections {
+	JsusFx_Section init;
+	JsusFx_Section slider;
+	JsusFx_Section block;
+	JsusFx_Section sample;
 };
 
 JsusFx::JsusFx() {
@@ -168,7 +168,7 @@ static std::string resolveImportFilename(const char * filename) {
 	return filename;
 }
 
-bool JsusFx::processImport(const std::string &import, JsusFx_SectionSources &sources) {
+bool JsusFx::processImport(const std::string &import, JsusFx_Sections &sections) {
 	bool result = true;
 	
 	displayMsg("Importing %s", import.c_str());
@@ -178,7 +178,7 @@ bool JsusFx::processImport(const std::string &import, JsusFx_SectionSources &sou
 	std::ifstream is(filename);
 
 	if (is.is_open()) {
-		result &= readSectionSources(is, sources);
+		result &= readSections(is, sections);
 	} else {
 		displayError("Failed to open import file %s", import.c_str());
 		result &= false;
@@ -187,14 +187,12 @@ bool JsusFx::processImport(const std::string &import, JsusFx_SectionSources &sou
 	return result;
 }
 
-bool JsusFx::readSectionSources(std::istream &input, JsusFx_SectionSources &sources) {
+bool JsusFx::readSections(std::istream &input, JsusFx_Sections &sections) {
     WDL_String * code = nullptr;
     char line[4096];
 	
 	// are we reading the header or sections?
 	bool isHeader = true;
-	
-	std::vector<std::string> imports;
 	
     for(int lnumber=1; ! input.eof(); lnumber++) {
 		input.getline(line, sizeof(line), '\n');
@@ -209,21 +207,23 @@ bool JsusFx::readSectionSources(std::istream &input, JsusFx_SectionSources &sour
 			// we've begun reading sections now
 			isHeader = false;
 			
-            if ( ! strnicmp(b, "init", 4) /*&& sources.init.code.GetLength() == 0*/ ) {
-                code = &sources.init.code;
-                sources.init.lineOffset = lnumber;
-            } else if ( ! strnicmp(b, "slider", 6) /*&& sources.slider.code.GetLength() == 0*/ ) {
-                code = &sources.slider.code;
-                sources.slider.lineOffset = lnumber;
-            } else if ( ! strnicmp(b, "block", 5) /*&& sources.block.code.GetLength() == 0*/ ) {
-                code = &sources.block.code;
-                sources.block.lineOffset = lnumber;
-            } else if ( ! strnicmp(b, "sample", 6) /*&& sources.sample.code.GetLength() == 0*/ ) {
-                code = &sources.sample.code;
-                sources.sample.lineOffset = lnumber;
-            } else {
-                code = nullptr;
-            }
+			JsusFx_Section *section = nullptr;
+            if ( ! strnicmp(b, "init", 4) )
+                section = &sections.init;
+            else if ( ! strnicmp(b, "slider", 6) )
+                section = &sections.slider;
+            else if ( ! strnicmp(b, "block", 5) )
+                section = &sections.block;
+            else if ( ! strnicmp(b, "sample", 6) )
+                section = &sections.sample;
+			
+            if ( section != nullptr ) {
+				code = &section->code;
+				section->lineOffset = lnumber;
+			} else {
+				code = nullptr;
+			}
+			
             continue;
         }
         
@@ -269,23 +269,14 @@ bool JsusFx::readSectionSources(std::istream &input, JsusFx_SectionSources &sour
             	while (*src && *src == ' ')
             		src++;
 				if (*src) {
-					//imports.push_back(src);
-					processImport(src, sources);
+					processImport(src, sections);
 				}
                 continue;
             }
         }
     }
 	
-	bool result = true;
-	
-#if 0
-    for (std::string & import : imports) {
-		result &= processImport(import, sources);
-	}
-#endif
-
-    return result;
+	return true;
 }
 
 bool JsusFx::compile(std::istream &input) {
@@ -293,8 +284,8 @@ bool JsusFx::compile(std::istream &input) {
 	
 	// read code for the various sections inside the jsusfx script
 	
-	JsusFx_SectionSources sources;
-	if ( ! readSectionSources(input, sources) )
+	JsusFx_Sections sections;
+	if ( ! readSections(input, sections) )
 		return false;
 	
 	// compile the sections
@@ -306,14 +297,14 @@ bool JsusFx::compile(std::istream &input) {
 	// 2 block
 	// 3 sample
 	
-	if (sources.init.code.GetLength() != 0)
-		result &= compileSection(0, sources.init.code.Get(), sources.init.lineOffset);
-	if (sources.slider.code.GetLength() != 0)
-		result &= compileSection(1, sources.slider.code.Get(), sources.slider.lineOffset);
-	if (sources.block.code.GetLength() != 0)
-		result &= compileSection(2, sources.block.code.Get(), sources.block.lineOffset);
-	if (sources.sample.code.GetLength() != 0)
-		result &= compileSection(3, sources.sample.code.Get(), sources.sample.lineOffset);
+	if (sections.init.code.GetLength() != 0)
+		result &= compileSection(0, sections.init.code.Get(), sections.init.lineOffset);
+	if (sections.slider.code.GetLength() != 0)
+		result &= compileSection(1, sections.slider.code.Get(), sections.slider.lineOffset);
+	if (sections.block.code.GetLength() != 0)
+		result &= compileSection(2, sections.block.code.Get(), sections.block.lineOffset);
+	if (sections.sample.code.GetLength() != 0)
+		result &= compileSection(3, sections.sample.code.Get(), sections.sample.lineOffset);
 	
 	if ( ! result ) {
 		releaseCode();
