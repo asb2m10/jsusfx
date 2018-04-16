@@ -23,6 +23,10 @@
 #include "WDL/eel2/ns-eel.h"
 #include "WDL/eel2/ns-eel-int.h"
 
+#ifndef nullptr
+	#define nullptr NULL
+#endif
+
 class eel_string_context_state;
 
 struct JsusFxGfx;

@@ -1,9 +1,9 @@
 #DEBUG_OPT=-g
-OBJS=jsusfx_pd.o ../jsusfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o 
+OBJS=jsusfx_pd.o ../jsusfx.o ../jsusfx_gfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o 
 OBJS2=
-PD_INCLUDE = $(PD_PATH)/include/pd
+PD_INCLUDE = $(PD_PATH)
 
-ALL_CFLAGS = -I"$(PD_INCLUDE)" -DWDL_FFT_REALSIZE=8 $(DEBUG_OPT)
+ALL_CFLAGS = -I"$(PD_INCLUDE)" -DWDL_FFT_REALSIZE=8 $(DEBUG_OPT) 
 ALL_LDFLAGS = $(DEBUG_OPT)
 
 UNAME_S := $(shell uname -s)
@@ -12,7 +12,7 @@ ifeq ($(UNAME_S),Darwin)
 	## OS X
 	EXTENSION=pd_darwin
 	OS = macosx
-	PD_PATH = /Applications/Pd-extended.app/Contents/Resources
+	PD_PATH = /Applications/Pd.app/Contents/Resources/src
 	OPT_CFLAGS = -ftree-vectorize -fast
 	FAT_FLAGS = -arch i386 -arch x86_64 -mmacosx-version-min=10.5
 	ALL_CFLAGS += $(FAT_FLAGS) -fPIC $(OPT_CFLAGS)
