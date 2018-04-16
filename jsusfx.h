@@ -148,7 +148,7 @@ public:
     
     EEL_F *tempo, *play_state, *play_position, *beat_position, *ts_num, *ts_denom;
     EEL_F *ext_noinit, *ext_nodenorm, *pdc_delay, *pdc_bot_cd, *pdc_top_ch;
-    EEL_F *srate, *num_ch, *blockPerSample, *samplesblock;
+    EEL_F *srate, *num_ch, *samplesblock;
     EEL_F *spl0, *spl1, *trigger;
 	
     JsusFxGfx *gfx;

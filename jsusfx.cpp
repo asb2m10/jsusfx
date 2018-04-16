@@ -70,7 +70,6 @@ JsusFx::JsusFx() {
     AUTOVAR(spl1);
     AUTOVAR(srate);
     AUTOVARV(num_ch, 2);
-    AUTOVAR(blockPerSample);
     AUTOVAR(samplesblock);
     AUTOVARV(tempo, 120);
     AUTOVARV(play_state, 1);
@@ -372,7 +371,6 @@ bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 
 void JsusFx::prepare(int sampleRate, int blockSize) {    
     *srate = (double) sampleRate;
-    *blockPerSample = blockSize;
     *samplesblock = blockSize;
     NSEEL_code_execute(codeInit);
 }
@@ -404,7 +402,6 @@ void JsusFx::process(float **input, float **output, int size) {
         computeSlider = false;      
     }
 
-    *blockPerSample = size;
     *samplesblock = size;
     NSEEL_code_execute(codeBlock);
     for(int i=0;i<size;i++) {
@@ -425,7 +422,6 @@ void JsusFx::process64(double **input, double **output, int size) {
         computeSlider = false;
     }
 
-    *blockPerSample = size;
     *samplesblock = size;
     NSEEL_code_execute(codeBlock);
     for(int i=0;i<size;i++) {
