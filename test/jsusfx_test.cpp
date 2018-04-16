@@ -9,6 +9,50 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define ENABLE_INOUT_TEST 1
+
+#define TEST_GFX 1
+
+#if ENABLE_INOUT_TEST
+	#include <math.h>
+#endif
+
+#if TEST_GFX
+	#include "../jsusfx_gfx.h"
+#endif
+
+
+
+struct JsusFxPathLibraryTest : JsusFxPathLibrary {
+	static bool fileExists(const std::string &filename) {
+		std::ifstream is(filename);
+		return is.is_open();
+	}
+
+	virtual bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) override {
+		const size_t pos = parentPath.rfind('/', '\\');
+		if (pos != std::string::npos)
+			resolvedPath = parentPath.substr(0, pos + 1);
+		resolvedPath += importPath;
+		return fileExists(resolvedPath);
+	}
+	
+	virtual std::istream* open(const std::string &path) override {
+		std::ifstream *stream = new std::ifstream(path);
+		if ( stream->is_open() == false ) {
+			delete stream;
+			stream = nullptr;
+		}
+		
+		return stream;
+	}
+	
+	virtual void close(std::istream *&stream) override {
+		delete stream;
+		stream = nullptr;
+	}
+};
+
 class JsusFxTest : public JsusFx {
 public:
     void displayMsg(const char *fmt, ...) {
@@ -48,27 +92,66 @@ void test_script(const char *path) {
         
     fx = new JsusFxTest();
 	
-	std::ifstream is(path);
-    
-    if (!is.is_open()) {
-        printf("failed to open jsfx file (%s)\n", path);
-    } else {
-    	printf("compile %d: %s\n", fx->compile(is), path);
-        
-        fx->prepare(44100, 64);
-        fx->process(in, out, 64);
-        fx->dumpvars();
-    	delete fx;
-    }
+#if TEST_GFX
+	JsusFxGfx_Log gfx;
+	fx->gfx = &gfx;
+	gfx.init(fx->m_vm);
+#endif
+	
+	JsusFxPathLibraryTest pathLibrary;
+	printf("compile %d: %s\n", fx->compile(pathLibrary, path), path);
+	
+	printf("desc: %s\n", fx->desc);
+
+#if ENABLE_INOUT_TEST
+	for (int i = 0; i < 64; ++i) {
+		in[0][i] = sin(i * 2.0 * M_PI / 63.0);
+		in[1][i] = cos(i * 2.0 * M_PI / 63.0);
+	}
+	
+	fx->moveSlider(1, 0.5);
+	fx->moveSlider(2, 0.1);
+#endif
+
+	fx->prepare(44100, 64);
+	fx->process(in, out, 64);
+
+#if ENABLE_INOUT_TEST
+	for (int i = 0; i < 64; ++i) {
+		printf("(%.3f, %.3f) -> (%.3f, %.3f)\n",
+			in[0][i],
+			in[1][i],
+			out[0][i],
+			out[1][i]);
+	}
+#endif
+
+	fx->dumpvars();
+		
+	#if TEST_GFX
+        fx->draw();
+	#endif
+		
+	delete fx;
 }
 extern "C" void test_jsfx();
 
 void test_jsfx() {
     JsusFx::init();
-    test_script("../pd/gain.jsfx");   
+#if TEST_GFX
+    test_script("../scripts/liteon/3bandpeakfilter");
+#else
+    test_script("../pd/gain.jsfx");
+#endif
 }
 
 int main(int argc, char *argv[]) {
-    test_jsfx();	
+    if (argc >= 2) {
+        const char *path = argv[1];
+        JsusFx::init();
+        test_script(path);
+    } else {
+        test_jsfx();	
+    }
 	return 0;
 }
