@@ -230,7 +230,7 @@ public:
     void process64(double **input, double **output, int size);
     void draw();
 	
-    const WDL_FastString * getString(int index);
+    const char * getString(int index, WDL_FastString ** fs);
     
     virtual void displayMsg(const char *fmt, ...) = 0;
     virtual void displayError(const char *fmt, ...) = 0;

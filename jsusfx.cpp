@@ -494,11 +494,9 @@ void JsusFx::draw() {
     NSEEL_code_execute(codeGfx);
 }
 
-const WDL_FastString * JsusFx::getString(const int index) {
+const char * JsusFx::getString(const int index, WDL_FastString ** fs) {
 	void * opaque = this;
-	WDL_FastString * result = nullptr;
-	EEL_STRING_GET_FOR_INDEX(index, &result);
-	return result;
+	return EEL_STRING_GET_FOR_INDEX(index, fs);
 }
 
 void JsusFx::releaseCode() {
