@@ -60,7 +60,70 @@ public:
         } else {
             desc[0] = 0;
         }
-        
+		
+	#if 1
+		tmp = buffer;
+		
+		while (*tmp && isspace(*tmp))
+			tmp++;
+		
+        if ( !sscanf(tmp, "%f", &def) )
+            return false;
+		
+		while (*tmp && *tmp != '<')
+			tmp++;
+		
+		while (*tmp && isspace(*tmp))
+			tmp++;
+		
+		if (*tmp == '<')
+		{
+			tmp++;
+			
+			while (*tmp && isspace(*tmp))
+				tmp++;
+			
+			if ( !sscanf(tmp, "%f", &min) )
+				return false;
+		
+			while (*tmp && *tmp != ',')
+				tmp++;
+			
+			if (*tmp == ',')
+			{
+				tmp++;
+				
+				while (*tmp && isspace(*tmp))
+					tmp++;
+				
+				if ( !sscanf(tmp, "%f", &max) )
+            		return false;
+				
+				while (*tmp && *tmp != ',' && *tmp != '{')
+					tmp++;
+				
+				if (*tmp == ',')
+				{
+					tmp++;
+		
+					while (*tmp && isspace(*tmp))
+						tmp++;
+					
+					if (*tmp == '{')
+					{
+						printf("found list!\n");
+						
+						inc = 1;
+					}
+					else
+					{
+						if ( !sscanf(tmp, "%f", &inc) )
+							return false;
+					}
+				}
+			}
+		}
+	#else
         tmp = strtok(buffer, "<,");
         if ( !sscanf(tmp, "%f", &def) )
             return false;
@@ -76,6 +139,7 @@ public:
         tmp = strtok(NULL, "<,");
         if ( tmp != NULL )
             sscanf(tmp, "%f", &inc);
+	#endif
 
         *owner = def;
         exists = true;
