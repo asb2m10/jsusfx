@@ -261,11 +261,25 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 int target = 0;
                 if ( ! sscanf(line, "slider%d:", &target) )
                     continue;
-                if ( target >= 64 ) 
+                if ( target < 0 || target >= 64 )
                     continue;
-                char *p = line+8;
-                if ( *p == ':' ) 
-                    p++;
+				
+                char *p = line+7;
+                while ( *p && *p != ':' )
+                	p++;
+                if ( *p != ':' )
+                	continue;
+				p++;
+					
+				if ( isalpha(*p) ) {
+					// extended syntax of format "slider1:variable_name=5<0,10,1>slider description"
+					// skip the variable_name= part here for now until we actually need it
+					while ( *p && *p != '=' )
+						p++;
+					if ( *p != '=' )
+						continue;
+					p++;
+				}
 
                 if ( ! sliders[target].config(p) ) {
                     displayError("Incomplete slider line %d", lnumber);
