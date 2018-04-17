@@ -4,7 +4,7 @@ jsusfx is an opensource implementation of the [JSFX](http://www.reaper.fm/sdk/js
 scripting language that was created by [Cockos](http://www.cockos.com/jesusonic/) and
 is made available with [Reaper](http://www.reaper.fm).
 
-While the original JSFX scripting language can do alot of things in Reaper, this 
+While the original JSFX scripting language can do a lot of things in Reaper, this 
 implementation is focusing on providing dsp scripting processing for other hosts
 (like pure-data and Max/MSP) and platforms.
 

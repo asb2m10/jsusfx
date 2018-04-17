@@ -95,7 +95,7 @@ void test_script(const char *path) {
 #if TEST_GFX
 	JsusFxGfx_Log gfx;
 	fx->gfx = &gfx;
-	gfx.init();
+	gfx.init(fx->m_vm);
 #endif
 	
 	JsusFxPathLibraryTest pathLibrary;

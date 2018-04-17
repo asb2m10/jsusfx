@@ -23,72 +23,72 @@
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_lineto(void *opaque, EEL_F *xpos, EEL_F *ypos, EEL_F *useaa)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_lineto(*xpos, *ypos, *useaa);
   return xpos;
 }
 static EEL_F * NSEEL_CGEN_CALL _gfx_lineto2(void *opaque, EEL_F *xpos, EEL_F *ypos)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_lineto(*xpos, *ypos, 1.0f);
   return xpos;
 }
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_rectto(void *opaque, EEL_F *xpos, EEL_F *ypos)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_rectto(*xpos, *ypos);
   return xpos;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_line(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_line((int)np,parms);
   return 0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_rect(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_rect((int)np,parms);
   return 0.0;
 }
 static EEL_F NSEEL_CGEN_CALL _gfx_roundrect(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_roundrect((int)np,parms);
   return 0.0;
 }
 static EEL_F NSEEL_CGEN_CALL _gfx_arc(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_arc((int)np,parms);
   return 0.0;
 }
 static EEL_F NSEEL_CGEN_CALL _gfx_set(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_set((int)np,parms);
   return 0.0;
 }
 static EEL_F NSEEL_CGEN_CALL _gfx_gradrect(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_grad_or_muladd_rect(0,(int)np,parms);
   return 0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_muladdrect(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_grad_or_muladd_rect(1,(int)np,parms);
   return 0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_deltablit(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_blitext2((int)np,parms,1);
   return 0.0;
 }
@@ -96,7 +96,7 @@ static EEL_F NSEEL_CGEN_CALL _gfx_deltablit(void *opaque, INT_PTR np, EEL_F **pa
 static EEL_F NSEEL_CGEN_CALL _gfx_transformblit(void *opaque, INT_PTR np, EEL_F **parms)
 {
 #if 0 // todo
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx)
   {
 #ifndef EEL_LICE_NO_RAM
@@ -133,7 +133,7 @@ static EEL_F NSEEL_CGEN_CALL _gfx_transformblit(void *opaque, INT_PTR np, EEL_F 
 
 static EEL_F NSEEL_CGEN_CALL _gfx_circle(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   bool aa = true, fill = false;
   if (np>3) fill = parms[3][0] > 0.5;
   if (np>4) aa = parms[4][0] > 0.5;
@@ -143,28 +143,28 @@ static EEL_F NSEEL_CGEN_CALL _gfx_circle(void *opaque, INT_PTR np, EEL_F **parms
 
 static EEL_F NSEEL_CGEN_CALL _gfx_triangle(void* opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_triangle(parms, np);
   return 0.0;
 }
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_drawnumber(void *opaque, EEL_F *n, EEL_F *nd)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_drawnumber(*n, *nd);
   return n;
 }
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_drawchar(void *opaque, EEL_F *n)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_drawchar(*n);
   return n;
 }
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_measurestr(void *opaque, EEL_F *str, EEL_F *xOut, EEL_F *yOut)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx)
   {
     EEL_F *p[3]={str,xOut,yOut};
@@ -174,7 +174,7 @@ static EEL_F * NSEEL_CGEN_CALL _gfx_measurestr(void *opaque, EEL_F *str, EEL_F *
 }
 static EEL_F * NSEEL_CGEN_CALL _gfx_measurechar(void *opaque, EEL_F *str, EEL_F *xOut, EEL_F *yOut)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx)
   {
     EEL_F *p[3]={str,xOut,yOut};
@@ -185,13 +185,13 @@ static EEL_F * NSEEL_CGEN_CALL _gfx_measurechar(void *opaque, EEL_F *str, EEL_F 
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_drawstr(void *opaque, EEL_F *n)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_drawstr(opaque,&n,1,0);
   return n;
 }
 static EEL_F NSEEL_CGEN_CALL _gfx_printf(void *opaque, INT_PTR nparms, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx && nparms>0)
   {
     EEL_F v= **parms;
@@ -203,42 +203,42 @@ static EEL_F NSEEL_CGEN_CALL _gfx_printf(void *opaque, INT_PTR nparms, EEL_F **p
 
 static EEL_F NSEEL_CGEN_CALL _gfx_showmenu(void* opaque, INT_PTR nparms, EEL_F **parms)
 {
-  auto* ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx* ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) return ctx->gfx_showmenu(opaque, parms, (int)nparms);
   return 0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_setcursor(void* opaque,  INT_PTR nparms, EEL_F **parms)
 {
-  auto* ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx* ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) return ctx->gfx_setcursor(opaque, parms, (int)nparms);
   return 0.0;
 }
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_setpixel(void *opaque, EEL_F *r, EEL_F *g, EEL_F *b)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_setpixel(*r, *g, *b);
   return r;
 }
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_getpixel(void *opaque, EEL_F *r, EEL_F *g, EEL_F *b)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_getpixel(r, g, b);
   return r;
 }
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_blit(void *opaque, EEL_F *img, EEL_F *scale, EEL_F *rotate)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_blit(*img,*scale,*rotate);
   return img;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_setfont(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) return ctx->gfx_setfont(opaque,(int)np,parms);
   return 0.0;
 }
@@ -246,7 +246,7 @@ static EEL_F NSEEL_CGEN_CALL _gfx_setfont(void *opaque, INT_PTR np, EEL_F **parm
 static EEL_F NSEEL_CGEN_CALL _gfx_getfont(void *opaque, INT_PTR np, EEL_F **parms)
 {
 #if 0 // todo
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx)
   {
     const int idx=ctx->m_gfx_font_active;
@@ -272,7 +272,7 @@ static EEL_F NSEEL_CGEN_CALL _gfx_getfont(void *opaque, INT_PTR np, EEL_F **parm
 
 static EEL_F NSEEL_CGEN_CALL _gfx_blit2(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx && np>=3)
   {
     ctx->gfx_blitext2((int)np,parms,0);
@@ -284,7 +284,7 @@ static EEL_F NSEEL_CGEN_CALL _gfx_blit2(void *opaque, INT_PTR np, EEL_F **parms)
 static EEL_F * NSEEL_CGEN_CALL _gfx_blitext(void *opaque, EEL_F *img, EEL_F *coordidx, EEL_F *rotate)
 {
 #if 0 // todo
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx)
   {
 #ifndef EEL_LICE_NO_RAM
@@ -318,28 +318,28 @@ static EEL_F * NSEEL_CGEN_CALL _gfx_blitext(void *opaque, EEL_F *img, EEL_F *coo
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_blurto(void *opaque, EEL_F *x, EEL_F *y)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_blurto(*x,*y);
   return x;
 }
 
 static EEL_F * NSEEL_CGEN_CALL _gfx_getimgdim(void *opaque, EEL_F *img, EEL_F *w, EEL_F *h)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) ctx->gfx_getimgdim(*img,w,h);
   return img;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_loadimg(void *opaque, EEL_F *img, EEL_F *fr)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) return ctx->gfx_loadimg(opaque,(int)*img,*fr);
   return 0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_setimgdim(void *opaque, EEL_F *img, EEL_F *w, EEL_F *h)
 {
-  auto *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
   if (ctx) return ctx->gfx_setimgdim((int)*img,w,h);
   return 0.0;
 }

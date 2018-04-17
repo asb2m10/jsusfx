@@ -3,7 +3,7 @@ LFLAGS=-fPIC
 #PORTABLE=true
 CXXFLAGS=-fPIC -DWDL_FFT_REALSIZE=8
 
-OBJS=../jsusfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o jsusfx_test.o
+OBJS=../jsusfx.o ../jsusfx_gfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o jsusfx_test.o
 OBJS2=
 
 UNAME_S := $(shell uname -s)

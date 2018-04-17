@@ -23,6 +23,10 @@
 #include "WDL/eel2/ns-eel.h"
 #include "WDL/eel2/ns-eel-int.h"
 
+#ifndef nullptr
+	#define nullptr NULL
+#endif
+
 class eel_string_context_state;
 
 struct JsusFxGfx;
@@ -208,7 +212,7 @@ public:
     
     EEL_F *tempo, *play_state, *play_position, *beat_position, *ts_num, *ts_denom;
     EEL_F *ext_noinit, *ext_nodenorm, *pdc_delay, *pdc_bot_cd, *pdc_top_ch;
-    EEL_F *srate, *num_ch, *blockPerSample, *samplesblock;
+    EEL_F *srate, *num_ch, *samplesblock;
     EEL_F *spl0, *spl1, *trigger;
 	
     JsusFxGfx *gfx;
