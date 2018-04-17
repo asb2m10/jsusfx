@@ -41,6 +41,8 @@ struct JsusFxGfx {
 	
 	void init(NSEEL_VMCTX vm);
 	
+	virtual bool handleFile(int index, const char *filename) { return true; }
+	
 	virtual void setup(const int w, const int h) { };
 	
 	virtual void gfx_line(int np, EEL_F ** params) { }
@@ -78,12 +80,14 @@ struct JsusFxGfx {
 
 	virtual void gfx_blit(EEL_F img, EEL_F scale, EEL_F rotate) { }
 	virtual void gfx_blitext(EEL_F img, EEL_F * coords, EEL_F angle) { }
-	virtual void gfx_blitext2(int mp, EEL_F ** params, int mode) { } // 0=blit, 1=deltablit
+	virtual void gfx_blitext2(int mp, EEL_F ** params, int blitmode) { } // 0=blit, 1=deltablit
 };
 
 #define GFXLOG printf("%s called!\n", __FUNCTION__)
 
 struct JsusFxGfx_Log : JsusFxGfx {
+	virtual bool handleFile(int index, const char *filename) override { GFXLOG; return true; }
+	
 	virtual void gfx_line(int np, EEL_F ** params) override { GFXLOG; }
 	virtual void gfx_rect(int np, EEL_F ** params) override { GFXLOG; }
 	virtual void gfx_circle(EEL_F x, EEL_F y, EEL_F radius, bool fill, bool aa) override { GFXLOG; }
@@ -105,7 +109,7 @@ struct JsusFxGfx_Log : JsusFxGfx {
 	virtual void gfx_setpixel(EEL_F r, EEL_F g, EEL_F b) override { GFXLOG; }
 	virtual void gfx_getpixel(EEL_F * r, EEL_F * g, EEL_F * b) override { GFXLOG; }
 
-	virtual EEL_F gfx_loadimg(void * opaque, int img, EEL_F loadFrom) override { GFXLOG; return 0.f; }
+	virtual EEL_F gfx_loadimg(void * opaque, int img, EEL_F loadFrom) override { GFXLOG; return -1.f; }
 	virtual void gfx_getimgdim(EEL_F img, EEL_F * w, EEL_F * h) override { GFXLOG; }
 	virtual EEL_F gfx_setimgdim(int img, EEL_F * w, EEL_F * h) override { GFXLOG; return 0.f; }
 	
@@ -119,7 +123,7 @@ struct JsusFxGfx_Log : JsusFxGfx {
 
 	virtual void gfx_blit(EEL_F img, EEL_F scale, EEL_F rotate) override { GFXLOG; }
 	virtual void gfx_blitext(EEL_F img, EEL_F * coords, EEL_F angle) override { GFXLOG; }
-	virtual void gfx_blitext2(int mp, EEL_F ** params, int mode) override { GFXLOG; }
+	virtual void gfx_blitext2(int mp, EEL_F ** params, int blitmode) override { GFXLOG; }
 };
 
 #undef GFXLOG

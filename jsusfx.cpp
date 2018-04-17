@@ -15,6 +15,7 @@
 */
 
 #include "jsusfx.h"
+#include "jsusfx_gfx.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -278,6 +279,41 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
             	src = trim(src, true, true);
                 strncpy(desc, src, 64);
                 continue;
+            }
+            if ( ! strnicmp(line, "filename", 8) ) {
+				
+            	// filename:0,filename.wav
+				
+            	char *src = line+8;
+				
+            	src = trim(src, true, false);
+				
+            	if ( *src != ':' )
+            		return false;
+				src++;
+				
+				src = trim(src, true, false);
+				
+				int index;
+				if ( sscanf(src, "%d", &index) != 1 )
+					return false;
+				while ( isdigit(*src) )
+					src++;
+				
+				src = trim(src, true, false);
+				
+				if ( *src != ',' )
+					return false;
+				src++;
+				
+				src = trim(src, true, true);
+				
+				std::string resolvedPath;
+				if ( pathLibrary.resolveImportPath(src, path, resolvedPath) ) {
+					if ( gfx != nullptr && ! gfx->handleFile(index, resolvedPath.c_str() ) ) {
+						return false;
+					}
+				}
             }
             if ( ! strncmp(line, "import ", 5) ) {
 				char *src = line+7;
