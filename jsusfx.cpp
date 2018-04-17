@@ -136,6 +136,10 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         }
         break;
     case 4:
+        // ignore block if there is no gfx implemented
+        if ( gfx == NULL )
+            return true;
+
         codeGfx = NSEEL_code_compile_ex(m_vm, code, line_offset, NSEEL_CODE_COMPILE_FLAG_COMMONFUNCS);
         if ( codeGfx == NULL ) {
             snprintf(errorMsg, 4096, "@gfx line %s", NSEEL_code_getcodeerror(m_vm));
