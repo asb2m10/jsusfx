@@ -19,6 +19,7 @@
 #include <string.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "WDL/eel2/ns-eel.h"
 #include "WDL/eel2/ns-eel-int.h"
@@ -40,12 +41,37 @@ public:
     char desc[64];
     EEL_F *owner;
     bool exists;
+	
+    std::vector<std::string> enumNames;
+    bool isEnum;
 
     Slider() {
         def = min = max = inc = 0;
         exists = false;
         desc[0] = 0;
+        isEnum = false;
     }
+
+	static const char *skipWhite(const char *text)
+	{
+		while ( *text && isspace(*text) )
+			text++;
+		
+		return text;
+	}
+	
+    static const char *nextToken(const char *text)
+    {
+    	while ( *text && *text != ',' && *text != '=' && *text != '<' && *text != '>' && *text != '{' && *text != '}' )
+    		text++;
+
+    	return text;
+    }
+	
+    static void log(const char *text)
+    {
+    	printf("%s\n", text);
+	}
 
     bool config(char *param) {
         char buffer[1024];
@@ -54,7 +80,7 @@ public:
         def = min = max = inc = 0;
         exists = false;     
 
-        char *tmp = strchr(buffer, '>');
+        const char *tmp = strchr(buffer, '>');
         if ( tmp != NULL ) {
         	tmp++;
         	while (*tmp == ' ')
@@ -65,85 +91,98 @@ public:
             desc[0] = 0;
         }
 		
-	#if 1
 		tmp = buffer;
-		
-		while (*tmp && isspace(*tmp))
-			tmp++;
 		
         if ( !sscanf(tmp, "%f", &def) )
             return false;
 		
-		while (*tmp && *tmp != '<')
-			tmp++;
+		tmp = nextToken(tmp);
 		
-		while (*tmp && isspace(*tmp))
-			tmp++;
-		
-		if (*tmp == '<')
+		if ( *tmp != '<' )
+		{
+			log("slider info is missing");
+			return false;
+		}
+		else
 		{
 			tmp++;
 			
-			while (*tmp && isspace(*tmp))
-				tmp++;
-			
 			if ( !sscanf(tmp, "%f", &min) )
+			{
+				log("failed to read min value");
 				return false;
+			}
 		
-			while (*tmp && *tmp != ',')
-				tmp++;
+			tmp = nextToken(tmp);
 			
-			if (*tmp == ',')
+			if ( *tmp != ',' )
+			{
+				log("max value is missing");
+				return false;
+			}
+			else
 			{
 				tmp++;
 				
-				while (*tmp && isspace(*tmp))
-					tmp++;
-				
 				if ( !sscanf(tmp, "%f", &max) )
+				{
+					log("failed to read max value");
             		return false;
+				}
 				
-				while (*tmp && *tmp != ',' && *tmp != '{')
-					tmp++;
+				tmp = nextToken(tmp);
 				
-				if (*tmp == ',')
+				if ( *tmp == ',')
 				{
 					tmp++;
-		
-					while (*tmp && isspace(*tmp))
-						tmp++;
 					
-					if (*tmp == '{')
+					tmp = skipWhite(tmp);
+					
+					if ( *tmp == '{' )
 					{
-						printf("found list!\n");
+						isEnum = true;
 						
 						inc = 1;
+						
+						tmp++;
+						
+						while ( true )
+						{
+							const char *end = nextToken(tmp);
+							
+							const std::string name(tmp, end);
+							
+							enumNames.push_back(name);
+							
+							tmp = end;
+							
+							if ( *tmp == 0 )
+							{
+								log("enum value list not properly terminated");
+							 	return false;
+							}
+							
+							if ( *tmp == '}' )
+							{
+								break;
+							}
+							
+							tmp++;
+						}
+						
+						tmp++;
 					}
 					else
 					{
 						if ( !sscanf(tmp, "%f", &inc) )
+						{
+							log("failed to read increment value");
 							return false;
+						}
 					}
 				}
 			}
 		}
-	#else
-        tmp = strtok(buffer, "<,");
-        if ( !sscanf(tmp, "%f", &def) )
-            return false;
-        
-        tmp = strtok(NULL, "<,");
-        if ( !sscanf(tmp, "%f", &min) )
-            return false;
-        
-        tmp = strtok(NULL, "<,");
-        if ( !sscanf(tmp, "%f", &max) )
-            return false;
-
-        tmp = strtok(NULL, "<,");
-        if ( tmp != NULL )
-            sscanf(tmp, "%f", &inc);
-	#endif
 
         *owner = def;
         exists = true;
