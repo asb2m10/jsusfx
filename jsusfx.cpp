@@ -105,7 +105,6 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         if ( codeInit == NULL ) {
             snprintf(errorMsg, 4096, "@init line %s", NSEEL_code_getcodeerror(m_vm));
             displayError(errorMsg);
-            releaseCode();
             return false;
         }
         break;
@@ -114,7 +113,6 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         if ( codeSlider == NULL ) {
             snprintf(errorMsg, 4096, "@slider line %s", NSEEL_code_getcodeerror(m_vm));
             displayError(errorMsg);
-            releaseCode();
             return false;
         }
         break;
@@ -123,7 +121,6 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         if ( codeBlock == NULL ) {
             snprintf(errorMsg, 4096, "@block line %s", NSEEL_code_getcodeerror(m_vm));
             displayError(errorMsg);
-            releaseCode();
             return false;
         }
         break;
@@ -132,7 +129,6 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         if ( codeSample == NULL ) {
             snprintf(errorMsg, 4096, "@sample line %s", NSEEL_code_getcodeerror(m_vm));
             displayError(errorMsg);
-            releaseCode();
             return false;
         }
         break;
@@ -145,7 +141,6 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         if ( codeGfx == NULL ) {
             snprintf(errorMsg, 4096, "@gfx line %s", NSEEL_code_getcodeerror(m_vm));
             displayError(errorMsg);
-            releaseCode();
             return false;
         }
         break;
@@ -366,6 +361,9 @@ bool JsusFx::compileSections(JsusFx_Sections &sections) {
 		result &= compileSection(3, sections.sample.code.Get(), sections.sample.lineOffset);
 	if (sections.gfx.code.GetLength() != 0)
 		result &= compileSection(4, sections.gfx.code.Get(), sections.gfx.lineOffset);
+	
+	if (result == false)
+		releaseCode();
 	
 	return result;
 }
