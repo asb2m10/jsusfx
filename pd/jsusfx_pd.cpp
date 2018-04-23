@@ -70,7 +70,7 @@ void jsusfx_describe(t_jsusfx *x) {
     post("jsusfx~ script %s : %s", x->scriptpath, x->fx->desc);
     for(int i=0;i<64;i++) {
         if ( x->fx->sliders[i].exists ) {
-            Slider *s = &(x->fx->sliders[i]);
+            JsusFx_Slider *s = &(x->fx->sliders[i]);
             if ( s->inc == 0 )
                 post(" slider%d: %g %g %s [%g]", i, s->min, s->max, s->desc, *(s->owner));
             else

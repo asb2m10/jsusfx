@@ -71,7 +71,7 @@ void jsusfx_describe(t_jsusfx *x) {
     post("jsusfx~ script %s : %s", x->scriptname, x->fx->desc);
     for(int i=0;i<64;i++) {
         if ( x->fx->sliders[i].exists ) {
-            Slider *s = &(x->fx->sliders[i]);
+            JsusFx_Slider *s = &(x->fx->sliders[i]);
             post(" slider%d: %g %g %s", i, s->min, s->max, s->desc);
             
             t_atom argv[5];
