@@ -138,6 +138,16 @@ public:
 					
 					tmp = skipWhite(tmp);
 					
+					if ( !sscanf(tmp, "%f", &inc) )
+					{
+						//log("failed to read increment value");
+						//return false;
+						
+						inc = 0;
+					}
+					
+					tmp = nextToken(tmp);
+					
 					if ( *tmp == '{' )
 					{
 						isEnum = true;
@@ -171,14 +181,6 @@ public:
 						}
 						
 						tmp++;
-					}
-					else
-					{
-						if ( !sscanf(tmp, "%f", &inc) )
-						{
-							log("failed to read increment value");
-							return false;
-						}
 					}
 				}
 			}
