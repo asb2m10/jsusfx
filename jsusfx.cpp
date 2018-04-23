@@ -368,7 +368,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 					}
 				}
             }
-            else if ( ! strncmp(line, "import ", 5) ) {
+            else if ( ! strncmp(line, "import ", 7) ) {
 				char *src = line+7;
 				src = trim(src, true, true);
 					
