@@ -30,14 +30,18 @@
 
 class eel_string_context_state;
 
+class JsusFx;
 struct JsusFxGfx;
 
 class WDL_FastString;
 
-class Slider {
+class JsusFx_Slider {
 public:
+	static const int kMaxName = 63;
+	
     float def, min, max, inc;
 
+	char name[kMaxName + 1];
     char desc[64];
     EEL_F *owner;
     bool exists;
@@ -45,8 +49,9 @@ public:
     std::vector<std::string> enumNames;
     bool isEnum;
 
-    Slider() {
+    JsusFx_Slider() {
         def = min = max = inc = 0;
+        name[0] = 0;
         desc[0] = 0;
         exists = false;
         owner = nullptr;
@@ -74,127 +79,8 @@ public:
     	printf("%s\n", text);
 	}
 
-    bool config(char *param) {
-        char buffer[1024];
-        strncpy(buffer, param, 1024);
-                
-        def = min = max = inc = 0;
-        exists = false;
-		
-        enumNames.clear();
-        isEnum = false;
-
-        const char *tmp = strchr(buffer, '>');
-        if ( tmp != NULL ) {
-        	tmp++;
-        	while (*tmp == ' ')
-        		tmp++;
-            strncpy(desc, tmp, 64);
-            tmp = 0;
-        } else {
-            desc[0] = 0;
-        }
-		
-		tmp = buffer;
-		
-        if ( !sscanf(tmp, "%f", &def) )
-            return false;
-		
-		tmp = nextToken(tmp);
-		
-		if ( *tmp != '<' )
-		{
-			log("slider info is missing");
-			return false;
-		}
-		else
-		{
-			tmp++;
-			
-			if ( !sscanf(tmp, "%f", &min) )
-			{
-				log("failed to read min value");
-				return false;
-			}
-		
-			tmp = nextToken(tmp);
-			
-			if ( *tmp != ',' )
-			{
-				log("max value is missing");
-				return false;
-			}
-			else
-			{
-				tmp++;
-				
-				if ( !sscanf(tmp, "%f", &max) )
-				{
-					log("failed to read max value");
-            		return false;
-				}
-				
-				tmp = nextToken(tmp);
-				
-				if ( *tmp == ',')
-				{
-					tmp++;
-					
-					tmp = skipWhite(tmp);
-					
-					if ( !sscanf(tmp, "%f", &inc) )
-					{
-						//log("failed to read increment value");
-						//return false;
-						
-						inc = 0;
-					}
-					
-					tmp = nextToken(tmp);
-					
-					if ( *tmp == '{' )
-					{
-						isEnum = true;
-						
-						inc = 1;
-						
-						tmp++;
-						
-						while ( true )
-						{
-							const char *end = nextToken(tmp);
-							
-							const std::string name(tmp, end);
-							
-							enumNames.push_back(name);
-							
-							tmp = end;
-							
-							if ( *tmp == 0 )
-							{
-								log("enum value list not properly terminated");
-							 	return false;
-							}
-							
-							if ( *tmp == '}' )
-							{
-								break;
-							}
-							
-							tmp++;
-						}
-						
-						tmp++;
-					}
-				}
-			}
-		}
-
-        *owner = def;
-        exists = true;
-        return true;
-    }
-
+    bool config(JsusFx &fx, const int index, const char *param, const int lnumber);
+    
     /**
      * Return true if the value has changed
      */
@@ -251,9 +137,10 @@ protected:
 
 public:
 	static const int kMaxSamples = 64;
+	static const int kMaxSliders = 64;
 	
     NSEEL_VMCTX m_vm;
-    Slider sliders[64];
+    JsusFx_Slider sliders[kMaxSliders];
     int normalizeSliders;
     char desc[64];
     

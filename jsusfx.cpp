@@ -76,6 +76,161 @@ struct JsusFx_Sections {
 	JsusFx_Section gfx;
 };
 
+//
+
+bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const int lnumber) {
+	char buffer[2048];
+	strncpy(buffer, param, 2048);
+	
+	def = min = max = inc = 0;
+	exists = false;
+	
+	enumNames.clear();
+	isEnum = false;
+	
+	bool hasName = false;
+
+	const char *tmp = strchr(buffer, '>');
+	if ( tmp != NULL ) {
+		tmp++;
+		while (*tmp == ' ')
+			tmp++;
+		strncpy(desc, tmp, 64);
+		tmp = 0;
+	} else {
+		desc[0] = 0;
+	}
+	
+	tmp = buffer;
+	
+	if ( isalpha(*tmp) ) {
+		// extended syntax of format "slider1:variable_name=5<0,10,1>slider description"
+		const char *begin = tmp;
+		while ( *tmp && *tmp != '=' )
+			tmp++;
+		if ( *tmp != '=' ) {
+			fx.displayError("Expected '=' at end of slider name %d", lnumber);
+			return false;
+		}
+		const char *end = tmp;
+		int len = end - begin;
+		if ( len > JsusFx_Slider::kMaxName ) {
+			fx.displayError("Slider name too long %d", lnumber);
+			return false;
+		}
+		for ( int i = 0; i < len; ++i )
+			name[i] = begin[i];
+		name[len] = 0;
+		hasName = true;
+		tmp++;
+	}
+	
+	if ( !sscanf(tmp, "%f", &def) )
+		return false;
+	
+	tmp = nextToken(tmp);
+	
+	if ( *tmp != '<' )
+	{
+		log("slider info is missing");
+		return false;
+	}
+	else
+	{
+		tmp++;
+		
+		if ( !sscanf(tmp, "%f", &min) )
+		{
+			log("failed to read min value");
+			return false;
+		}
+	
+		tmp = nextToken(tmp);
+		
+		if ( *tmp != ',' )
+		{
+			log("max value is missing");
+			return false;
+		}
+		else
+		{
+			tmp++;
+			
+			if ( !sscanf(tmp, "%f", &max) )
+			{
+				log("failed to read max value");
+				return false;
+			}
+			
+			tmp = nextToken(tmp);
+			
+			if ( *tmp == ',')
+			{
+				tmp++;
+				
+				tmp = skipWhite(tmp);
+				
+				if ( !sscanf(tmp, "%f", &inc) )
+				{
+					//log("failed to read increment value");
+					//return false;
+					
+					inc = 0;
+				}
+				
+				tmp = nextToken(tmp);
+				
+				if ( *tmp == '{' )
+				{
+					isEnum = true;
+					
+					inc = 1;
+					
+					tmp++;
+					
+					while ( true )
+					{
+						const char *end = nextToken(tmp);
+						
+						const std::string name(tmp, end);
+						
+						enumNames.push_back(name);
+						
+						tmp = end;
+						
+						if ( *tmp == 0 )
+						{
+							log("enum value list not properly terminated");
+							return false;
+						}
+						
+						if ( *tmp == '}' )
+						{
+							break;
+						}
+						
+						tmp++;
+					}
+					
+					tmp++;
+				}
+			}
+		}
+	}
+	
+	if (hasName == false) {
+		sprintf(name, "slider%d", index);
+	}
+	
+	owner = NSEEL_VM_regvar(fx.m_vm, name);
+	
+	*owner = def;
+	exists = true;
+	return true;
+}
+
+//
+
 JsusFx::JsusFx() {
     m_vm = NSEEL_VM_alloc();
     codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
@@ -109,13 +264,6 @@ JsusFx::JsusFx() {
     AUTOVAR(samplesblock);
     AUTOVARV(tempo, 120);
     AUTOVARV(play_state, 1);
-
-    char slider_name[16];
-    for(int i=0;i<64;i++) {
-        sprintf(slider_name, "slider%d", i);
-        sliders[i].exists = false;
-        sliders[i].owner = NSEEL_VM_regvar(m_vm, slider_name);
-    }
 	
 	// Reaper API
 	NSEEL_addfunc_varparm("slider_automate",1,NSEEL_PProc_THIS,&__stub);
@@ -300,8 +448,10 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 int target = 0;
                 if ( ! sscanf(line, "slider%d:", &target) )
                     continue;
-                if ( target < 0 || target >= 64 )
+                if ( target < 0 || target >= kMaxSliders )
                     continue;
+				
+				JsusFx_Slider &slider = sliders[target];
 				
                 char *p = line+7;
                 while ( *p && *p != ':' )
@@ -310,21 +460,12 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 	continue;
 				p++;
 					
-				if ( isalpha(*p) ) {
-					// extended syntax of format "slider1:variable_name=5<0,10,1>slider description"
-					// skip the variable_name= part here for now until we actually need it
-					while ( *p && *p != '=' )
-						p++;
-					if ( *p != '=' )
-						continue;
-					p++;
-				}
-
-                if ( ! sliders[target].config(p) ) {
+                if ( ! slider.config(*this, target, p, lnumber) ) {
                     displayError("Incomplete slider line %d", lnumber);
                     return false;
                 }
-                trim(sliders[target].desc, false, true);
+                trim(slider.desc, false, true);
+				
                 continue;
             }
             else if ( ! strncmp(line, "desc:", 5) ) {
@@ -475,7 +616,7 @@ void JsusFx::prepare(int sampleRate, int blockSize) {
 }
 
 void JsusFx::moveSlider(int idx, float value) {
-    if ( idx >= 64 || !sliders[idx].exists )
+    if ( idx < 0 || idx >= kMaxSliders || !sliders[idx].exists )
         return;
 
     if ( normalizeSliders != 0 ) {
@@ -567,7 +708,7 @@ void JsusFx::releaseCode() {
 	numInputs = 0;
 	numOutputs = 0;
 	
-    for(int i=0;i<64;i++)
+    for(int i=0;i<kMaxSliders;i++)
     	sliders[i].exists = false;
 	
 	gfx_w = 0;
@@ -590,7 +731,7 @@ static int dumpvarsCallback(const char *name, EEL_F *val, void *ctx) {
     int target;
         
     if ( sscanf(name, "slider%d", &target) ) {
-        if ( target >= 0 && target < 64 ) {
+        if ( target >= 0 && target < JsusFx::kMaxSliders ) {
             if ( ! fx->sliders[target].exists ) {
                 return 1;
             } else {
