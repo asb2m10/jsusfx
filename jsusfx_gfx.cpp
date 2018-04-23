@@ -410,9 +410,4 @@ void JsusFxGfx::init(NSEEL_VMCTX vm) {
 	
 	// todo
 	NSEEL_addfunc_varparm("gfx_getchar",1,NSEEL_PProc_THIS,&__stub);
-	
-	// Reaper
-	NSEEL_addfunc_varparm("slider_automate",1,NSEEL_PProc_THIS,&__stub);
-	NSEEL_addfunc_varparm("sliderchange",1,NSEEL_PProc_THIS,&__stub);
-	NSEEL_addfunc_varparm("slider",1,NSEEL_PProc_THIS,&__stub); // todo : support this syntax: slider(index) = x
 }

@@ -246,6 +246,8 @@ protected:
     bool compileSections(JsusFx_Sections &sections);
 
 public:
+	static const int kNumSamples = 64;
+	
     NSEEL_VMCTX m_vm;
     Slider sliders[64];
     int normalizeSliders;
@@ -254,7 +256,8 @@ public:
     EEL_F *tempo, *play_state, *play_position, *beat_position, *ts_num, *ts_denom;
     EEL_F *ext_noinit, *ext_nodenorm, *pdc_delay, *pdc_bot_cd, *pdc_top_ch;
     EEL_F *srate, *num_ch, *samplesblock;
-    EEL_F *spl0, *spl1, *trigger;
+    EEL_F *spl[kNumSamples], *trigger;
+    EEL_F dummyValue;
 	
     JsusFxGfx *gfx;
     int gfx_w;
