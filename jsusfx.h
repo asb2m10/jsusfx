@@ -246,7 +246,7 @@ protected:
     bool compileSections(JsusFx_Sections &sections);
 
 public:
-	static const int kNumSamples = 64;
+	static const int kMaxSamples = 64;
 	
     NSEEL_VMCTX m_vm;
     Slider sliders[64];
@@ -256,8 +256,9 @@ public:
     EEL_F *tempo, *play_state, *play_position, *beat_position, *ts_num, *ts_denom;
     EEL_F *ext_noinit, *ext_nodenorm, *pdc_delay, *pdc_bot_cd, *pdc_top_ch;
     EEL_F *srate, *num_ch, *samplesblock;
-    EEL_F *spl[kNumSamples], *trigger;
+    EEL_F *spl[kMaxSamples], *trigger;
     EEL_F dummyValue;
+    int numValidInputChannels;
 	
     JsusFxGfx *gfx;
     int gfx_w;
@@ -270,8 +271,8 @@ public:
     bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
     void moveSlider(int idx, float value);
-    void process(float **input, float **output, int size);
-    void process64(double **input, double **output, int size);
+    void process(float **input, float **output, int size, int numInputChannels, int numOutputChannels);
+    void process64(double **input, double **output, int size, int numInputChannels, int numOutputChannels);
     void draw();
 	
     const char * getString(int index, WDL_FastString ** fs);

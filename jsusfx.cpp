@@ -47,7 +47,7 @@ static EEL_F * NSEEL_CGEN_CALL _reaper_spl(void *opaque, EEL_F *n)
 {
   JsusFx *ctx = REAPER_GET_INTERFACE(opaque);
   const int index = *n;
-  if (index >= 0 && index < ctx->kNumSamples)
+  if (index >= 0 && index < ctx->numValidInputChannels)
   	return ctx->spl[index];
   else {
     ctx->dummyValue = 0;
@@ -91,14 +91,16 @@ JsusFx::JsusFx() {
     gfx_w = 0;
     gfx_h = 0;
 	
-    for (int i = 0; i < kNumSamples; ++i)
-    {
+    for (int i = 0; i < kMaxSamples; ++i) {
     	char name[16];
     	sprintf(name, "spl%d", i);
 		
     	spl[i] = NSEEL_VM_regvar(m_vm, name);
     	*spl[i] = 0;
 	}
+	
+	numValidInputChannels = 0;
+	
     AUTOVAR(srate);
     AUTOVARV(num_ch, 2);
     AUTOVAR(samplesblock);
@@ -481,7 +483,7 @@ void JsusFx::moveSlider(int idx, float value) {
     computeSlider |= sliders[idx].setValue(value);
 }
 
-void JsusFx::process(float **input, float **output, int size) {
+void JsusFx::process(float **input, float **output, int size, int numInputChannels, int numOutputChannels) {
     if ( codeSample == NULL )
         return;
 
@@ -489,19 +491,21 @@ void JsusFx::process(float **input, float **output, int size) {
         NSEEL_code_execute(codeSlider);
         computeSlider = false;      
     }
-
+	
+    numValidInputChannels = numInputChannels;
+	
     *samplesblock = size;
     NSEEL_code_execute(codeBlock);
     for(int i=0;i<size;i++) {
-        *spl[0] = input[0][i];
-        *spl[1] = input[1][i];
+    	for (int c = 0; c < numInputChannels; ++c)
+        	*spl[c] = input[c][i];
         NSEEL_code_execute(codeSample);
-        output[0][i] = *spl[0];
-        output[1][i] = *spl[1];
+    	for (int c = 0; c < numOutputChannels; ++c)
+        	output[c][i] = *spl[c];
     }       
 }
 
-void JsusFx::process64(double **input, double **output, int size) {
+void JsusFx::process64(double **input, double **output, int size, int numInputChannels, int numOutputChannels) {
     if ( codeSample == NULL )
         return;
 
@@ -509,15 +513,17 @@ void JsusFx::process64(double **input, double **output, int size) {
         NSEEL_code_execute(codeSlider);
         computeSlider = false;
     }
+	
+    numValidInputChannels = numInputChannels;
 
     *samplesblock = size;
     NSEEL_code_execute(codeBlock);
     for(int i=0;i<size;i++) {
-        *spl[0] = input[0][i];
-        *spl[1] = input[1][i];
+    	for (int c = 0; c < numInputChannels; ++c)
+        	*spl[c] = input[c][i];
         NSEEL_code_execute(codeSample);
-        output[0][i] = *spl[0];
-        output[1][i] = *spl[1];
+    	for (int c = 0; c < numOutputChannels; ++c)
+        	output[c][i] = *spl[c];
     }
 }
 
