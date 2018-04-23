@@ -47,8 +47,9 @@ public:
 
     Slider() {
         def = min = max = inc = 0;
-        exists = false;
         desc[0] = 0;
+        exists = false;
+        owner = nullptr;
         isEnum = false;
     }
 
@@ -78,7 +79,10 @@ public:
         strncpy(buffer, param, 1024);
                 
         def = min = max = inc = 0;
-        exists = false;     
+        exists = false;
+		
+        enumNames.clear();
+        isEnum = false;
 
         const char *tmp = strchr(buffer, '>');
         if ( tmp != NULL ) {
@@ -258,6 +262,9 @@ public:
     EEL_F *srate, *num_ch, *samplesblock;
     EEL_F *spl[kMaxSamples], *trigger;
     EEL_F dummyValue;
+	
+    int numInputs;
+    int numOutputs;
     int numValidInputChannels;
 	
     JsusFxGfx *gfx;

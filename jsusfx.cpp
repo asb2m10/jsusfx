@@ -99,6 +99,9 @@ JsusFx::JsusFx() {
     	*spl[i] = 0;
 	}
 	
+	numInputs = 0;
+	numOutputs = 0;
+	
 	numValidInputChannels = 0;
 	
     AUTOVAR(srate);
@@ -324,13 +327,13 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 trim(sliders[target].desc, false, true);
                 continue;
             }
-            if ( ! strncmp(line, "desc:", 5) ) {
+            else if ( ! strncmp(line, "desc:", 5) ) {
             	char *src = line+5;
             	src = trim(src, true, true);
                 strncpy(desc, src, 64);
                 continue;
             }
-            if ( ! strnicmp(line, "filename", 8) ) {
+            else if ( ! strnicmp(line, "filename:", 9) ) {
 				
             	// filename:0,filename.wav
 				
@@ -365,7 +368,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 					}
 				}
             }
-            if ( ! strncmp(line, "import ", 5) ) {
+            else if ( ! strncmp(line, "import ", 5) ) {
 				char *src = line+7;
 				src = trim(src, true, true);
 					
@@ -373,6 +376,12 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 					processImport(pathLibrary, path, src, sections);
 				}
                 continue;
+            }
+            else if ( ! strncmp(line, "in_pin: ", 7) ) {
+            	numInputs++;
+            }
+            else if ( ! strncmp(line, "out_pin: ", 8) ) {
+            	numOutputs++;
             }
         }
     }
@@ -555,9 +564,15 @@ void JsusFx::releaseCode() {
         
     codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
 
+	numInputs = 0;
+	numOutputs = 0;
+	
     for(int i=0;i<64;i++)
-        sliders[i].exists = false;
-
+    	sliders[i].exists = false;
+	
+	gfx_w = 0;
+	gfx_h = 0;
+	
     NSEEL_VM_remove_unused_vars(m_vm);
     NSEEL_VM_remove_all_nonreg_vars(m_vm);
 }
