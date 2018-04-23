@@ -282,7 +282,7 @@ void jsusfx_perform64(t_jsusfx *x, t_object *dsp64, double **ins, long numins, d
     if ( critical_tryenter(x->critical) )
         goto bypass;
 
-    x->fx->process64(inv, outs, sampleframes);
+    x->fx->process64(inv, outs, sampleframes, 2, 2);
     
     critical_exit(x->critical);
     return;

@@ -114,7 +114,7 @@ void test_script(const char *path) {
 #endif
 
 	fx->prepare(44100, 64);
-	fx->process(in, out, 64);
+	fx->process(in, out, 64, 2, 2);
 
 #if ENABLE_INOUT_TEST
 	for (int i = 0; i < 64; ++i) {

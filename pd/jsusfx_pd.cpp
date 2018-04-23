@@ -171,7 +171,7 @@ t_int *jsusfx_perform(t_int *w) {
             outs[1][i] = ins[1][i];
         }
     } else {
-        x->fx->process(ins, outs, n);
+        x->fx->process(ins, outs, n, 2, 2);
         x->fx->dspLock.Leave();
     }
 
