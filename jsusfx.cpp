@@ -232,7 +232,8 @@ bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const
 
 //
 
-JsusFx::JsusFx() {
+JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
+	: pathLibrary(_pathLibrary) {
     m_vm = NSEEL_VM_alloc();
     codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
     NSEEL_VM_SetCustomFuncThis(m_vm,this);
@@ -242,7 +243,9 @@ JsusFx::JsusFx() {
     computeSlider = false;
     normalizeSliders = 0;
     srate = 0;
-
+	
+    pathLibrary = _pathLibrary;
+	
     fileAPI = nullptr;
 	
 	gfx = nullptr;

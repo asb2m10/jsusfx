@@ -159,13 +159,15 @@ public:
     int numOutputs;
     int numValidInputChannels;
 	
+	JsusFxPathLibrary &pathLibrary;
+	
     JsusFxFileAPI *fileAPI;
 
     JsusFxGfx *gfx;
     int gfx_w;
     int gfx_h;
 
-    JsusFx();
+    JsusFx(JsusFxPathLibrary &pathLibrary);
     virtual ~JsusFx();
 
     bool compile(std::istream &input);

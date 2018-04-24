@@ -18,14 +18,52 @@
 
 #include "WDL/eel2/ns-eel.h"
 
+class JsusFx;
+
 struct JsusFxFileAPI {
 	void init(NSEEL_VMCTX vm);
 	
-	virtual int file_open(const char * filename) { return -1; }
-	virtual bool file_close(const int handle) { return false; } 
-	virtual int file_avail(const int handle) { return 0; }
-	virtual bool file_riff(const int handle, int & numChannels, int & sampleRate) { return false; }
-	virtual bool file_text(const int handle) { return false; }
-	virtual int file_mem(const int handle, EEL_F * result, const int numValues) { return 0; }
-	virtual bool file_var(const int handle, EEL_F & result) { return false; }
+	virtual int file_open(JsusFx & jsusFx, const char * filename) { return -1; }
+	virtual bool file_close(JsusFx & jsusFx, const int handle) { return false; }
+	virtual int file_avail(JsusFx & jsusFx, const int handle) { return 0; }
+	virtual bool file_riff(JsusFx & jsusFx, const int handle, int & numChannels, int & sampleRate) { return false; }
+	virtual bool file_text(JsusFx & jsusFx, const int handle) { return false; }
+	virtual int file_mem(JsusFx & jsusFx, const int handle, EEL_F * result, const int numValues) { return 0; }
+	virtual bool file_var(JsusFx & jsusFx, const int handle, EEL_F & result) { return false; }
+};
+
+//
+
+struct RIFFSoundData;
+
+struct JsusFx_File
+{
+	enum Mode
+	{
+		kMode_None,
+		kMode_Text,
+		kMode_Sound
+	};
+	
+	std::string filename;
+	Mode mode = kMode_None;
+	
+	RIFFSoundData * soundData = nullptr;
+	
+	int readPosition = 0;
+	
+	std::vector<EEL_F> vars;
+	
+	~JsusFx_File();
+	
+	bool open(JsusFx & jsusFx, const char * _filename);
+	void close(JsusFx & jsusFx);
+	
+	bool riff(int & numChannels, int & sampleRate);
+	bool text(JsusFx & jsusFx);
+	
+	int avail() const;
+	
+	bool mem(const int numValues, EEL_F * dest);
+	bool var(EEL_F & value);
 };
