@@ -521,10 +521,10 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 				}
                 continue;
             }
-            else if ( ! strncmp(line, "in_pin: ", 7) ) {
+            else if ( ! strncmp(line, "in_pin:", 7) ) {
             	numInputs++;
             }
-            else if ( ! strncmp(line, "out_pin: ", 8) ) {
+            else if ( ! strncmp(line, "out_pin:", 8) ) {
             	numOutputs++;
             }
         }
