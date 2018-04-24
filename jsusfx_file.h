@@ -17,6 +17,7 @@
 #pragma once
 
 #include "WDL/eel2/ns-eel.h"
+#include <iostream>
 
 class JsusFx;
 
@@ -45,15 +46,18 @@ struct JsusFx_File
 		kMode_Sound
 	};
 	
+	std::istream * stream;
+	
 	std::string filename;
-	Mode mode = kMode_None;
+	Mode mode;
 	
-	RIFFSoundData * soundData = nullptr;
+	RIFFSoundData * soundData;
 	
-	int readPosition = 0;
+	int readPosition;
 	
 	std::vector<EEL_F> vars;
 	
+	JsusFx_File();
 	~JsusFx_File();
 	
 	bool open(JsusFx & jsusFx, const char * _filename);

@@ -144,9 +144,21 @@ void JsusFxFileAPI::init(NSEEL_VMCTX vm)
 #include "riff.h"
 #include <assert.h>
 
+#define USE_ISTREAM 1
+
+JsusFx_File::JsusFx_File()
+	: stream(nullptr)
+	, filename()
+	, mode(kMode_None)
+	, soundData(nullptr)
+	, readPosition(0)
+	, vars()
+{
+}
+
 JsusFx_File::~JsusFx_File()
 {
-	// todo : assert is closed
+	assert(stream == nullptr);
 }
 
 bool JsusFx_File::open(JsusFx & jsusFx, const char * _filename)
@@ -157,14 +169,13 @@ bool JsusFx_File::open(JsusFx & jsusFx, const char * _filename)
 	
 	// check if file exists
 	
-	std::istream * stream = jsusFx.pathLibrary.open(_filename);
+	stream = jsusFx.pathLibrary.open(_filename);
 	
 	if (stream == nullptr)
 		return false;
 	else
 	{
 		filename = _filename;
-		jsusFx.pathLibrary.close(stream);
 		return true;
 	}
 }
@@ -175,6 +186,8 @@ void JsusFx_File::close(JsusFx & jsusFx)
 	
 	delete soundData;
 	soundData = nullptr;
+	
+	jsusFx.pathLibrary.close(stream);
 }
 
 bool JsusFx_File::riff(int & numChannels, int & sampleRate)
@@ -192,8 +205,52 @@ bool JsusFx_File::riff(int & numChannels, int & sampleRate)
 	// load RIFF file
 	
 	bool success = true;
+
+#if USE_ISTREAM
+	success &= stream != nullptr;
 	
-	FILE * file = fopen(filename.c_str(), "rb");
+	int size = 0;;
+	
+	if (success)
+	{
+		try
+		{
+			stream->seekg(0, std::ios_base::end);
+			success &= stream->fail() == false;
+			
+			size = stream->tellg();
+			success &= size != -1;
+			
+			stream->seekg(0, std::ios_base::beg);
+			success &= stream->fail() == false;
+		}
+		catch (std::exception & e)
+		{
+			success &= false;
+		}
+	}
+	
+	success &= size > 0;
+	
+	uint8_t * bytes = nullptr;
+	
+	if (success)
+	{
+		bytes = new uint8_t[size];
+	
+		try
+		{
+			stream->read((char*)bytes, size);
+			
+			success &= stream->fail() == false;
+		}
+		catch (std::exception & e)
+		{
+			success &= false;
+		}
+	}
+#else
+ 	FILE * file = fopen(filename.c_str(), "rb");
 	
 	success &= file != nullptr;
 	
@@ -206,6 +263,8 @@ bool JsusFx_File::riff(int & numChannels, int & sampleRate)
 		success &= fseek(file, 0, SEEK_SET) == 0;
 	}
 	
+	success &= size > 0;
+
 	uint8_t * bytes = nullptr;
 	
 	if (success)
@@ -220,6 +279,7 @@ bool JsusFx_File::riff(int & numChannels, int & sampleRate)
 		fclose(file);
 		file = nullptr;
 	}
+#endif
 	
 	if (success)
 	{
@@ -262,12 +322,8 @@ bool JsusFx_File::text(JsusFx & jsusFx)
 	
 	// load text file
 	
-	std::istream * stream = nullptr;
-	
 	try
 	{
-		stream = jsusFx.pathLibrary.open(filename);
-		
 		if (stream == nullptr)
 		{
 			jsusFx.displayError("failed to open text file");
@@ -313,20 +369,12 @@ bool JsusFx_File::text(JsusFx & jsusFx)
 			}
 		}
 		
-		jsusFx.pathLibrary.close(stream);
-		
 		mode = kMode_Text;
 		
 		return true;
 	}
 	catch (std::exception & e)
 	{
-		if (stream != nullptr)
-		{
-			delete stream;
-			stream = nullptr;
-		}
-		
 		jsusFx.displayError("failed to read text file contents: %s", e.what());
 		return false;
 	}
