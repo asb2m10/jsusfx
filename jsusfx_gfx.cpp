@@ -204,14 +204,14 @@ static EEL_F NSEEL_CGEN_CALL _gfx_printf(void *opaque, INT_PTR nparms, EEL_F **p
 static EEL_F NSEEL_CGEN_CALL _gfx_showmenu(void* opaque, INT_PTR nparms, EEL_F **parms)
 {
   JsusFxGfx* ctx=EEL_GFX_GET_INTERFACE(opaque);
-  if (ctx) return ctx->gfx_showmenu(opaque, parms, (int)nparms);
+  if (ctx) return ctx->gfx_showmenu(parms, (int)nparms);
   return 0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_setcursor(void* opaque,  INT_PTR nparms, EEL_F **parms)
 {
   JsusFxGfx* ctx=EEL_GFX_GET_INTERFACE(opaque);
-  if (ctx) return ctx->gfx_setcursor(opaque, parms, (int)nparms);
+  if (ctx) return ctx->gfx_setcursor(parms, (int)nparms);
   return 0.0;
 }
 
@@ -239,34 +239,13 @@ static EEL_F * NSEEL_CGEN_CALL _gfx_blit(void *opaque, EEL_F *img, EEL_F *scale,
 static EEL_F NSEEL_CGEN_CALL _gfx_setfont(void *opaque, INT_PTR np, EEL_F **parms)
 {
   JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
-  if (ctx) return ctx->gfx_setfont(opaque,(int)np,parms);
+  if (ctx) return ctx->gfx_setfont((int)np,parms);
   return 0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL _gfx_getfont(void *opaque, INT_PTR np, EEL_F **parms)
 {
-#if 0 // todo
-  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
-  if (ctx)
-  {
-    const int idx=ctx->m_gfx_font_active;
-    if (idx>=0 && idx < ctx->m_gfx_fonts.GetSize())
-    {
-      eel_lice_state::gfxFontStruct* f=ctx->m_gfx_fonts.Get()+idx;
-
-      EEL_STRING_MUTEXLOCK_SCOPE
-		
-#ifdef NOT_EEL_STRING_UPDATE_STRING
-      NOT_EEL_STRING_UPDATE_STRING(parms[0][0],f->actual_fontname);
-#else
-      WDL_FastString *fs=NULL;
-      EEL_STRING_GET_FOR_INDEX(parms[0][0],&fs);
-      if (fs) fs->Set(f->actual_fontname);
-#endif
-    }
-    return idx;
-  }
-#endif
+  // todo : implement
   return 0.0;
 }
 
@@ -333,7 +312,7 @@ static EEL_F * NSEEL_CGEN_CALL _gfx_getimgdim(void *opaque, EEL_F *img, EEL_F *w
 static EEL_F NSEEL_CGEN_CALL _gfx_loadimg(void *opaque, EEL_F *img, EEL_F *fr)
 {
   JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
-  if (ctx) return ctx->gfx_loadimg(opaque,(int)*img,*fr);
+  if (ctx) return ctx->gfx_loadimg((int)*img,*fr);
   return 0.0;
 }
 

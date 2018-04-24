@@ -66,15 +66,15 @@ struct JsusFxGfx {
 	virtual void gfx_setpixel(EEL_F r, EEL_F g, EEL_F b) { }
 	virtual void gfx_getpixel(EEL_F * r, EEL_F * g, EEL_F * b) { }
 
-	virtual EEL_F gfx_loadimg(void * opaque, int img, EEL_F loadFrom) { return 0.f; }
+	virtual EEL_F gfx_loadimg(int img, EEL_F loadFrom) { return 0.f; }
 	virtual void gfx_getimgdim(EEL_F img, EEL_F * w, EEL_F * h) { }
 	virtual EEL_F gfx_setimgdim(int img, EEL_F * w, EEL_F * h) { return 0.f; }
 	
-	virtual EEL_F gfx_setfont(void * opaque, int np, EEL_F ** parms) { return 0.f; }
-	virtual EEL_F gfx_getfont(void * opaque, int np, EEL_F ** parms) { return 0.f; }
+	virtual EEL_F gfx_setfont(int np, EEL_F ** parms) { return 0.f; }
+	virtual EEL_F gfx_getfont(int np, EEL_F ** parms) { return 0.f; }
 	
-	virtual EEL_F gfx_showmenu(void * opaque, EEL_F ** parms, int nparms) { return 0.f; }
-	virtual EEL_F gfx_setcursor(void * opaque, EEL_F ** parms, int nparms) { return 0.f; }
+	virtual EEL_F gfx_showmenu(EEL_F ** parms, int nparms) { return 0.f; }
+	virtual EEL_F gfx_setcursor(EEL_F ** parms, int nparms) { return 0.f; }
 	
 	virtual void gfx_blurto(EEL_F x, EEL_F y) { }
 
@@ -109,15 +109,15 @@ struct JsusFxGfx_Log : JsusFxGfx {
 	virtual void gfx_setpixel(EEL_F r, EEL_F g, EEL_F b) override { GFXLOG; }
 	virtual void gfx_getpixel(EEL_F * r, EEL_F * g, EEL_F * b) override { GFXLOG; }
 
-	virtual EEL_F gfx_loadimg(void * opaque, int img, EEL_F loadFrom) override { GFXLOG; return -1.f; }
+	virtual EEL_F gfx_loadimg(int img, EEL_F loadFrom) override { GFXLOG; return -1.f; }
 	virtual void gfx_getimgdim(EEL_F img, EEL_F * w, EEL_F * h) override { GFXLOG; }
 	virtual EEL_F gfx_setimgdim(int img, EEL_F * w, EEL_F * h) override { GFXLOG; return 0.f; }
 	
-	virtual EEL_F gfx_setfont(void * opaque, int np, EEL_F ** parms) override { GFXLOG; return 0.f; }
-	virtual EEL_F gfx_getfont(void * opaque, int np, EEL_F ** parms) override { GFXLOG; return 0.f; }
+	virtual EEL_F gfx_setfont(int np, EEL_F ** parms) override { GFXLOG; return 0.f; }
+	virtual EEL_F gfx_getfont(int np, EEL_F ** parms) override { GFXLOG; return 0.f; }
 	
-	virtual EEL_F gfx_showmenu(void * opaque, EEL_F ** parms, int nparms) override { GFXLOG; return 0.f; }
-	virtual EEL_F gfx_setcursor(void * opaque, EEL_F ** parms, int nparms) override { GFXLOG; return 0.f; }
+	virtual EEL_F gfx_showmenu(EEL_F ** parms, int nparms) override { GFXLOG; return 0.f; }
+	virtual EEL_F gfx_setcursor(EEL_F ** parms, int nparms) override { GFXLOG; return 0.f; }
 	
 	virtual void gfx_blurto(EEL_F x, EEL_F y) override { GFXLOG; }
 
