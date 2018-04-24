@@ -172,7 +172,10 @@ bool JsusFx_File::open(JsusFx & jsusFx, const char * _filename)
 	stream = jsusFx.pathLibrary.open(_filename);
 	
 	if (stream == nullptr)
+	{
+		jsusFx.displayError("failed to open file: %s", _filename);
 		return false;
+	}
 	else
 	{
 		filename = _filename;
@@ -311,7 +314,7 @@ bool JsusFx_File::riff(int & numChannels, int & sampleRate)
 	}
 }
 
-bool JsusFx_File::text(JsusFx & jsusFx)
+bool JsusFx_File::text()
 {
 	assert(mode == kMode_None);
 	
@@ -326,7 +329,6 @@ bool JsusFx_File::text(JsusFx & jsusFx)
 	{
 		if (stream == nullptr)
 		{
-			jsusFx.displayError("failed to open text file");
 			return false;
 		}
 		
@@ -375,7 +377,6 @@ bool JsusFx_File::text(JsusFx & jsusFx)
 	}
 	catch (std::exception & e)
 	{
-		jsusFx.displayError("failed to read text file contents: %s", e.what());
 		return false;
 	}
 }

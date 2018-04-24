@@ -64,7 +64,7 @@ struct JsusFx_File
 	void close(JsusFx & jsusFx);
 	
 	bool riff(int & numChannels, int & sampleRate);
-	bool text(JsusFx & jsusFx);
+	bool text();
 	
 	int avail() const;
 	
