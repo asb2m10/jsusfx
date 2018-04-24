@@ -144,8 +144,6 @@ void JsusFxFileAPI::init(NSEEL_VMCTX vm)
 #include "riff.h"
 #include <assert.h>
 
-#define USE_ISTREAM 1
-
 JsusFx_File::JsusFx_File()
 	: stream(nullptr)
 	, mode(kMode_None)
@@ -202,8 +200,7 @@ bool JsusFx_File::riff(int & numChannels, int & sampleRate)
 	// load RIFF file
 	
 	bool success = true;
-
-#if USE_ISTREAM
+	
 	success &= stream != nullptr;
 	
 	int size = 0;;
@@ -246,37 +243,6 @@ bool JsusFx_File::riff(int & numChannels, int & sampleRate)
 			success &= false;
 		}
 	}
-#else
- 	FILE * file = fopen(filename.c_str(), "rb");
-	
-	success &= file != nullptr;
-	
-	int size = 0;
-	
-	if (success)
-	{
-		success &= fseek(file, 0, SEEK_END) == 0;
-		size = ftell(file);
-		success &= fseek(file, 0, SEEK_SET) == 0;
-	}
-	
-	success &= size > 0;
-
-	uint8_t * bytes = nullptr;
-	
-	if (success)
-	{
-		bytes = new uint8_t[size];
-	
-		success &= fread(bytes, size, 1, file) == 1;
-	}
-	
-	if (file != nullptr)
-	{
-		fclose(file);
-		file = nullptr;
-	}
-#endif
 	
 	if (success)
 	{
