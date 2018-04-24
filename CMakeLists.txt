@@ -8,6 +8,7 @@ set(sources
 	jsusfx.cpp
 	jsusfx_file.cpp
 	jsusfx_gfx.cpp
+	riff.cpp
 	WDL/eel2/nseel-compiler.c
 	WDL/eel2/nseel-eval.c
 	WDL/eel2/nseel-ram.c
