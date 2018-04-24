@@ -510,7 +510,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 				
 				std::string resolvedPath;
 				if ( pathLibrary.resolveImportPath(src, path, resolvedPath) ) {
-					if ( gfx != nullptr && ! gfx->handleFile(index, resolvedPath.c_str() ) ) {
+					if ( ! handleFile(index, resolvedPath.c_str() ) ) {
 						return false;
 					}
 				}
@@ -756,6 +756,7 @@ void JsusFx::dumpvars() {
 }
 
 #ifndef JSUSFX_OWNSCRIPTMUTEXT
+// todo : implement mutex interface ?
 void NSEEL_HOSTSTUB_EnterMutex() { }
 void NSEEL_HOSTSTUB_LeaveMutex() { }
 #endif

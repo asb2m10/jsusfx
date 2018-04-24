@@ -179,7 +179,9 @@ public:
     void draw();
 	
     const char * getString(int index, WDL_FastString ** fs);
-    
+	
+    virtual bool handleFile(int index, const char *filename) { return true; }
+	
     virtual void displayMsg(const char *fmt, ...) = 0;
     virtual void displayError(const char *fmt, ...) = 0;
 

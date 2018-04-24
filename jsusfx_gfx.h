@@ -41,8 +41,6 @@ struct JsusFxGfx {
 	
 	void init(NSEEL_VMCTX vm);
 	
-	virtual bool handleFile(int index, const char *filename) { return true; }
-	
 	virtual void setup(const int w, const int h) { };
 	
 	virtual void gfx_line(int np, EEL_F ** params) { }
@@ -86,8 +84,6 @@ struct JsusFxGfx {
 #define GFXLOG printf("%s called!\n", __FUNCTION__)
 
 struct JsusFxGfx_Log : JsusFxGfx {
-	virtual bool handleFile(int index, const char *filename) override { GFXLOG; return true; }
-	
 	virtual void gfx_line(int np, EEL_F ** params) override { GFXLOG; }
 	virtual void gfx_rect(int np, EEL_F ** params) override { GFXLOG; }
 	virtual void gfx_circle(EEL_F x, EEL_F y, EEL_F radius, bool fill, bool aa) override { GFXLOG; }
