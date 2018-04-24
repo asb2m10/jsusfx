@@ -48,7 +48,6 @@ struct JsusFx_File
 	
 	std::istream * stream;
 	
-	std::string filename;
 	Mode mode;
 	
 	RIFFSoundData * soundData;

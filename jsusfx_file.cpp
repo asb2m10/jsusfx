@@ -148,7 +148,6 @@ void JsusFxFileAPI::init(NSEEL_VMCTX vm)
 
 JsusFx_File::JsusFx_File()
 	: stream(nullptr)
-	, filename()
 	, mode(kMode_None)
 	, soundData(nullptr)
 	, readPosition(0)
@@ -161,24 +160,19 @@ JsusFx_File::~JsusFx_File()
 	assert(stream == nullptr);
 }
 
-bool JsusFx_File::open(JsusFx & jsusFx, const char * _filename)
+bool JsusFx_File::open(JsusFx & jsusFx, const char * filename)
 {
-	// reset
+	// open the stream
 	
-	filename.clear();
-	
-	// check if file exists
-	
-	stream = jsusFx.pathLibrary.open(_filename);
+	stream = jsusFx.pathLibrary.open(filename);
 	
 	if (stream == nullptr)
 	{
-		jsusFx.displayError("failed to open file: %s", _filename);
+		jsusFx.displayError("failed to open file: %s", filename);
 		return false;
 	}
 	else
 	{
-		filename = _filename;
 		return true;
 	}
 }
