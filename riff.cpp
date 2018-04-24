@@ -32,6 +32,12 @@
 
 //
 
+#ifndef nullptr
+	#define nullptr NULL
+#endif
+
+//
+
 template <typename T>
 bool read(const uint8_t *& src, int & srcSize, T & result)
 {
