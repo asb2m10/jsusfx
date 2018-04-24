@@ -55,6 +55,10 @@ struct JsusFxPathLibraryTest : JsusFxPathLibrary {
 
 class JsusFxTest : public JsusFx {
 public:
+	JsusFxTest(JsusFxPathLibrary &pathLibrary)
+		: JsusFx(pathLibrary) {
+	}
+	
     void displayMsg(const char *fmt, ...) {
         char output[4096];
         va_list argptr;
@@ -89,8 +93,10 @@ void test_script(const char *path) {
     
     out[0] = new float[64];
     out[1] = new float[64];
-        
-    fx = new JsusFxTest();
+	
+	JsusFxPathLibraryTest pathLibrary;
+	
+    fx = new JsusFxTest(pathLibrary);
 	
 #if TEST_GFX
 	JsusFxGfx_Log gfx;
@@ -98,7 +104,6 @@ void test_script(const char *path) {
 	gfx.init(fx->m_vm);
 #endif
 	
-	JsusFxPathLibraryTest pathLibrary;
 	printf("compile %d: %s\n", fx->compile(pathLibrary, path), path);
 	
 	printf("desc: %s\n", fx->desc);
