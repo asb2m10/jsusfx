@@ -55,6 +55,58 @@ static EEL_F * NSEEL_CGEN_CALL _reaper_spl(void *opaque, EEL_F *n)
   }
 }
 
+static int lastNote = -1;
+static int todo = 0;
+
+static EEL_F NSEEL_CGEN_CALL _midirecv(void *opaque, INT_PTR np, EEL_F **parms)
+{
+	//const bool trigger = (rand() % 1000) == 0;
+	const bool trigger = (lastNote == -1) ? (todo-- == 0) : ((rand() % 200) == 0);
+
+	JsusFx *ctx=REAPER_GET_INTERFACE(opaque);
+	if (trigger && np >= 3) {
+		if (lastNote != -1) {
+			const uint8_t msg = 0x80;
+			const uint8_t note = lastNote;
+			const uint8_t value = rand() % 128;
+			
+			*parms[0] = 0;
+			*parms[1] = msg;
+			if (np >= 4) {
+				*parms[2] = note;
+				*parms[3] = value;
+			} else {
+				*parms[2] = note + value * 256;
+			}
+			lastNote = -1;
+			return 1;
+		} else {
+			const uint8_t msg = 0x90;
+			const uint8_t note = 32 + (rand() % 32);
+			const uint8_t value = rand() % 128;
+			
+			*parms[0] = 0;
+			*parms[1] = msg;
+			if (np >= 4) {
+				*parms[2] = note;
+				*parms[3] = value;
+			} else {
+				*parms[2] = note + value * 256;
+			}
+			lastNote = note;
+			todo = 100 + (rand() % 400);
+			return 1;
+		}
+	} else {
+		return 0;
+	}
+}
+
+static EEL_F NSEEL_CGEN_CALL _midisend(void *opaque, INT_PTR np, EEL_F **parms)
+{
+	return 0;
+}
+
 // todo : remove
 static EEL_F NSEEL_CGEN_CALL __stub(void *opaque, INT_PTR np, EEL_F **parms)
 {
@@ -270,6 +322,8 @@ JsusFx::JsusFx() {
 	NSEEL_addfunc_varparm("sliderchange",1,NSEEL_PProc_THIS,&__stub);
 	NSEEL_addfunc_varparm("slider",1,NSEEL_PProc_THIS,&__stub); // todo : support this syntax: slider(index) = x
 	NSEEL_addfunc_retptr("spl",1,NSEEL_PProc_THIS,&_reaper_spl);
+	NSEEL_addfunc_varparm("midirecv",3,NSEEL_PProc_THIS,&_midirecv);
+	NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
 }
 
 JsusFx::~JsusFx() {
