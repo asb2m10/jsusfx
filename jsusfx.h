@@ -31,6 +31,7 @@
 class eel_string_context_state;
 
 class JsusFx;
+struct JsusFxFileAPI;
 struct JsusFxGfx;
 
 class WDL_FastString;
@@ -116,6 +117,10 @@ struct JsusFxPathLibrary {
 		return false;
 	}
 	
+	virtual bool resolveDataPath(const std::string &importPath, std::string &resolvedPath) {
+		return false;
+	}
+	
 	virtual std::istream* open(const std::string &path) {
 		return nullptr;
 	}
@@ -154,6 +159,8 @@ public:
     int numOutputs;
     int numValidInputChannels;
 	
+    JsusFxFileAPI *fileAPI;
+
     JsusFxGfx *gfx;
     int gfx_w;
     int gfx_h;

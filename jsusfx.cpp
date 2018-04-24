@@ -15,6 +15,7 @@
 */
 
 #include "jsusfx.h"
+#include "jsusfx_file.h"
 #include "jsusfx_gfx.h"
 
 #include <string.h>
@@ -241,6 +242,8 @@ JsusFx::JsusFx() {
     computeSlider = false;
     normalizeSliders = 0;
     srate = 0;
+
+    fileAPI = nullptr;
 	
 	gfx = nullptr;
     gfx_w = 0;

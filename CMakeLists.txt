@@ -6,6 +6,7 @@ project(jsusfx)
 
 set(sources
 	jsusfx.cpp
+	jsusfx_file.cpp
 	jsusfx_gfx.cpp
 	WDL/eel2/nseel-compiler.c
 	WDL/eel2/nseel-eval.c
