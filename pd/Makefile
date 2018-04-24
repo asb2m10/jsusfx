@@ -1,5 +1,5 @@
 #DEBUG_OPT=-g
-OBJS=jsusfx_pd.o ../jsusfx.o ../jsusfx_gfx.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o 
+OBJS=jsusfx_pd.o ../jsusfx.o ../jsusfx_file.o ../jsusfx_gfx.o ../riff.o ../WDL/eel2/nseel-compiler.o ../WDL/eel2/nseel-eval.o ../WDL/eel2/nseel-ram.o ../WDL/eel2/nseel-yylex.o ../WDL/eel2/nseel-cfunc.o  ../WDL/fft.o 
 OBJS2=
 PD_INCLUDE = $(PD_PATH)
 
