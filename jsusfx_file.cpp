@@ -16,6 +16,8 @@
 
 #include "jsusfx.h"
 #include "jsusfx_file.h"
+#include "riff.h"
+#include <assert.h>
 
 #define EEL_FILE_GET_INTERFACE(opaque) ((opaque) ? (((JsusFx*)opaque)->fileAPI) : nullptr)
 
@@ -314,9 +316,6 @@ bool JsusFxFileAPI_Basic::file_var(JsusFx & jsusFx, const int index, EEL_F & des
 }
 
 //
-
-#include "riff.h"
-#include <assert.h>
 
 JsusFx_File::JsusFx_File()
 	: stream(nullptr)

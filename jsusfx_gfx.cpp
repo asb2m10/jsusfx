@@ -14,10 +14,9 @@
  * limitations under the License.
 */
 
-#include "WDL/eel2/ns-eel-int.h"
-
 #include "jsusfx.h"
 #include "jsusfx_gfx.h"
+#include "WDL/eel2/ns-eel-int.h"
 
 #define EEL_GFX_GET_INTERFACE(opaque) ((opaque) ? (((JsusFx*)opaque)->gfx) : nullptr)
 
