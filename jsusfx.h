@@ -33,8 +33,15 @@ class eel_string_context_state;
 class JsusFx;
 struct JsusFxFileAPI;
 struct JsusFxGfx;
+struct JsusFxPathLibrary;
+
+struct JsusFx_FileInfo;
+class JsusFx_Slider;
+struct JsusFx_Sections;
 
 class WDL_FastString;
+
+//
 
 class JsusFx_Slider {
 public:
@@ -103,8 +110,6 @@ struct JsusFx_FileInfo
 		return isValid();
 	}
 };
-
-struct JsusFx_Sections;
 
 struct JsusFxPathLibrary {
 	virtual bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {

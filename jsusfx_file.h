@@ -20,6 +20,7 @@
 #include <iostream>
 
 class JsusFx;
+struct RIFFSoundData;
 
 struct JsusFxFileAPI {
 	void init(NSEEL_VMCTX vm);
@@ -34,8 +35,6 @@ struct JsusFxFileAPI {
 };
 
 //
-
-struct RIFFSoundData;
 
 struct JsusFx_File
 {
