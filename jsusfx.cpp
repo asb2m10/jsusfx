@@ -56,48 +56,21 @@ static EEL_F * NSEEL_CGEN_CALL _reaper_spl(void *opaque, EEL_F *n)
   }
 }
 
-static int lastNote = -1;
-static int todo = 0;
-
 static EEL_F NSEEL_CGEN_CALL _midirecv(void *opaque, INT_PTR np, EEL_F **parms)
 {
-	//const bool trigger = (rand() % 1000) == 0;
-	const bool trigger = (lastNote == -1) ? (todo-- == 0) : ((rand() % 200) == 0);
-
-	JsusFx *ctx=REAPER_GET_INTERFACE(opaque);
-	if (trigger && np >= 3) {
-		if (lastNote != -1) {
-			const uint8_t msg = 0x80;
-			const uint8_t note = lastNote;
-			const uint8_t value = rand() % 128;
-			
-			*parms[0] = 0;
-			*parms[1] = msg;
-			if (np >= 4) {
-				*parms[2] = note;
-				*parms[3] = value;
-			} else {
-				*parms[2] = note + value * 256;
-			}
-			lastNote = -1;
-			return 1;
+	JsusFx *ctx = REAPER_GET_INTERFACE(opaque);
+	if (np >= 3 && ctx->midiSize >= 4) {
+		*parms[0] = ctx->midi[0];
+		*parms[1] = ctx->midi[1];
+		if (np >= 4) {
+			*parms[2] = ctx->midi[2];
+			*parms[3] = ctx->midi[3];
 		} else {
-			const uint8_t msg = 0x90;
-			const uint8_t note = 32 + (rand() % 32);
-			const uint8_t value = rand() % 128;
-			
-			*parms[0] = 0;
-			*parms[1] = msg;
-			if (np >= 4) {
-				*parms[2] = note;
-				*parms[3] = value;
-			} else {
-				*parms[2] = note + value * 256;
-			}
-			lastNote = note;
-			todo = 100 + (rand() % 400);
-			return 1;
+			*parms[2] = ctx->midi[2] + ctx->midi[3] * 256;
 		}
+		ctx->midi += 4;
+		ctx->midiSize -= 4;
+		return 1;
 	} else {
 		return 0;
 	}
@@ -313,6 +286,9 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
     pathLibrary = _pathLibrary;
 	
     fileAPI = nullptr;
+		
+    midi = nullptr;
+	midiSize = 0;
 	
 	gfx = nullptr;
     gfx_w = 0;
@@ -705,6 +681,15 @@ void JsusFx::moveSlider(int idx, float value) {
     }
 
     computeSlider |= sliders[idx].setValue(value);
+}
+
+void JsusFx::setMidi(const void * _midi, int numBytes) {
+	if ((numBytes % 4) != 0) {
+		displayError("midi buffer size is not a multiple of four");
+	} else {
+		midi = (uint8_t*)_midi;
+		midiSize = numBytes;
+	}
 }
 
 void JsusFx::process(float **input, float **output, int size, int numInputChannels, int numOutputChannels) {

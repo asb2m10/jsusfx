@@ -163,6 +163,9 @@ public:
     JsusFxFileAPI *fileAPI;
     JsusFx_FileInfo fileInfos[kMaxFileInfos];
 
+	uint8_t * midi;
+    int midiSize;
+	
     JsusFxGfx *gfx;
     int gfx_w;
     int gfx_h;
@@ -174,6 +177,7 @@ public:
     bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
     void moveSlider(int idx, float value);
+    void setMidi(const void * midi, int numBytes);
     void process(float **input, float **output, int size, int numInputChannels, int numOutputChannels);
     void process64(double **input, double **output, int size, int numInputChannels, int numOutputChannels);
     void draw();
