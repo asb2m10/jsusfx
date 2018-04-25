@@ -11,10 +11,16 @@
 
 #define ENABLE_INOUT_TEST 1
 
+#define TEST_FILE 1
+
 #define TEST_GFX 1
 
 #if ENABLE_INOUT_TEST
 	#include <math.h>
+#endif
+
+#if TEST_FILE
+	#include "../jsusfx_file.h"
 #endif
 
 #if TEST_GFX
@@ -24,6 +30,12 @@
 
 
 struct JsusFxPathLibraryTest : JsusFxPathLibrary {
+	std::string dataRoot;
+
+	JsusFxPathLibraryTest(const char * _dataRoot) {
+		dataRoot = _dataRoot;
+	}
+
 	static bool fileExists(const std::string &filename) {
 		std::ifstream is(filename);
 		return is.is_open();
@@ -34,6 +46,11 @@ struct JsusFxPathLibraryTest : JsusFxPathLibrary {
 		if (pos != std::string::npos)
 			resolvedPath = parentPath.substr(0, pos + 1);
 		resolvedPath += importPath;
+		return fileExists(resolvedPath);
+	}
+
+	virtual bool resolveDataPath(const std::string &importPath, std::string &resolvedPath) override {
+		resolvedPath = dataRoot + "/" + importPath;
 		return fileExists(resolvedPath);
 	}
 	
@@ -93,11 +110,23 @@ void test_script(const char *path) {
     
     out[0] = new float[64];
     out[1] = new float[64];
+
+    std::string dataRoot = path;
+	const size_t pos = dataRoot.rfind('/', '\\');
+	if (pos != std::string::npos)
+		dataRoot = dataRoot.substr(0, pos + 1);
+	printf("data root: %s\n", dataRoot.c_str());
 	
-	JsusFxPathLibraryTest pathLibrary;
+	JsusFxPathLibraryTest pathLibrary(dataRoot.c_str());
 	
     fx = new JsusFxTest(pathLibrary);
 	
+#if TEST_FILE
+	JsusFxFileAPI_Basic fileAPI;
+	fx->fileAPI = &fileAPI;
+	fileAPI.init(fx->m_vm);
+#endif
+
 #if TEST_GFX
 	JsusFxGfx_Log gfx;
 	fx->gfx = &gfx;
