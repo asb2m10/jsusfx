@@ -141,6 +141,180 @@ void JsusFxFileAPI::init(NSEEL_VMCTX vm)
 
 //
 
+JsusFxFileAPI_Basic::JsusFxFileAPI_Basic()
+{
+	memset(files, 0, sizeof(files));
+}
+
+int JsusFxFileAPI_Basic::file_open(JsusFx & jsusFx, const char * filename)
+{
+	std::string resolvedPath;
+	
+	if (jsusFx.pathLibrary.resolveDataPath(filename, resolvedPath) == false)
+	{
+		jsusFx.displayError("failed to resolve data path");
+		return -1;
+	}
+	
+	for (int i = 1; i < kMaxFileHandles; ++i)
+	{
+		if (files[i] == nullptr)
+		{
+			files[i] = new JsusFx_File();
+			
+			if (files[i]->open(jsusFx, resolvedPath.c_str()) == false)
+			{
+				jsusFx.displayError("failed to open file: %s", resolvedPath.c_str());
+				
+				delete files[i];
+				files[i] = nullptr;
+				
+				return -1;
+			}
+			else
+			{
+				return i;
+			}
+		}
+	}
+	
+	jsusFx.displayError("failed to find a free file handle");
+	return -1;
+}
+
+bool JsusFxFileAPI_Basic::file_close(JsusFx & jsusFx, const int index)
+{
+	if (index < 0 || index >= kMaxFileHandles)
+	{
+		jsusFx.displayError("invalid file handle");
+		return -1;
+	}
+	
+	if (files[index] == nullptr)
+	{
+		jsusFx.displayError("file not opened");
+		return -1;
+	}
+	
+	files[index]->close(jsusFx);
+	
+	delete files[index];
+	files[index] = nullptr;
+	
+	return 0;
+}
+
+int JsusFxFileAPI_Basic::file_avail(JsusFx & jsusFx, const int index)
+{
+	if (index < 0 || index >= kMaxFileHandles)
+	{
+		jsusFx.displayError("invalid file handle");
+		return 0;
+	}
+	
+	if (files[index] == nullptr)
+	{
+		jsusFx.displayError("file not opened");
+		return 0;
+	}
+	
+	return files[index]->avail();
+}
+
+bool JsusFxFileAPI_Basic::file_riff(JsusFx & jsusFx, const int index, int & numChannels, int & sampleRate)
+{
+	if (index < 0 || index >= kMaxFileHandles)
+	{
+		jsusFx.displayError("invalid file handle");
+		return false;
+	}
+	
+	if (files[index] == nullptr)
+	{
+		jsusFx.displayError("file not opened");
+		return false;
+	}
+	
+	if (files[index]->riff(numChannels, sampleRate) == false)
+	{
+		jsusFx.displayError("failed to parse RIFF");
+		return false;
+	}
+	
+	return true;
+}
+
+bool JsusFxFileAPI_Basic::file_text(JsusFx & jsusFx, const int index)
+{
+	if (index < 0 || index >= kMaxFileHandles)
+	{
+		jsusFx.displayError("invalid file handle");
+		return false;
+	}
+	
+	if (files[index] == nullptr)
+	{
+		jsusFx.displayError("file not opened");
+		return false;
+	}
+	
+	if (files[index]->text() == false)
+	{
+		jsusFx.displayError("failed to parse text");
+		return false;
+	}
+	
+	return true;
+}
+
+int JsusFxFileAPI_Basic::file_mem(JsusFx & jsusFx, const int index, EEL_F * dest, const int numValues)
+{
+	if (index < 0 || index >= kMaxFileHandles)
+	{
+		jsusFx.displayError("invalid file handle");
+		return 0;
+	}
+	
+	if (files[index] == nullptr)
+	{
+		jsusFx.displayError("file not opened");
+		return 0;
+	}
+	
+	if (files[index]->mem(numValues, dest) == false)
+	{
+		jsusFx.displayError("failed to read data");
+		return 0;
+	}
+	else
+		return numValues;
+}
+
+bool JsusFxFileAPI_Basic::file_var(JsusFx & jsusFx, const int index, EEL_F & dest)
+{
+	if (index < 0 || index >= kMaxFileHandles)
+	{
+		jsusFx.displayError("invalid file handle");
+		return 0;
+	}
+	
+	if (files[index] == nullptr)
+	{
+		jsusFx.displayError("file not opened");
+		return 0;
+	}
+	
+	if (files[index]->var(dest) == false)
+	{
+		jsusFx.displayError("failed to read value");
+		return 0;
+	}
+	else
+		return 1;
+}
+
+//
+
 #include "riff.h"
 #include <assert.h>
 

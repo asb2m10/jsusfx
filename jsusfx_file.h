@@ -20,6 +20,9 @@
 #include <iostream>
 
 class JsusFx;
+struct JsusFxFileAPI;
+struct JsusFxFileAPI_Basic;
+struct JsusFx_File;
 struct RIFFSoundData;
 
 struct JsusFxFileAPI {
@@ -32,6 +35,27 @@ struct JsusFxFileAPI {
 	virtual bool file_text(JsusFx & jsusFx, const int handle) { return false; }
 	virtual int file_mem(JsusFx & jsusFx, const int handle, EEL_F * result, const int numValues) { return 0; }
 	virtual bool file_var(JsusFx & jsusFx, const int handle, EEL_F & result) { return false; }
+};
+
+/*
+JsusFxFileAPI_Basic provides a basic File API implementation which uses JsusFx_File for reading and the JsusFxPathLibrary to resolve and open files
+*/
+
+struct JsusFxFileAPI_Basic : JsusFxFileAPI
+{
+	static const int kMaxFileHandles = 16;
+
+	JsusFx_File * files[kMaxFileHandles];
+	
+	JsusFxFileAPI_Basic();
+	
+	virtual int file_open(JsusFx & jsusFx, const char * filename) override;
+	virtual bool file_close(JsusFx & jsusFx, const int index) override;
+	virtual int file_avail(JsusFx & jsusFx, const int index) override;
+	virtual bool file_riff(JsusFx & jsusFx, const int index, int & numChannels, int & sampleRate) override;
+	virtual bool file_text(JsusFx & jsusFx, const int index) override;
+	virtual int file_mem(JsusFx & jsusFx, const int index, EEL_F * dest, const int numValues) override;
+	virtual bool file_var(JsusFx & jsusFx, const int index, EEL_F & dest) override;
 };
 
 /*
