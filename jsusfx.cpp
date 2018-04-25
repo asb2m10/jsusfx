@@ -695,6 +695,48 @@ const char * JsusFx::getString(const int index, WDL_FastString ** fs) {
 	return EEL_STRING_GET_FOR_INDEX(index, fs);
 }
 
+bool JsusFx::handleFile(int index, const char *filename)
+{
+	if (index < 0 || index >= kMaxFileInfos)
+	{
+		displayError("file index out of bounds %d:%s", index, filename);
+		return false;
+	}
+	
+	if (fileInfos[index].isValid())
+	{
+		displayMsg("file already exists %d:%s", index, filename);
+		
+		fileInfos[index] = JsusFx_FileInfo();
+	}
+	
+	//
+	
+	if (fileInfos[index].init(filename))
+	{
+		const char *ext = nullptr;
+		for (const char *p = filename; *p; ++p)
+			if (*p == '.')
+				ext = p + 1;
+		
+		if (ext != nullptr && (stricmp(ext, "png") == 0 || stricmp(ext, "jpg") == 0))
+		{
+			if (gfx != nullptr)
+			{
+				gfx->gfx_loadimg(*this, index, index);
+			}
+		}
+		
+		return true;
+	}
+	else
+	{
+		displayError("failed to find file %d:%s", index, filename);
+		
+		return false;
+	}
+}
+
 void JsusFx::releaseCode() {
     desc[0] = 0;
     

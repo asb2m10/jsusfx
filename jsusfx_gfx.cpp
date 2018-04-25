@@ -21,6 +21,8 @@
 
 #define EEL_GFX_GET_INTERFACE(opaque) ((opaque) ? (((JsusFx*)opaque)->gfx) : nullptr)
 
+#define REAPER_GET_INTERFACE(opaque) (*(JsusFx*)opaque)
+
 static EEL_F * NSEEL_CGEN_CALL _gfx_lineto(void *opaque, EEL_F *xpos, EEL_F *ypos, EEL_F *useaa)
 {
   JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
@@ -312,7 +314,8 @@ static EEL_F * NSEEL_CGEN_CALL _gfx_getimgdim(void *opaque, EEL_F *img, EEL_F *w
 static EEL_F NSEEL_CGEN_CALL _gfx_loadimg(void *opaque, EEL_F *img, EEL_F *fr)
 {
   JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
-  if (ctx) return ctx->gfx_loadimg((int)*img,*fr);
+  JsusFx &jsusFx = REAPER_GET_INTERFACE(opaque);
+  if (ctx) return ctx->gfx_loadimg(jsusFx,(int)*img,*fr);
   return 0.0;
 }
 

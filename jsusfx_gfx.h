@@ -64,7 +64,7 @@ struct JsusFxGfx {
 	virtual void gfx_setpixel(EEL_F r, EEL_F g, EEL_F b) { }
 	virtual void gfx_getpixel(EEL_F * r, EEL_F * g, EEL_F * b) { }
 
-	virtual EEL_F gfx_loadimg(int img, EEL_F loadFrom) { return 0.f; }
+	virtual EEL_F gfx_loadimg(JsusFx & jsusFx, int img, EEL_F loadFrom) { return 0.f; }
 	virtual void gfx_getimgdim(EEL_F img, EEL_F * w, EEL_F * h) { }
 	virtual EEL_F gfx_setimgdim(int img, EEL_F * w, EEL_F * h) { return 0.f; }
 	
@@ -105,7 +105,7 @@ struct JsusFxGfx_Log : JsusFxGfx {
 	virtual void gfx_setpixel(EEL_F r, EEL_F g, EEL_F b) override { GFXLOG; }
 	virtual void gfx_getpixel(EEL_F * r, EEL_F * g, EEL_F * b) override { GFXLOG; }
 
-	virtual EEL_F gfx_loadimg(int img, EEL_F loadFrom) override { GFXLOG; return -1.f; }
+	virtual EEL_F gfx_loadimg(JsusFx & jsusFx, int img, EEL_F loadFrom) override { GFXLOG; return -1.f; }
 	virtual void gfx_getimgdim(EEL_F img, EEL_F * w, EEL_F * h) override { GFXLOG; }
 	virtual EEL_F gfx_setimgdim(int img, EEL_F * w, EEL_F * h) override { GFXLOG; return 0.f; }
 	

@@ -110,6 +110,23 @@ public:
 	}
 };
 
+struct JsusFx_FileInfo
+{
+	std::string filename;
+	
+	bool isValid() const
+	{
+		return !filename.empty();
+	}
+	
+	bool init(const char * _filename)
+	{
+		filename = _filename;
+		
+		return isValid();
+	}
+};
+
 struct JsusFx_Sections;
 
 struct JsusFxPathLibrary {
@@ -143,6 +160,7 @@ protected:
 public:
 	static const int kMaxSamples = 64;
 	static const int kMaxSliders = 64;
+	static const int kMaxFileInfos = 128;
 	
     NSEEL_VMCTX m_vm;
     JsusFx_Slider sliders[kMaxSliders];
@@ -162,6 +180,7 @@ public:
 	JsusFxPathLibrary &pathLibrary;
 	
     JsusFxFileAPI *fileAPI;
+    JsusFx_FileInfo fileInfos[kMaxFileInfos];
 
     JsusFxGfx *gfx;
     int gfx_w;
@@ -180,7 +199,7 @@ public:
 	
     const char * getString(int index, WDL_FastString ** fs);
 	
-    virtual bool handleFile(int index, const char *filename) { return true; }
+    bool handleFile(int index, const char *filename);
 	
     virtual void displayMsg(const char *fmt, ...) = 0;
     virtual void displayError(const char *fmt, ...) = 0;
