@@ -698,10 +698,12 @@ void JsusFx::process64(double **input, double **output, int size, int numInputCh
 }
 
 void JsusFx::draw() {
-    if ( codeGfx == NULL )
+    if ( codeGfx == NULL || gfx == NULL )
         return;
-
-    NSEEL_code_execute(codeGfx);
+	
+	gfx->beginDraw();
+	NSEEL_code_execute(codeGfx);
+	gfx->endDraw();
 }
 
 const char * JsusFx::getString(const int index, WDL_FastString ** fs) {

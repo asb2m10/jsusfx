@@ -43,6 +43,9 @@ struct JsusFxGfx {
 	
 	virtual void setup(const int w, const int h) { };
 	
+	virtual void beginDraw() { }
+	virtual void endDraw() { }
+	
 	virtual void gfx_line(int np, EEL_F ** params) { }
 	virtual void gfx_rect(int np, EEL_F ** params) { }
 	virtual void gfx_circle(EEL_F x, EEL_F y, EEL_F radius, bool fill, bool aa) { }
