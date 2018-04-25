@@ -79,6 +79,22 @@ struct JsusFx_Sections {
 
 //
 
+static const char *skipWhite(const char *text)
+{
+	while ( *text && isspace(*text) )
+		text++;
+	
+	return text;
+}
+
+static const char *nextToken(const char *text)
+{
+	while ( *text && *text != ',' && *text != '=' && *text != '<' && *text != '>' && *text != '{' && *text != '}' )
+		text++;
+
+	return text;
+}
+
 bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const int lnumber) {
 	char buffer[2048];
 	strncpy(buffer, param, 2048);
@@ -133,7 +149,7 @@ bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const
 	
 	if ( *tmp != '<' )
 	{
-		log("slider info is missing");
+		fx.displayError("slider info is missing");
 		return false;
 	}
 	else
@@ -142,7 +158,7 @@ bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const
 		
 		if ( !sscanf(tmp, "%f", &min) )
 		{
-			log("failed to read min value");
+			fx.displayError("failed to read min value");
 			return false;
 		}
 	
@@ -150,7 +166,7 @@ bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const
 		
 		if ( *tmp != ',' )
 		{
-			log("max value is missing");
+			fx.displayError("max value is missing");
 			return false;
 		}
 		else
@@ -159,7 +175,7 @@ bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const
 			
 			if ( !sscanf(tmp, "%f", &max) )
 			{
-				log("failed to read max value");
+				fx.displayError("failed to read max value");
 				return false;
 			}
 			
@@ -201,7 +217,7 @@ bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const
 						
 						if ( *tmp == 0 )
 						{
-							log("enum value list not properly terminated");
+							fx.displayError("enum value list not properly terminated");
 							return false;
 						}
 						

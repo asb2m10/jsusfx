@@ -59,27 +59,6 @@ public:
         isEnum = false;
     }
 
-	static const char *skipWhite(const char *text)
-	{
-		while ( *text && isspace(*text) )
-			text++;
-		
-		return text;
-	}
-	
-    static const char *nextToken(const char *text)
-    {
-    	while ( *text && *text != ',' && *text != '=' && *text != '<' && *text != '>' && *text != '{' && *text != '}' )
-    		text++;
-
-    	return text;
-    }
-	
-    static void log(const char *text)
-    {
-    	printf("%s\n", text);
-	}
-
     bool config(JsusFx &fx, const int index, const char *param, const int lnumber);
     
     /**
