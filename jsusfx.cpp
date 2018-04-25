@@ -710,6 +710,8 @@ void JsusFx::releaseCode() {
 		NSEEL_code_free(codeGfx);
         
     codeInit = codeSlider = codeBlock = codeSample = codeGfx = NULL;
+	
+    NSEEL_code_compile_ex(m_vm, nullptr, 0, NSEEL_CODE_COMPILE_FLAG_COMMONFUNCS_RESET);
 
 	numInputs = 0;
 	numOutputs = 0;
