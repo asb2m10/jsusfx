@@ -81,6 +81,8 @@ struct JsusFxGfx {
 	virtual void gfx_blitext2(int mp, EEL_F ** params, int blitmode) { } // 0=blit, 1=deltablit
 };
 
+// the logging based GFX implementation below is used to see if the API works, and to see which calls a script is making. it's use doesn't extend beyong this basic debugging facility
+
 #define GFXLOG printf("%s called!\n", __FUNCTION__)
 
 struct JsusFxGfx_Log : JsusFxGfx {

@@ -96,8 +96,7 @@ public:
 	}
 };
 
-struct JsusFx_FileInfo
-{
+struct JsusFx_FileInfo {
 	std::string filename;
 	
 	bool isValid() const {

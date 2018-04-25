@@ -34,7 +34,53 @@ struct JsusFxFileAPI {
 	virtual bool file_var(JsusFx & jsusFx, const int handle, EEL_F & result) { return false; }
 };
 
-//
+/*
+JsusFx_File is used to implement the File API. it provides functionality to read RIFF sound data, text files and raw data files according to how these functions should behave according to Reaper's documentation. documentation for the exact operation of these functions isn't available, so a best effort attempt has been made to implement them
+
+// example usage loading a sound file:
+
+JsusFx_File file;
+if (file.open(jsusFx, "sound.wav"))
+{
+	int numChannels;
+ 	int sampleRate;
+ 
+	if (file.riff(numChannels, sampleRate))
+	{
+		const int numSamples = file.avail();
+ 
+		EEL_F * samples = new EEL_F[numSamples];
+ 
+		if (file.mem(numSamples, samples))
+		{
+			printf("successfully loaded some sound samples!\n");
+		}
+	}
+ 
+	file.close();
+}
+
+// example usage loading values from a text file:
+
+JsusFx_File file;
+if (file.open(jsusFx, "kernelValues.txt"))
+{
+	if (file.text())
+	{
+		while (file.avail())
+		{
+			EEL_F value;
+ 
+			if (file.var(value))
+			{
+				printf("%.2f\n", value);
+			}
+		}
+	}
+ 
+	file.close();
+}
+*/
 
 struct JsusFx_File
 {
