@@ -79,16 +79,14 @@ struct JsusFx_Sections {
 
 //
 
-static const char *skipWhite(const char *text)
-{
+static const char *skipWhite(const char *text) {
 	while ( *text && isspace(*text) )
 		text++;
 	
 	return text;
 }
 
-static const char *nextToken(const char *text)
-{
+static const char *nextToken(const char *text) {
 	while ( *text && *text != ',' && *text != '=' && *text != '<' && *text != '>' && *text != '{' && *text != '}' )
 		text++;
 

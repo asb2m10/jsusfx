@@ -93,13 +93,11 @@ struct JsusFx_FileInfo
 {
 	std::string filename;
 	
-	bool isValid() const
-	{
+	bool isValid() const {
 		return !filename.empty();
 	}
 	
-	bool init(const char * _filename)
-	{
+	bool init(const char *_filename) {
 		filename = _filename;
 		
 		return isValid();
