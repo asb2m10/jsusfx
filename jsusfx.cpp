@@ -59,21 +59,64 @@ static EEL_F * NSEEL_CGEN_CALL _reaper_spl(void *opaque, EEL_F *n)
 static EEL_F NSEEL_CGEN_CALL _midirecv(void *opaque, INT_PTR np, EEL_F **parms)
 {
 	JsusFx *ctx = REAPER_GET_INTERFACE(opaque);
-	if (np >= 3 && ctx->midiSize >= 3) {
-		*parms[0] = 0;
-		*parms[1] = ctx->midi[0];
-		if (np >= 4) {
-			*parms[2] = ctx->midi[1];
-			*parms[3] = ctx->midi[2];
-		} else {
-			*parms[2] = ctx->midi[1] + ctx->midi[2] * 256;
+	while (ctx->midiSize > 0) {
+		// peek the message type
+		const uint8_t b = ctx->midi[0];
+		if ((b & 0xf0) == 0xf0) {
+			// 0xf0 = system exclusive message
+			
+			// consume the byte
+			ctx->midi++;
+			ctx->midiSize--;
+			
+			// skip until we find a 0xf7 byte
+			for (;;) {
+				// end of data stream?
+				if (ctx->midiSize == 0)
+					break;
+				
+				// consume the byte
+				const uint8_t b = ctx->midi[0];
+				ctx->midi++;
+				ctx->midiSize--;
+				
+				// end of system exclusive message?
+				if (b == 0xf7)
+					break;
+			}
 		}
-		ctx->midi += 3;
-		ctx->midiSize -= 3;
-		return 1;
-	} else {
-		return 0;
+		else if (b & 0x80) {
+			// status byte
+			const uint8_t event = b & 0xf0;
+			//const uint8_t channel = b & 0x0f;
+			
+			// consume the byte
+			ctx->midi++;
+			ctx->midiSize--;
+			
+			// data bytes
+			if (ctx->midiSize >= 2) {
+				*parms[0] = 0;
+				*parms[1] = event;
+				if (np >= 4) {
+					*parms[2] = ctx->midi[0];
+					*parms[3] = ctx->midi[1];
+				} else {
+					*parms[2] = ctx->midi[0] + ctx->midi[1] * 256;
+				}
+				ctx->midi += 2;
+				ctx->midiSize -= 2;
+				return 1;
+			} else {
+				ctx->midiSize = 0;
+				return 0;
+			}
+		} else {
+			// data byte without a preceeding status byte? something is wrong here
+			printf("help!\n");
+		}
 	}
+	return 0;
 }
 
 static EEL_F NSEEL_CGEN_CALL _midisend(void *opaque, INT_PTR np, EEL_F **parms)
