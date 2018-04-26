@@ -59,17 +59,17 @@ static EEL_F * NSEEL_CGEN_CALL _reaper_spl(void *opaque, EEL_F *n)
 static EEL_F NSEEL_CGEN_CALL _midirecv(void *opaque, INT_PTR np, EEL_F **parms)
 {
 	JsusFx *ctx = REAPER_GET_INTERFACE(opaque);
-	if (np >= 3 && ctx->midiSize >= 4) {
-		*parms[0] = ctx->midi[0];
-		*parms[1] = ctx->midi[1];
+	if (np >= 3 && ctx->midiSize >= 3) {
+		*parms[0] = 0;
+		*parms[1] = ctx->midi[0];
 		if (np >= 4) {
-			*parms[2] = ctx->midi[2];
-			*parms[3] = ctx->midi[3];
+			*parms[2] = ctx->midi[1];
+			*parms[3] = ctx->midi[2];
 		} else {
-			*parms[2] = ctx->midi[2] + ctx->midi[3] * 256;
+			*parms[2] = ctx->midi[1] + ctx->midi[2] * 256;
 		}
-		ctx->midi += 4;
-		ctx->midiSize -= 4;
+		ctx->midi += 3;
+		ctx->midiSize -= 3;
 		return 1;
 	} else {
 		return 0;
@@ -684,7 +684,7 @@ void JsusFx::moveSlider(int idx, float value) {
 }
 
 void JsusFx::setMidi(const void * _midi, int numBytes) {
-	if ((numBytes % 4) != 0) {
+	if ((numBytes % 3) != 0) {
 		displayError("midi buffer size is not a multiple of four");
 	} else {
 		midi = (uint8_t*)_midi;
