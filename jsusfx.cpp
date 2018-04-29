@@ -315,16 +315,17 @@ bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const
 //
 
 JsusFxPathLibrary_Basic::JsusFxPathLibrary_Basic(const char * _dataRoot) {
-	dataRoot = _dataRoot;
+	if ( _dataRoot != nullptr )
+		dataRoot = _dataRoot;
 }
 
 void JsusFxPathLibrary_Basic::addSearchPath(const std::string & path) {
-	if (path.empty())
+	if ( path.empty() )
 		return;
 	
 	// make sure it ends with '/' or '\\'
 	
-	if (path.back() == '/' || path.back() == '\\')
+	if ( path.back() == '/' || path.back() == '\\' )
 		searchPaths.push_back(path);
 	else
 		searchPaths.push_back(path + "/");
@@ -337,26 +338,29 @@ bool JsusFxPathLibrary_Basic::fileExists(const std::string &filename) {
 
 bool JsusFxPathLibrary_Basic::resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
 	const size_t pos = parentPath.rfind('/', '\\');
-	if (pos != std::string::npos)
+	if ( pos != std::string::npos )
 		resolvedPath = parentPath.substr(0, pos + 1);
-	if (fileExists(resolvedPath + importPath))
-	{
+	
+	if ( fileExists(resolvedPath + importPath) ) {
 		resolvedPath = resolvedPath + importPath;
 		return true;
 	}
-	for (std::string & searchPath : searchPaths)
-	{
-		if (fileExists(resolvedPath + searchPath + importPath))
-		{
+	
+	for ( std::string & searchPath : searchPaths ) {
+		if ( fileExists(resolvedPath + searchPath + importPath) ) {
 			resolvedPath = resolvedPath + searchPath + importPath;
 			return true;
 		}
 	}
+	
 	return false;
 }
 
 bool JsusFxPathLibrary_Basic::resolveDataPath(const std::string &importPath, std::string &resolvedPath) {
-	resolvedPath = dataRoot + "/" + importPath;
+	if ( !dataRoot.empty() )
+		resolvedPath = dataRoot + "/" + importPath;
+	else
+		resolvedPath = importPath;
 	return fileExists(resolvedPath);
 }
 
@@ -550,6 +554,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 	
     for(int lnumber=1; ! input.eof(); lnumber++) {
 		input.getline(line, sizeof(line), '\n');
+		const int l = input.gcount();
 		
         if ( line[0] == '@' ) {
             char *b = line + 1;
@@ -587,7 +592,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
         }
         
         if ( code != nullptr ) {
-            int l = strlen(line);
+            //int l = strlen(line);
 			
             if ( l > 0 && line[l-1] == '\r' )
                 line[l-1] = 0;
