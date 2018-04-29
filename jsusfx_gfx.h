@@ -18,6 +18,8 @@
 
 #include "WDL/eel2/ns-eel.h"
 
+class JsusFx;
+
 struct JsusFxGfx {
 	EEL_F *m_gfx_r;
 	EEL_F *m_gfx_g;
