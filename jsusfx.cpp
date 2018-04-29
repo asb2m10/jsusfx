@@ -803,7 +803,7 @@ void JsusFx::setMidi(const void * _midi, int numBytes) {
 	}
 }
 
-void JsusFx::process(float **input, float **output, int size, int numInputChannels, int numOutputChannels) {
+void JsusFx::process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels) {
     if ( codeSample == NULL )
         return;
 
@@ -825,7 +825,7 @@ void JsusFx::process(float **input, float **output, int size, int numInputChanne
     }       
 }
 
-void JsusFx::process64(double **input, double **output, int size, int numInputChannels, int numOutputChannels) {
+void JsusFx::process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels) {
     if ( codeSample == NULL )
         return;
 
