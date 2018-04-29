@@ -39,9 +39,11 @@ struct JsusFxGfx {
 	EEL_F *m_mouse_y;
 	EEL_F *m_mouse_cap;
 	
+	virtual ~JsusFxGfx() { }
+	
 	void init(NSEEL_VMCTX vm);
 	
-	virtual void setup(const int w, const int h) { };
+	virtual void setup(const int w, const int h) { }
 	
 	virtual void beginDraw() { }
 	virtual void endDraw() { }
