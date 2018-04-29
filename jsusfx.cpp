@@ -314,6 +314,69 @@ bool JsusFx_Slider::config(JsusFx &fx, const int index, const char *param, const
 
 //
 
+JsusFxPathLibrary_Basic::JsusFxPathLibrary_Basic(const char * _dataRoot) {
+	dataRoot = _dataRoot;
+}
+
+void JsusFxPathLibrary_Basic::addSearchPath(const std::string & path) {
+	if (path.empty())
+		return;
+	
+	// make sure it ends with '/' or '\\'
+	
+	if (path.back() == '/' || path.back() == '\\')
+		searchPaths.push_back(path);
+	else
+		searchPaths.push_back(path + "/");
+}
+
+bool JsusFxPathLibrary_Basic::fileExists(const std::string &filename) {
+	std::ifstream is(filename);
+	return is.is_open();
+}
+
+bool JsusFxPathLibrary_Basic::resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
+	const size_t pos = parentPath.rfind('/', '\\');
+	if (pos != std::string::npos)
+		resolvedPath = parentPath.substr(0, pos + 1);
+	if (fileExists(resolvedPath + importPath))
+	{
+		resolvedPath = resolvedPath + importPath;
+		return true;
+	}
+	for (std::string & searchPath : searchPaths)
+	{
+		if (fileExists(resolvedPath + searchPath + importPath))
+		{
+			resolvedPath = resolvedPath + searchPath + importPath;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool JsusFxPathLibrary_Basic::resolveDataPath(const std::string &importPath, std::string &resolvedPath) {
+	resolvedPath = dataRoot + "/" + importPath;
+	return fileExists(resolvedPath);
+}
+
+std::istream* JsusFxPathLibrary_Basic::open(const std::string &path) {
+	std::ifstream *stream = new std::ifstream(path);
+	if ( stream->is_open() == false ) {
+		delete stream;
+		stream = nullptr;
+	}
+	
+	return stream;
+}
+
+void JsusFxPathLibrary_Basic::close(std::istream *&stream) {
+	delete stream;
+	stream = nullptr;
+}
+
+//
+
 JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
 	: pathLibrary(_pathLibrary) {
     m_vm = NSEEL_VM_alloc();

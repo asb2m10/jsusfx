@@ -111,6 +111,9 @@ struct JsusFx_FileInfo {
 };
 
 struct JsusFxPathLibrary {
+	virtual ~JsusFxPathLibrary() {
+	}
+	
 	virtual bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
 		return false;
 	}
@@ -125,6 +128,24 @@ struct JsusFxPathLibrary {
 	
 	virtual void close(std::istream *&stream) {
 	}
+};
+
+struct JsusFxPathLibrary_Basic : JsusFxPathLibrary {
+	std::string dataRoot;
+	
+	std::vector<std::string> searchPaths;
+	
+	JsusFxPathLibrary_Basic(const char * _dataRoot);
+	
+	void addSearchPath(const std::string & path);
+	
+	static bool fileExists(const std::string &filename);
+
+	virtual bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) override;
+	virtual bool resolveDataPath(const std::string &importPath, std::string &resolvedPath) override;
+	
+	virtual std::istream* open(const std::string &path) override;
+	virtual void close(std::istream *&stream) override;
 };
 
 class JsusFx {
