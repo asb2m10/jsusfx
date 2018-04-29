@@ -102,11 +102,15 @@ public:
 
 void test_script(const char *path) {
 	JsusFxTest *fx;
-    float *in[2];
+	float *in1, *in2;
+    const float *in[2];
     float *out[2];
     
-    in[0] = new float[64];
-    in[1] = new float[64];
+    in1 = new float[64];
+    in2 = new float[64];
+	
+    in[0] = in1;
+    in[1] = in2;
     
     out[0] = new float[64];
     out[1] = new float[64];
@@ -139,8 +143,8 @@ void test_script(const char *path) {
 
 #if ENABLE_INOUT_TEST
 	for (int i = 0; i < 64; ++i) {
-		in[0][i] = sin(i * 2.0 * M_PI / 63.0);
-		in[1][i] = cos(i * 2.0 * M_PI / 63.0);
+		in1[i] = sin(i * 2.0 * M_PI / 63.0);
+		in2[i] = cos(i * 2.0 * M_PI / 63.0);
 	}
 	
 	fx->moveSlider(1, 0.5);
@@ -167,6 +171,11 @@ void test_script(const char *path) {
 	#endif
 		
 	delete fx;
+	
+	delete[] in1;
+	delete[] in2;
+	delete[] out[0];
+	delete[] out[1];
 }
 extern "C" void test_jsfx();
 

@@ -153,7 +153,7 @@ void jsusfx_bypass(t_jsusfx *x, t_float id) {
 }
 
 t_int *jsusfx_perform(t_int *w) {
-    float *ins[2];
+    const float *ins[2];
     float *outs[2];
 
     t_jsusfx *x = (t_jsusfx *)(w[1]);

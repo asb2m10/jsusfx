@@ -272,7 +272,7 @@ void jsusfx_bypass(t_jsusfx *x, t_int id) {
 }
 
 void jsusfx_perform64(t_jsusfx *x, t_object *dsp64, double **ins, long numins, double **outs, long numouts, long sampleframes, long flags, void *userparam) {
-    double *inv[2];
+    const double *inv[2];
     inv[0] = ins[1];
     inv[1] = ins[0];
     
