@@ -135,6 +135,11 @@ static EEL_F NSEEL_CGEN_CALL __stub(void *opaque, INT_PTR np, EEL_F **parms)
 struct JsusFx_Section {
 	WDL_String code;
 	int lineOffset;
+	
+	JsusFx_Section()
+	{
+		lineOffset = 0;
+	}
 };
 
 struct JsusFx_Sections {
@@ -803,9 +808,9 @@ void JsusFx::setMidi(const void * _midi, int numBytes) {
 	}
 }
 
-void JsusFx::process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels) {
+bool JsusFx::process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels) {
     if ( codeSample == NULL )
-        return;
+        return false;
 
     if ( computeSlider ) {
         NSEEL_code_execute(codeSlider);
@@ -822,12 +827,14 @@ void JsusFx::process(const float **input, float **output, int size, int numInput
         NSEEL_code_execute(codeSample);
     	for (int c = 0; c < numOutputChannels; ++c)
         	output[c][i] = *spl[c];
-    }       
+    }
+	
+    return true;
 }
 
-void JsusFx::process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels) {
+bool JsusFx::process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels) {
     if ( codeSample == NULL )
-        return;
+        return false;
 
     if ( computeSlider ) {
         NSEEL_code_execute(codeSlider);
@@ -845,6 +852,8 @@ void JsusFx::process64(const double **input, double **output, int size, int numI
     	for (int c = 0; c < numOutputChannels; ++c)
         	output[c][i] = *spl[c];
     }
+	
+    return true;
 }
 
 void JsusFx::draw() {

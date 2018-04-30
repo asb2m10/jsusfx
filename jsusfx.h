@@ -199,8 +199,8 @@ public:
     void prepare(int sampleRate, int blockSize);
     void moveSlider(int idx, float value);
     void setMidi(const void * midi, int numBytes);
-    void process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels);
-    void process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels);
+    bool process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels);
+    bool process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels);
     void draw();
 	
     const char * getString(int index, WDL_FastString ** fs);
