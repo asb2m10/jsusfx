@@ -253,10 +253,23 @@ RIFFSoundData * loadRIFF(const void * _src, const int _srcSize)
 			}
 			
 			// convert data if necessary
-			
-		// todo : for 8 bit data the integers are unsigned. they should be made signed
 		
-			if (fmtBitDepth == 24)
+			if (fmtBitDepth == 8)
+			{
+				// for 8 bit data the integers are unsigned. convert them to signed here
+				
+				const uint8_t * srcValues = bytes;
+				int8_t * dstValues = (int8_t*)bytes;
+				const int numValues = byteCount;
+				
+				for (int i = 0; i < numValues; ++i)
+				{
+					const int8_t value = int8_t(int(srcValues[i]) - 128);
+					
+					dstValues[i] = value;
+				}
+			}
+			else if (fmtBitDepth == 24)
 			{
 				const int sampleCount = byteCount / 3;
 				float * samplesData = new float[sampleCount];
@@ -280,7 +293,7 @@ RIFFSoundData * loadRIFF(const void * _src, const int _srcSize)
 			}
 			else if (fmtBitDepth == 32)
 			{
-				int32_t * srcValues = (int32_t*)bytes;
+				const int32_t * srcValues = (int32_t*)bytes;
 				float * dstValues = (float*)bytes;
 				const int numValues = byteCount / 4;
 				
