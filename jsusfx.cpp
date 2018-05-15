@@ -749,16 +749,22 @@ bool JsusFx::compile(std::istream &input) {
 bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 	releaseCode();
 	
-	std::istream *input = pathLibrary.open(path);
+	std::string resolvedPath;
+	if ( ! pathLibrary.resolveImportPath(path, "", resolvedPath) ) {
+ 		displayError("Failed to open %s", path.c_str());
+ 		return false;
+ 	}
+	
+	std::istream *input = pathLibrary.open(resolvedPath);
 	if ( input == nullptr ) {
-		displayError("Failed to open %s", path.c_str());
+		displayError("Failed to open %s", resolvedPath.c_str());
 		return false;
 	}
 	
 	// read code for the various sections inside the jsusfx script
 	
 	JsusFx_Sections sections;
-	if ( ! readSections(pathLibrary, path, *input, sections) )
+	if ( ! readSections(pathLibrary, resolvedPath, *input, sections) )
 		return false;
 	
 	pathLibrary.close(input);
