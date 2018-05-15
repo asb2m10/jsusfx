@@ -538,20 +538,17 @@ bool JsusFx_File::mem(const int numValues, EEL_F * dest)
 			return false;
 		for (int i = 0; i < numValues; ++i)
 		{
-			const int channelIndex = readPosition / soundData->sampleCount;
-			const int sampleIndex = readPosition % soundData->sampleCount;
-			
 			if (soundData->channelSize == 2)
 			{
 				const short * values = (short*)soundData->sampleData;
 				
-				dest[i] = values[sampleIndex * soundData->channelCount + channelIndex] / float(1 << 15);
+				dest[i] = values[readPosition] / float(1 << 15);
 			}
 			else if (soundData->channelSize == 4)
 			{
 				const float * values = (float*)soundData->sampleData;
 				
-				dest[i] = values[sampleIndex * soundData->channelCount + channelIndex];
+				dest[i] = values[readPosition];
 			}
 			else
 			{
