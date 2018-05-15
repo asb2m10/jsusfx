@@ -26,6 +26,7 @@ struct JsusFx_File;
 struct RIFFSoundData;
 
 struct JsusFxFileAPI {
+	virtual ~JsusFxFileAPI() { }
 	void init(NSEEL_VMCTX vm);
 	
 	virtual int file_open(JsusFx & jsusFx, const char * filename) { return -1; }
