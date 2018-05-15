@@ -170,7 +170,7 @@ RIFFSoundData * loadRIFF(const void * _src, const int _srcSize)
 	
 	bool hasFmt = false;
 	int32_t fmtLength;
-	int16_t fmtCompressionType;
+	int16_t fmtCompressionType; // format code is a better name. 1 = PCM/integer, 2 = ADPCM, 3 = float, 7 = u-law
 	int16_t fmtChannelCount;
 	int32_t fmtSampleRate;
 	int32_t fmtByteRate;
@@ -254,6 +254,8 @@ RIFFSoundData * loadRIFF(const void * _src, const int _srcSize)
 			
 			// convert data if necessary
 			
+		// todo : for 8 bit data the integers are unsigned. they should be made signed
+		
 			if (fmtBitDepth == 24)
 			{
 				const int sampleCount = byteCount / 3;
@@ -275,6 +277,17 @@ RIFFSoundData * loadRIFF(const void * _src, const int _srcSize)
 				
 				fmtBitDepth = 32;
 				byteCount = byteCount * 4 / 3;
+			}
+			else if (fmtBitDepth == 32)
+			{
+				int32_t * srcValues = (int32_t*)bytes;
+				float * dstValues = (float*)bytes;
+				const int numValues = byteCount / 4;
+				
+				for (int i = 0; i < numValues; ++i)
+				{
+					dstValues[i] = float(srcValues[i] / double(1 << 31));
+				}
 			}
 			
 			numBytes = byteCount;
