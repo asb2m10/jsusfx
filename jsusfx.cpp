@@ -820,6 +820,7 @@ bool JsusFx::process(const float **input, float **output, int size, int numInput
     numValidInputChannels = numInputChannels;
 	
     *samplesblock = size;
+    *num_ch = numValidInputChannels;
     NSEEL_code_execute(codeBlock);
     for(int i=0;i<size;i++) {
     	for (int c = 0; c < numInputChannels; ++c)
@@ -844,6 +845,7 @@ bool JsusFx::process64(const double **input, double **output, int size, int numI
     numValidInputChannels = numInputChannels;
 
     *samplesblock = size;
+    *num_ch = numValidInputChannels;
     NSEEL_code_execute(codeBlock);
     for(int i=0;i<size;i++) {
     	for (int c = 0; c < numInputChannels; ++c)
