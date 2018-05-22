@@ -21,7 +21,21 @@ file(GLOB_RECURSE headers *.h)
 source_group("sources" FILES ${sources})
 source_group("headers" FILES ${headers})
 
-add_library(jsusfx ${sources} ${headers} WDL/eel2/asm-nseel-x64-macho.o)
+if (UNIX AND NOT APPLE)
+	add_custom_command(
+		OUTPUT WDL/eel2/asm-nseel-x64.o
+		COMMAND php a2x64.php elf64
+		WORKING_DIRECTORY WDL/eel2
+	)
+	add_library(jsusfx ${sources} ${headers} WDL/eel2/asm-nseel-x86.o)
+else()
+        add_custom_command(
+                OUTPUT WDL/eel2/asm-nseel-x64-macho.o
+                COMMAND php a2x64.php macho64x
+                WORKING_DIRECTORY WDL/eel2
+        )
+	add_library(jsusfx ${sources} ${headers} WDL/eel2/asm-nseel-x64-macho.o)
+endif()
 
 target_compile_definitions(jsusfx PUBLIC WDL_FFT_REALSIZE=8)
 
