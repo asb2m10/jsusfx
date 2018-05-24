@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 project(jsusfx)
 
 # -- JSUSFX library --
-
+set(CMAKE_OSX_ARCHITECTURES "i386;x86_64")
 set(sources
 	jsusfx.cpp
 	jsusfx_file.cpp
@@ -38,11 +38,5 @@ else()
 endif()
 
 target_compile_definitions(jsusfx PUBLIC WDL_FFT_REALSIZE=8)
-
 target_include_directories(jsusfx PUBLIC "${PROJECT_SOURCE_DIR}")
 
-# -- JSUSFX test app --
-
-add_executable(jsusfx_test test/jsusfx_test.cpp)
-
-target_link_libraries(jsusfx_test jsusfx)

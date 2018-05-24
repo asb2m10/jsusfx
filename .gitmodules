@@ -1,0 +1,3 @@
+[submodule "pd/pd.build"]
+	path = pd/pd.build
+	url = https://github.com/pierreguillot/pd.build

@@ -5,7 +5,7 @@
 
 #include <fstream>
 #include <string.h>
-#include "../jsusfx.h"
+#include "jsusfx.h"
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -20,11 +20,11 @@
 #endif
 
 #if TEST_FILE
-	#include "../jsusfx_file.h"
+	#include "jsusfx_file.h"
 #endif
 
 #if TEST_GFX
-	#include "../jsusfx_gfx.h"
+	#include "jsusfx_gfx.h"
 #endif
 
 

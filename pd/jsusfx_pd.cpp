@@ -17,12 +17,30 @@
 
 #include <fstream>
 #include "m_pd.h"
-#include "../WDL/mutex.h"
-#include "../jsusfx.h"
+#include "WDL/mutex.h"
+#include "jsusfx.h"
 #include <stdarg.h>
+
+class JsusFxPdPath : public JsusFxPathLibrary_Basic {
+public:
+    JsusFxPdPath(const char * _dataRoot) : JsusFxPathLibrary_Basic(_dataRoot) {
+    }
+    
+    bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
+        return false;
+    }
+    
+    bool resolveDataPath(const std::string &importPath, std::string &resolvedPath) {
+        return false;
+    }
+};
 
 class JsusFxPd : public JsusFx {
 public:
+    JsusFxPd(JsusFxPathLibrary &pathLibrary) : JsusFx(pathLibrary) {
+        
+    }
+    
     void displayMsg(const char *fmt, ...) {
         char output[4096];
         va_list argptr;
@@ -184,12 +202,12 @@ void jsusfx_dsp(t_jsusfx *x, t_signal **sp) {
 }
 
 void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
-    JsusFxPd *fx = new JsusFxPd();
-
+    t_symbol *dir = canvas_getcurrentdir();
+    JsusFxPdPath path(dir->s_name);
+    JsusFxPd *fx = new JsusFxPd(path);
+    
     fx->normalizeSliders = 1;
     t_jsusfx *x = (t_jsusfx *)pd_new(jsusfx_class);
-
-    t_symbol *dir = canvas_getcurrentdir();
     strcpy(x->canvasdir, dir->s_name);
     x->fx = fx;
     x->bypass = true;
@@ -216,7 +234,7 @@ void jsusfx_free(t_jsusfx *x) {
 }
 
 void *jxrt_new(t_symbol *script) {
-    JsusFxPd *fx = new JsusFxPd();
+    /*JsusFxPd *fx = new JsusFxPd();
 
     fx->normalizeSliders = 0;
     t_jsusfx *x = (t_jsusfx *)pd_new(jxrt_class);
@@ -249,7 +267,7 @@ void *jxrt_new(t_symbol *script) {
         }
     }
 
-    return (x);
+    return (x);*/
 }
 
 void jxrt_free(t_jsusfx *x) {
