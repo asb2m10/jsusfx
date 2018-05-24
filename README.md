@@ -14,6 +14,15 @@ This project comes with a subset of the original eel2 code from Cockos
 While this project could support plugin formats like LV2 or VST, this 
 implementation focuses on Pure Data and Max support.
 
+Version 0.4 (still in development)
+----------------------------------
+* File API support
+* @gfx and @import section support
+* Midi support
+* More support of extended sliders
+* Various bug fixes
+* CMake now global build system
+
 Version 0.3
 -----------
 * Native x86 x86_64 for OS X and Linux (10 times faster than portable)
@@ -41,14 +50,13 @@ See the pd and max directory to see how to build them.
 
 Limitations
 -----------
-* Only supports 2 in / 2 out
-* @gfx, @serialize and @import section is ignored
-* No midi support
+* @serialize section is ignored
 
 BUILDING
 --------
-* PHP and nasm is required to build native x86_64 support code
+* cmake, PHP and nasm is required to build native x86_64 support code
 
 Credits
 -------
+* @marcel303 (Marcel Smit) did a lot of work (Version 0.4) in implementing the missing features from the previous version
 * The core of the language is from WDL (the authors of JSFX and Reaper)
