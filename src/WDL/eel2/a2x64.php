@@ -293,7 +293,22 @@ if (isset($argv[1]) && $argv[1] != "") $fmt = $argv[1];
 $fnout = "asm-nseel-x64.asm";
 
 if ($fmt == "macho64") {  $fnout="asm-nseel-x64-macho.asm"; $nasm = "nasm64"; $want_funclead = "_"; }
-if ($fmt == "macho64x") {  $fnout="asm-nseel-x64-macho.asm"; $nasm = "nasm"; $want_funclead = "_"; $fmt="macho64"; }
+if ($fmt == "macho64x") {
+  $fnout="asm-nseel-x64-macho.asm";
+
+  /*
+  The version of NASM which ships with XCode (0.98.40) is vastly outdated and doesn't support macho64 output. Sadly when building from XCode it sets to path so it finds
+  the old version first. We try to locate a more recent version of NASM and call it
+  instead.
+  */
+  $nasm_usr = "/usr/local/bin/nasm"; // this is where brew installs NASM by default.
+  if (file_exists($nasm_usr))
+    $nasm = $nasm_usr;
+  else
+    $nasm = "nasm";
+  $want_funclead = "_";
+  $fmt="macho64";
+}
 if ($fmt == "win64x") { $nasm="nasm64"; $fmt = "win64"; }
 
 process_file("asm-nseel-x86-gcc.c" , $fnout, $fmt != "win64" ? "%define AMD64ABI\n" : "");
