@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.6)
 project(jsusfx)
 
 # -- JSUSFX library --
-set(CMAKE_OSX_ARCHITECTURES "i386;x86_64")
 set(sources
 	jsusfx.cpp
 	jsusfx_file.cpp
@@ -27,7 +26,7 @@ if (UNIX AND NOT APPLE)
 		COMMAND php a2x64.php elf64
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
 	)
-	add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x86.o)
+	add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o)
 else()
 	add_custom_command(
 		OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o
