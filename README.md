@@ -12,10 +12,16 @@ This project comes with a subset of the original eel2 code from Cockos
 [WDL](http://www.cockos.com/wdl).
 
 While this project could support plugin formats like LV2 or VST, this 
-implementation focuses on Pure Data and Max support.
+implementation focuses on Pure Data support. Support for version 0.4 is
+in progress for Pure Data.
 
-Version 0.4 (still in development)
-----------------------------------
+Another project named [Framework](https://github.com/marcel303/framework) also uses
+this JsusFx implementation. 
+
+[![Framework](https://img.youtube.com/vi/7f9fOeBecaY/0.jpg)](https://www.youtube.com/watch?v=7f9fOeBecaY)
+
+Version 0.4
+-----------
 * File API support
 * @gfx and @import section support
 * Midi support
@@ -51,6 +57,7 @@ See the pd and max directory to see how to build them.
 Limitations
 -----------
 * @serialize section is ignored
+* Support for slider(index) = [value]
 
 BUILDING
 --------
@@ -58,5 +65,5 @@ BUILDING
 
 Credits
 -------
-* @marcel303 (Marcel Smit) did a lot of work (Version 0.4) in implementing the missing features from the previous version
+* @marcel303 (Marcel Smit) did a lot of work (Version 0.4) in implementing the missing features from the previous versions
 * The core of the language is from WDL (the authors of JSFX and Reaper)

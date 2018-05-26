@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 Pascal Gauthier
+ * Copyright 2014-2018 Pascal Gauthier
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,18 +27,33 @@ public:
     }
     
     bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
-        return false;
+        char result[1024];
+        char *bufptr;
+        int fd = open_via_path(parentPath.c_str(), importPath.c_str(), "", result, &bufptr, 1023, 1);
+        if ( fd < 0 || result[0] == 0 ) {
+            return false;
+        }
+        sys_close(fd);        
+        resolvedPath = result;        
+        return true;
     }
     
     bool resolveDataPath(const std::string &importPath, std::string &resolvedPath) {
-        return false;
+        char result[1024];
+        char *bufptr;
+        int fd = open_via_path(dataRoot.c_str(), importPath.c_str(), "", result, &bufptr, 1023, 1);
+        if ( fd < 0 || result[0] == 0 ) {
+            return false;
+        }
+        sys_close(fd);        
+        resolvedPath = result;
+        return true;
     }
 };
 
 class JsusFxPd : public JsusFx {
 public:
-    JsusFxPd(JsusFxPathLibrary &pathLibrary) : JsusFx(pathLibrary) {
-        
+    JsusFxPd(JsusFxPathLibrary &pathLibrary) : JsusFx(pathLibrary) {   
     }
     
     void displayMsg(const char *fmt, ...) {
@@ -68,7 +83,7 @@ typedef struct _jsusfx {
     t_object x_obj;
     t_float x_f;
     JsusFxPd *fx;
-    char canvasdir[2048];
+    JsusFxPdPath *path;
     char scriptpath[2048];
     bool bypass;
     bool user_bypass;
@@ -99,25 +114,24 @@ void jsusfx_describe(t_jsusfx *x) {
 
 void jsusfx_dumpvars(t_jsusfx *x) {
     post("jsusfx~ vars for: %s =========", x->fx->desc);
-    x->fx->dumpvars();
+    if ( x->fx != NULL )
+        x->fx->dumpvars();
 }
 
 void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
     x->bypass = true;
-
     std::ifstream *is;
 
     if ( newFile != NULL && newFile->s_name[0] != 0) {
-        char result[1024], *bufptr;
-        result[0] = 0;
-        int fd = open_via_path(x->canvasdir, newFile->s_name, "", result, &bufptr, 1024, 1);
-        if ( fd < 0 || result[0] == 0 ) {
+        std::string result;
+
+        if ( ! x->path->resolveDataPath(std::string(newFile->s_name), result) ) {
             error("jsusfx~: unable to find script %s", newFile->s_name);
             return;
         }
-        sys_close(fd);
-        strncat(result, "/", 1024);
-        strncat(result, newFile->s_name, 1024);
+
+        result += '/';
+        result += newFile->s_name;
 
         is = new std::ifstream(result);
         if ( ! is->is_open() ) {
@@ -125,7 +139,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
             delete is;
             return;
         }
-        strncpy(x->scriptpath, result, 1024);
+        strncpy(x->scriptpath, result.c_str(), 1024);
     } else {
         if ( x->scriptpath[0] == 0 )
             return;
@@ -154,11 +168,12 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
 }
 
 void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
-    int i = (int) id;
-
-    if ( i > 64 || i < 0 )
+    if ( x->fx != NULL )
         return;
 
+    int i = (int) id;
+    if ( i > 64 || i < 0 )
+        return;
     if ( ! x->fx->sliders[i].exists ) {
         error("jsusfx~: slider number %d is not assigned for this effect", i);
         return;
@@ -202,18 +217,13 @@ void jsusfx_dsp(t_jsusfx *x, t_signal **sp) {
 }
 
 void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
-    t_symbol *dir = canvas_getcurrentdir();
-    JsusFxPdPath path(dir->s_name);
-    JsusFxPd *fx = new JsusFxPd(path);
-    
-    fx->normalizeSliders = 1;
     t_jsusfx *x = (t_jsusfx *)pd_new(jsusfx_class);
-    strcpy(x->canvasdir, dir->s_name);
-    x->fx = fx;
+    x->path = new JsusFxPdPath(canvas_getcurrentdir()->s_name);
     x->bypass = true;
     x->user_bypass = false;
     x->scriptpath[0] = 0;
-
+    x->fx = new JsusFxPd(*(x->path));
+    x->fx->normalizeSliders = 1;
     inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
     outlet_new(&x->x_obj, gensym("signal"));
     outlet_new(&x->x_obj, gensym("signal"));
@@ -225,16 +235,16 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
 
     t_symbol *s = atom_getsymbol(argv);
     jsusfx_compile(x, s);
-
     return (x);
 }
 
 void jsusfx_free(t_jsusfx *x) {
     delete x->fx;
+    delete x->path;
 }
 
 void *jxrt_new(t_symbol *script) {
-    /*JsusFxPd *fx = new JsusFxPd();
+/*    JsusFxPd *fx = new JsusFxPd();
 
     fx->normalizeSliders = 0;
     t_jsusfx *x = (t_jsusfx *)pd_new(jxrt_class);
