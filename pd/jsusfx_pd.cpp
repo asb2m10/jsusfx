@@ -220,12 +220,12 @@ void jsusfx_dsp(t_jsusfx *x, t_signal **sp) {
     int i, j;
     for (i=0; i<x->pinIn; i++) {
         x->dspVect[i+1] = (t_int*)sp[i]->s_vec;
-        post("jsusfx~ dsp-vecin: %x", x->dspVect[i+1]);
+        //post("jsusfx~ dsp-vecin: %x", x->dspVect[i+1]);
     }
     
     for (j=0;j<x->pinOut; j++) {
         x->dspVect[i+j+1] = (t_int*)sp[i+j]->s_vec;
-        post("jsusfx~ dsp-vecout: %x", x->dspVect[i+j+1]);
+        //post("jsusfx~ dsp-vecout: %x", x->dspVect[i+j+1]);
     }
     x->dspVect[i+j+1] = (t_int *) ((long)sp[0]->s_n);
 
