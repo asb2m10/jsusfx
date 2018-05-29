@@ -21,6 +21,9 @@
 #include "jsusfx.h"
 #include <stdarg.h>
 
+// The maximum of signal inlet/outlet
+const int MAX_SIGNAL_PORT = 16;
+
 class JsusFxPdPath : public JsusFxPathLibrary_Basic {
 public:
     JsusFxPdPath(const char * _dataRoot) : JsusFxPathLibrary_Basic(_dataRoot) {
@@ -87,6 +90,8 @@ typedef struct _jsusfx {
     char scriptpath[2048];
     bool bypass;
     bool user_bypass;
+    int pinIn, pinOut;
+    t_int **dspVect;
 } t_jsusfx;
 
 static t_class *jsusfx_class;
@@ -135,7 +140,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
 
         is = new std::ifstream(result);
         if ( ! is->is_open() ) {
-            error("jsusfx~: error opening file %s", result);
+            error("jsusfx~: error opening file %s", result.c_str());
             delete is;
             return;
         }
@@ -168,9 +173,6 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
 }
 
 void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
-    if ( x->fx != NULL )
-        return;
-
     int i = (int) id;
     if ( i > 64 || i < 0 )
         return;
@@ -186,34 +188,48 @@ void jsusfx_bypass(t_jsusfx *x, t_float id) {
 }
 
 t_int *jsusfx_perform(t_int *w) {
-    const float *ins[2];
-    float *outs[2];
-
+    const float *ins[MAX_SIGNAL_PORT];
+    float *outs[MAX_SIGNAL_PORT];
+    int argc = 2;
+    
     t_jsusfx *x = (t_jsusfx *)(w[1]);
-    ins[0] = (float *)(w[2]);
-    ins[1] = (float *)(w[3]);
-    outs[0] = (float *)(w[4]);
-    outs[1] = (float *)(w[5]);
-    int n = (int)(w[6]);
-
+    for(int i=0;i<x->pinIn;i++)
+        ins[i] = (float *)(w[argc++]);
+    for(int i=0;i<x->pinOut;i++)
+        outs[i] = (float *)(w[argc++]);
+    int n = (int)(w[argc++]);
+    
     if ( (x->bypass || x->user_bypass) || x->fx->dspLock.TryEnter() ) {
         //x->fx->displayMsg("system is bypassed");
-
-        for(int i=0;i<n;i++) {
-            outs[0][i] = ins[0][i];
-            outs[1][i] = ins[1][i];
+        for(int i=0;i<x->pinOut;i++) {
+            for(int j=0;j<n;j++)
+                outs[i][j] = 0;
         }
     } else {
-        x->fx->process(ins, outs, n, 2, 2);
+        x->fx->process(ins, outs, n, x->pinIn, x->pinOut);
         x->fx->dspLock.Leave();
     }
 
-    return (w+7);
+    return (w+argc);
 }
 
 void jsusfx_dsp(t_jsusfx *x, t_signal **sp) {
     x->fx->prepare(sp[0]->s_sr, sp[0]->s_n);
-    dsp_add(jsusfx_perform, 6, x, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec, sp[3]->s_vec, sp[0]->s_n);
+    
+    x->dspVect[0] = (t_int *) x;
+    int i, j;
+    for (i=0; i<x->pinIn; i++) {
+        x->dspVect[i+1] = (t_int*)sp[i]->s_vec;
+        post("jsusfx~ dsp-vecin: %x", x->dspVect[i+1]);
+    }
+    
+    for (j=0;j<x->pinOut; j++) {
+        x->dspVect[i+j+1] = (t_int*)sp[i+j]->s_vec;
+        post("jsusfx~ dsp-vecout: %x", x->dspVect[i+j+1]);
+    }
+    x->dspVect[i+j+1] = (t_int *) ((long)sp[0]->s_n);
+
+    dsp_addv(jsusfx_perform, x->pinIn + x->pinOut + 2, (t_int*)x->dspVect);
 }
 
 void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
@@ -224,48 +240,108 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
     x->scriptpath[0] = 0;
     x->fx = new JsusFxPd(*(x->path));
     x->fx->normalizeSliders = 1;
-    inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
-    outlet_new(&x->x_obj, gensym("signal"));
-    outlet_new(&x->x_obj, gensym("signal"));
 
-    if ( argc < 1 || (argv[0]).a_type != A_SYMBOL ) {
-        error("jsusfx~: missing script");
-        return x;
+    x->pinIn = 2;
+    x->pinOut = 2;
+
+    if ( argc < 1 ) {
+        post("jsusfx~: missing script");
+    } else {
+        int argPos = 0;
+
+        if ( (argv[0]).a_type == A_SYMBOL ) {
+            t_symbol *s = atom_getsymbol(argv);
+            jsusfx_compile(x, s);
+            if (! x->bypass) { 
+                // the first compile will permantly set the number of pins for this instance. (unless it is
+                // specified in the pd object arguments)
+                x->pinIn = x->fx->numInputs;
+                x->pinOut = x->fx->numOutputs;
+            }
+            argPos++;
+        }
+        
+        if ( argc > argPos ) {
+            if ( (argv[argPos]).a_type == A_FLOAT )
+                x->pinIn = atom_getfloat(&argv[argPos]);
+        }
+        argPos++;
+
+        if ( argc > argPos ) {
+            if ( (argv[argPos]).a_type == A_FLOAT )
+                x->pinOut = atom_getfloat(&argv[argPos]);
+        }
     }
+    
+    if ( x->pinIn > MAX_SIGNAL_PORT )
+        x->pinIn = MAX_SIGNAL_PORT;
+    // we cannot set an object without signal inlet since it is created by default
+    // There is probably a better to do this.
+    if ( x->pinIn < 1 )
+        x->pinIn = 1;
+    if ( x->pinOut > MAX_SIGNAL_PORT )
+        x->pinOut = MAX_SIGNAL_PORT;
+    if ( x->pinOut < 0 ) 
+        x->pinOut = 0;
 
-    t_symbol *s = atom_getsymbol(argv);
-    jsusfx_compile(x, s);
+    for(int i=1;i<x->pinIn;i++)
+        signalinlet_new(&x->x_obj, 0);
+
+    for(int i=0;i<x->pinOut;i++)
+        outlet_new(&x->x_obj, gensym("signal"));
+
+    x->dspVect = (t_int **)t_getbytes(sizeof(t_int *) * (x->pinIn + x->pinOut + 2));
     return (x);
 }
 
 void jsusfx_free(t_jsusfx *x) {
+    t_freebytes(x->dspVect, sizeof(t_int) * (x->pinIn + x->pinOut + 2));
     delete x->fx;
     delete x->path;
 }
 
 void *jxrt_new(t_symbol *script) {
-/*    JsusFxPd *fx = new JsusFxPd();
-
-    fx->normalizeSliders = 0;
-    t_jsusfx *x = (t_jsusfx *)pd_new(jxrt_class);
-    
-    t_symbol *dir = canvas_getcurrentdir();
-    strcpy(x->canvasdir, dir->s_name);
-    x->fx = fx;
-    x->bypass = true;
-    x->user_bypass = false;
-
-    jsusfx_compile(x, script);
-    if ( x->bypass == true ) {
-        delete fx;
+    if ( script == NULL || script->s_name[0] == 0) {
+        error("jsusfx~: missing script");
         return NULL;
     }
     
-    // TODO: support multiple signal inlets/outlets
-    inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
-    outlet_new(&x->x_obj, gensym("signal"));
-    outlet_new(&x->x_obj, gensym("signal"));
-
+    t_jsusfx *x = (t_jsusfx *)pd_new(jsusfx_class);
+    x->path = new JsusFxPdPath(canvas_getcurrentdir()->s_name);
+    x->bypass = true;
+    x->user_bypass = false;
+    x->scriptpath[0] = 0;
+    x->fx = new JsusFxPd(*(x->path));
+    x->fx->normalizeSliders = 1;
+    
+    x->pinIn = 2;
+    x->pinOut = 2;
+    
+    jsusfx_compile(x, script);
+    if (x->bypass == true) {
+        //something went wrong with the compilation. bailout
+        delete x->fx;
+        delete x->path;
+        return NULL;
+    }
+    
+    if ( x->pinIn > MAX_SIGNAL_PORT )
+        x->pinIn = MAX_SIGNAL_PORT;
+    if ( x->pinIn < 1 )
+        x->pinIn = 1;
+    if ( x->pinOut > MAX_SIGNAL_PORT )
+        x->pinOut = MAX_SIGNAL_PORT;
+    if ( x->pinOut < 0 )
+        x->pinOut = 0;
+    
+    for(int i=1;i<x->pinIn;i++)
+        signalinlet_new(&x->x_obj, 0);
+    
+    for(int i=0;i<x->pinOut;i++)
+        outlet_new(&x->x_obj, gensym("signal"));
+    
+    x->dspVect = (t_int **)t_getbytes(sizeof(t_int *) * (x->pinIn + x->pinOut + 2));
+    
     for(int i=1;i<64;i++) {
         if ( x->fx->sliders[i].exists ) {
             t_inlet_proxy *proxy = (t_inlet_proxy *) pd_new(inlet_proxy);
@@ -277,12 +353,13 @@ void *jxrt_new(t_symbol *script) {
         }
     }
 
-    return (x);*/
+    return (x);
 }
 
 void jxrt_free(t_jsusfx *x) {
-    // TODO: free signal inlets/outlets ; also the proxy inlets ?
     delete x->fx;
+    delete x->path;
+    // delete also the inlet proxy or it is done automatically ?
 }
 
 static void inlet_float(t_inlet_proxy *proxy, t_float f) {

@@ -686,10 +686,20 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 continue;
             }
             else if ( ! strncmp(line, "in_pin:", 7) ) {
-            	numInputs++;
+                if ( ! strncmp(line+7, "none", 4) ) {
+                    numInputs = -1;
+                } else {
+                    if ( numInputs != -1 )
+                        numInputs++;
+                }
             }
             else if ( ! strncmp(line, "out_pin:", 8) ) {
-            	numOutputs++;
+                if ( ! strncmp(line+8, "none", 4) ) {
+                    numOutputs = -1;
+                } else {
+                    if ( numOutputs != -1 )
+                        numOutputs++;
+                }
             }
         }
     }
@@ -744,6 +754,19 @@ bool JsusFx::compile(std::istream &input) {
 	
 	computeSlider = 1;
 	
+    // in_pin and out_pin is optional, we default it to 2 in / 2 out if nothing is specified.
+    // if you really want no in or out, specify in_pin:none/out_pin:none
+    if ( numInputs == 0 )
+        numInputs = 2;
+    else if ( numInputs == -1 )
+        numInputs = 0;
+    
+    if ( numOutputs == 0 )
+        numOutputs = 2;
+    else if ( numOutputs == -1 )
+        numOutputs = 0;
+    
+    
 	return true;
 }
 
