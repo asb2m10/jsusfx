@@ -47,13 +47,14 @@
 #include <pthread.h>
 #endif
 
-#ifdef __APPLE__
-#include <libkern/OSAtomic.h>
-#endif
-
 #endif
 
 #include "wdltypes.h"
+#include "wdlatomic.h"
+
+#ifdef _DEBUG
+#include <assert.h>
+#endif
 
 class WDL_Mutex {
   public:
@@ -67,13 +68,17 @@ class WDL_Mutex {
       InitializeCriticalSection(&m_cs);
 #elif defined( WDL_MAC_USE_CARBON_CRITSEC)
       MPCreateCriticalRegion(&m_cr);
-#elif defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER)
+#elif defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER) && !defined(__linux__)
       const pthread_mutex_t tmp = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
       m_mutex = tmp;
 #else
       pthread_mutexattr_t attr;
       pthread_mutexattr_init(&attr);
       pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE);
+#ifdef __linux__
+      // todo: macos too?
+      pthread_mutexattr_setprotocol(&attr,PTHREAD_PRIO_INHERIT);
+#endif
       pthread_mutex_init(&m_mutex,&attr);
       pthread_mutexattr_destroy(&attr);
 #endif
@@ -92,7 +97,8 @@ class WDL_Mutex {
     void Enter()
     {
 #ifdef _DEBUG
-      _debug_cnt++;
+      const int new_debug_cnt = wdl_atomic_incr(&_debug_cnt);
+      assert(new_debug_cnt > 0);
 #endif
 
 #ifdef _WIN32
@@ -117,7 +123,8 @@ class WDL_Mutex {
     void Leave()
     {
 #ifdef _DEBUG
-      _debug_cnt--;
+      const int new_debug_cnt = wdl_atomic_decr(&_debug_cnt);
+      assert(new_debug_cnt >= 0);
 #endif
 
 #ifdef _WIN32
@@ -130,7 +137,7 @@ class WDL_Mutex {
     }
 
 #ifdef _DEBUG
-  int _debug_cnt;
+  volatile int _debug_cnt;
 #endif
 
   private:
@@ -141,6 +148,21 @@ class WDL_Mutex {
 #else
   pthread_mutex_t m_mutex;
 #endif
+
+  // prevent callers from copying mutexes accidentally
+  WDL_Mutex(const WDL_Mutex &cp)
+  {
+#ifdef _DEBUG
+    assert(sizeof(WDL_Mutex) == 0);
+#endif
+  }
+  WDL_Mutex &operator=(const WDL_Mutex &cp)
+  {
+#ifdef _DEBUG
+    assert(sizeof(WDL_Mutex) == 0);
+#endif
+    return *this;
+  }
 
 } WDL_FIXALIGN;
 
@@ -172,29 +194,12 @@ class WDL_SharedMutex
     void LockShared() 
     { 
       m_mutex.Enter();
-#ifdef _WIN32
-      InterlockedIncrement(&m_sharedcnt);
-#elif defined (__APPLE__)
-      OSAtomicIncrement32(&m_sharedcnt);
-#else
-      m_cntmutex.Enter();
-      m_sharedcnt++;
-      m_cntmutex.Leave();
-#endif
-
+      wdl_atomic_incr(&m_sharedcnt);
       m_mutex.Leave();
     }
     void UnlockShared()
     {
-#ifdef _WIN32
-      InterlockedDecrement(&m_sharedcnt);
-#elif defined(__APPLE__)
-      OSAtomicDecrement32(&m_sharedcnt);
-#else
-      m_cntmutex.Enter();
-      m_sharedcnt--;
-      m_cntmutex.Leave();
-#endif
+      wdl_atomic_decr(&m_sharedcnt);
     }
 
     void SharedToExclusive() // assumes a SINGLE shared lock by this thread!
@@ -211,29 +216,30 @@ class WDL_SharedMutex
     void ExclusiveToShared() // assumes exclusive locked returns with shared locked
     {
       // already have exclusive lock
-#ifdef _WIN32
-      InterlockedIncrement(&m_sharedcnt);
-#elif defined (__APPLE__)
-      OSAtomicIncrement32(&m_sharedcnt);
-#else
-      m_cntmutex.Enter();
-      m_sharedcnt++;
-      m_cntmutex.Leave();
-#endif
-      
+      wdl_atomic_incr(&m_sharedcnt);
       m_mutex.Leave();
     }
 
   private:
     WDL_Mutex m_mutex;
-#ifdef _WIN32
-    LONG m_sharedcnt;
-#elif defined(__APPLE__)
-    int32_t m_sharedcnt;
-#else
-    WDL_Mutex m_cntmutex;
-    int m_sharedcnt;
-#endif
+    volatile int m_sharedcnt;
+
+    // prevent callers from copying accidentally
+    WDL_SharedMutex(const WDL_SharedMutex &cp)
+    {
+    #ifdef _DEBUG
+      assert(sizeof(WDL_SharedMutex) == 0);
+    #endif
+    }
+    WDL_SharedMutex &operator=(const WDL_SharedMutex &cp)
+    {
+    #ifdef _DEBUG
+      assert(sizeof(WDL_SharedMutex) == 0);
+    #endif
+      return *this;
+    }
+
+
 } WDL_FIXALIGN;
 
 

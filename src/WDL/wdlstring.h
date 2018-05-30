@@ -210,7 +210,8 @@ class WDL_String
       if (b) 
       {
         #ifdef WDL_STRING_FASTSUB_DEFINED
-          if (length > osz) memset(b+osz,' ',length-osz);
+          const int fill = length-osz;
+          if (fill > 0) memset(b+osz,' ',fill);
         #endif
         b[length]=0;
         return true;
@@ -367,7 +368,8 @@ class WDL_String
       {
         const int oldsz = m_hb.GetSize();
         const int newsz=offs+len+trailkeep+1;
-        if (oldsz < newsz) 
+        const int growamt = newsz-oldsz;
+        if (growamt > 0)
         {
           const char *oldb = (const char *)m_hb.Get();
           const char *newb = (const char *)m_hb.Resize(newsz,false); // resize up if necessary
@@ -384,7 +386,7 @@ class WDL_String
           newbuf[newsz-1]=0;
 
           // resize down if necessary
-          if (newsz < oldsz) m_hb.Resize(newsz,false);
+          if (growamt < 0) m_hb.Resize(newsz,false);
         }
       }
     }
