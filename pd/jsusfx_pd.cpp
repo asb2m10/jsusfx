@@ -66,7 +66,7 @@ public:
         vsnprintf(output, 4095, fmt, argptr);
         va_end(argptr);
 
-        post(output);
+        post("%s", output);
     }
 
     void displayError(const char *fmt, ...) {
@@ -104,6 +104,12 @@ typedef struct _inlet_proxy {
     int idx;
 } t_inlet_proxy;
 
+bool ends_with(std::string const &value, std::string const &ending) {
+    if (ending.size() > value.size())
+        return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 void jsusfx_describe(t_jsusfx *x) {
     post("jsusfx~ script %s : %s", x->scriptpath, x->fx->desc);
     for(int i=0;i<64;i++) {
@@ -126,17 +132,23 @@ void jsusfx_dumpvars(t_jsusfx *x) {
 void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
     x->bypass = true;
     std::ifstream *is;
+    std::string filename = std::string(newFile->s_name);
 
     if ( newFile != NULL && newFile->s_name[0] != 0) {
         std::string result;
 
-        if ( ! x->path->resolveDataPath(std::string(newFile->s_name), result) ) {
-            error("jsusfx~: unable to find script %s", newFile->s_name);
-            return;
+        if ( ! x->path->resolveDataPath(std::string(filename), result) ) {
+            // maybe the suffix isn't specified, try with the .jsfx
+            filename += ".jsfx";
+            
+            if ( ! x->path->resolveDataPath(std::string(filename), result) ) {
+                error("jsusfx~: unable to find script %s", newFile->s_name);
+                return;
+            }
         }
 
         result += '/';
-        result += newFile->s_name;
+        result += filename;
 
         is = new std::ifstream(result);
         if ( ! is->is_open() ) {
