@@ -44,6 +44,18 @@
 
 // Reaper API
 
+static EEL_F * NSEEL_CGEN_CALL _reaper_slider(void *opaque, EEL_F *n)
+{
+  JsusFx *ctx = REAPER_GET_INTERFACE(opaque);
+  const int index = *n;
+  if (index >= 0 && index < ctx->kMaxSliders)
+  	return ctx->sliders[index].owner;
+  else {
+    ctx->dummyValue = 0;
+	return &ctx->dummyValue;
+  }
+}
+
 static EEL_F * NSEEL_CGEN_CALL _reaper_spl(void *opaque, EEL_F *n)
 {
   JsusFx *ctx = REAPER_GET_INTERFACE(opaque);
@@ -342,7 +354,7 @@ bool JsusFxPathLibrary_Basic::fileExists(const std::string &filename) {
 }
 
 bool JsusFxPathLibrary_Basic::resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
-	const size_t pos = parentPath.rfind('/', '\\');
+	const size_t pos = parentPath.rfind('/');
 	if ( pos != std::string::npos )
 		resolvedPath = parentPath.substr(0, pos + 1);
 	
@@ -429,9 +441,10 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
     AUTOVARV(play_state, 1);
 	
 	// Reaper API
-	NSEEL_addfunc_varparm("slider_automate",1,NSEEL_PProc_THIS,&__stub);
-	NSEEL_addfunc_varparm("sliderchange",1,NSEEL_PProc_THIS,&__stub);
-	NSEEL_addfunc_varparm("slider",1,NSEEL_PProc_THIS,&__stub); // todo : support this syntax: slider(index) = x
+	NSEEL_addfunc_varparm("slider_automate",1,NSEEL_PProc_THIS,&__stub); // todo : implement slider_automate. add Reaper api interface?
+	NSEEL_addfunc_varparm("slider_next_chg",2,NSEEL_PProc_THIS,&__stub); // todo : implement slider_next_chg. add Reaper api interface?
+	NSEEL_addfunc_varparm("sliderchange",1,NSEEL_PProc_THIS,&__stub); // todo : implement sliderchange. add Reaper api interface?
+	NSEEL_addfunc_retptr("slider",1,NSEEL_PProc_THIS,&_reaper_slider);
 	NSEEL_addfunc_retptr("spl",1,NSEEL_PProc_THIS,&_reaper_spl);
 	NSEEL_addfunc_varparm("midirecv",3,NSEEL_PProc_THIS,&_midirecv);
 	NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
@@ -627,7 +640,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 				p++;
 					
                 if ( ! slider.config(*this, target, p, lnumber) ) {
-                    displayError("Incomplete slider line %d", lnumber);
+                    displayError("Incomplete slider @line %d (%s)", lnumber, line);
                     return false;
                 }
                 trim(slider.desc, false, true);
