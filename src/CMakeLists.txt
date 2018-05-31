@@ -21,13 +21,25 @@ source_group("sources" FILES ${sources})
 source_group("headers" FILES ${headers})
 
 if (UNIX AND NOT APPLE)
-	add_custom_command(
-		OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o
-		COMMAND php a2x64.php elf64
-		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
-	)
-	add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o)
+	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") 
+		add_definitions(-mfpu=vfp -march=armv6t2 -marm)
+		add_library(jsusfx ${sources} ${headers})
+	else() 
+		# Linux x64
+		if (CMAKE_SIZEOF_VOID_P EQUALS 8)
+			add_custom_command(
+				OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o
+				COMMAND php a2x64.php elf64
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
+			)
+			add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o)
+		else()
+			# Linux i686
+			add_library(jsusfx ${sources} ${headers})
+		endif()
+	endif()
 else()
+	# MacOS, 64-bit always
 	add_custom_command(
 		OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o
 		COMMAND php a2x64.php macho64x
@@ -38,4 +50,3 @@ endif()
 
 target_compile_definitions(jsusfx PUBLIC WDL_FFT_REALSIZE=8)
 target_include_directories(jsusfx PUBLIC "${PROJECT_SOURCE_DIR}")
-

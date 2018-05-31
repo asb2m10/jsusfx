@@ -18,17 +18,23 @@ in_pin and out_pin is used.
 Version 0.4
 -----------
 * Multi-channel support
+* Native ARM support (Raspberry Pi) 
 * File API support
-* @import section support
+* @import support
 * More support of extended sliders
 * Various bug fixes
 * CMake now global build system
 
 Limitations
 -----------
-* @serialize section is ignored
-* Support for slider(index) = [value]
+* @gfx, @serialize section is ignored
+* No midi support
 
 BUILDING
 --------
 * cmake, PHP and nasm is required to build native x86_64 support code
+
+`$ cd pd
+ $ cmake .
+ $ make
+`

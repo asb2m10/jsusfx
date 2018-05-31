@@ -15,8 +15,8 @@ While this project could support plugin formats like LV2 or VST, this
 implementation focuses on Pure Data support. Support for version 0.4 is
 in progress for Pure Data. See subdirectory [pd](pd).
 
-Another project named [Framework](https://github.com/marcel303/framework) also uses
-this JsusFx implementation. 
+Marcel Smit, who is also working on [Framework](https://github.com/marcel303/framework) 
+that uses JsusFx, greatly contributed on version 0.4. 
 
 [![Framework](https://img.youtube.com/vi/7f9fOeBecaY/0.jpg)](https://www.youtube.com/watch?v=7f9fOeBecaY)
 
@@ -24,10 +24,11 @@ Version 0.4
 -----------
 * Multi-channel support
 * File API support
-* @gfx and @import section support
+* @import and @gfx section support
 * Midi support
 * More support of extended sliders
 * Various bug fixes
+* Native ARM support
 * CMake now global build system
 
 Version 0.3
