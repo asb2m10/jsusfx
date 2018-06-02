@@ -156,6 +156,7 @@ protected:
     void releaseCode();
     bool compileSection(int state, const char *code, int line_offset);
     bool processImport(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, const std::string &importPath, JsusFx_Sections &sections);
+    bool readHeader(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input);
     bool readSections(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input, JsusFx_Sections &sections);
     bool compileSections(JsusFx_Sections &sections);
 
@@ -196,6 +197,7 @@ public:
 
     bool compile(std::istream &input);
     bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
+    bool readHeader(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
     void moveSlider(int idx, float value);
     void setMidi(const void * midi, int numBytes);

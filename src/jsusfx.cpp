@@ -563,6 +563,56 @@ static char *trim(char *line, bool trimStart, bool trimEnd)
 	return line;
 }
 
+bool JsusFx::readHeader(JsusFxPathLibrary &pathLibrary, const std::string &path, std::istream &input) {
+	char line[4096];
+	
+    for(int lnumber = 1; ! input.eof(); lnumber++) {
+		input.getline(line, sizeof(line), '\n');
+		
+        if ( line[0] == '@' )
+            break;
+		
+		if ( ! strnicmp(line, "slider", 6) ) {
+			int target = 0;
+			if ( ! sscanf(line, "slider%d:", &target) )
+				continue;
+			if ( target < 0 || target >= kMaxSliders )
+				continue;
+			
+			JsusFx_Slider &slider = sliders[target];
+			
+			char *p = line+7;
+			while ( *p && *p != ':' )
+				p++;
+			if ( *p != ':' )
+				continue;
+			p++;
+			
+			if ( ! slider.config(*this, target, p, lnumber) ) {
+				displayError("Incomplete slider @line %d (%s)", lnumber, line);
+				return false;
+			}
+			trim(slider.desc, false, true);
+			
+			continue;
+		}
+		else if ( ! strncmp(line, "desc:", 5) ) {
+			char *src = line+5;
+			src = trim(src, true, true);
+			strncpy(desc, src, 64);
+			continue;
+		}
+		else if ( ! strncmp(line, "in_pin:", 7) ) {
+			numInputs++;
+		}
+		else if ( ! strncmp(line, "out_pin:", 8) ) {
+			numOutputs++;
+		}
+    }
+	
+	return true;
+}
+
 bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &path, std::istream &input, JsusFx_Sections &sections) {
     WDL_String * code = nullptr;
     char line[4096];
@@ -570,7 +620,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 	// are we reading the header or sections?
 	bool isHeader = true;
 	
-    for(int lnumber=1; ! input.eof(); lnumber++) {
+    for(int lnumber = 1; ! input.eof(); lnumber++) {
 		input.getline(line, sizeof(line), '\n');
 		const int l = input.gcount();
 		
@@ -790,6 +840,27 @@ bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 	}
 	
 	computeSlider = 1;
+	
+	return true;
+}
+
+bool JsusFx::readHeader(JsusFxPathLibrary &pathLibrary, const std::string &path) {
+	std::string resolvedPath;
+	if ( ! pathLibrary.resolveImportPath(path, "", resolvedPath) ) {
+ 		displayError("Failed to open %s", path.c_str());
+ 		return false;
+ 	}
+	
+	std::istream *input = pathLibrary.open(resolvedPath);
+	if ( input == nullptr ) {
+		displayError("Failed to open %s", resolvedPath.c_str());
+		return false;
+	}
+	
+	if ( ! readHeader(pathLibrary, resolvedPath, *input) )
+		return false;
+	
+	pathLibrary.close(input);
 	
 	return true;
 }
