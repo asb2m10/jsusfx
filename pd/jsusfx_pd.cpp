@@ -104,10 +104,13 @@ typedef struct _inlet_proxy {
     int idx;
 } t_inlet_proxy;
 
-bool ends_with(std::string const &value, std::string const &ending) {
-    if (ending.size() > value.size())
-        return false;
-    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+std::string getFileName(const std::string &s) {
+    char sep = '/';
+    size_t i = s.rfind(sep, s.length());
+    if (i != std::string::npos) {
+        return s.substr(i+1, s.length() - i);
+    }
+    return s;
 }
 
 void jsusfx_describe(t_jsusfx *x) {
@@ -148,7 +151,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
         }
 
         result += '/';
-        result += filename;
+        result += getFileName(filename);
 
         is = new std::ifstream(result);
         if ( ! is->is_open() ) {

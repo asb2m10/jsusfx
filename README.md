@@ -1,4 +1,4 @@
-jsusfx -  Opensource JesuSonic FX implementation
+jsusfx -  Opensource Jesusonic FX implementation
 ================================================
 jsusfx is an opensource implementation of the [JSFX](http://www.reaper.fm/sdk/js/js.php) 
 scripting language that was created by [Cockos](http://www.cockos.com/jesusonic/) and
@@ -16,7 +16,7 @@ implementation focuses on Pure Data support. Support for version 0.4 is
 in progress for Pure Data. See subdirectory [pd](pd).
 
 Marcel Smit, who is also working on [Framework](https://github.com/marcel303/framework) 
-that uses JsusFx, greatly contributed on version 0.4. 
+that uses JsusFx, greatly contributed on version 0.4. See below. 
 
 [![Framework](https://img.youtube.com/vi/7f9fOeBecaY/0.jpg)](https://www.youtube.com/watch?v=7f9fOeBecaY)
 

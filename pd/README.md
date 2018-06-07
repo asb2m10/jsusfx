@@ -1,4 +1,4 @@
-jsusfx_pd - JesuSonic FX for Pure Data
+jsusfx_pd - Jesusonic FX for Pure Data
 ======================================
 The external object is called jsusfx~ and the specify the 
 script to run. This script is search trough your pd/max path.
