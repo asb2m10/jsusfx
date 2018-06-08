@@ -736,7 +736,6 @@ bool JsusFx::compileSections(JsusFx_Sections &sections) {
 bool JsusFx::compile(std::istream &input) {
 	releaseCode();
 	
-	JsusFxPathLibrary pathLibrary;
 	std::string path;
 	
 	// read code for the various sections inside the jsusfx script
