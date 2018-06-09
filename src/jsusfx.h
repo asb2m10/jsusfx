@@ -195,7 +195,6 @@ public:
     JsusFx(JsusFxPathLibrary &pathLibrary);
     virtual ~JsusFx();
 
-    bool compile(std::istream &input);
     bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
     void moveSlider(int idx, float value);

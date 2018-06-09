@@ -30,9 +30,18 @@ public:
     }
     
     bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
+        const size_t pos = parentPath.rfind('/', '\\');
+        if ( pos != std::string::npos )
+            resolvedPath = parentPath.substr(0, pos + 1);
+        
+        if ( fileExists(resolvedPath + importPath) ) {
+            resolvedPath = resolvedPath + importPath;
+            return true;
+        }
+        
         char result[1024];
         char *bufptr;
-        int fd = open_via_path(parentPath.c_str(), importPath.c_str(), "", result, &bufptr, 1023, 1);
+        int fd = open_via_path(dataRoot.c_str(), importPath.c_str(), "", result, &bufptr, 1023, 1);
         if ( fd < 0 || result[0] == 0 ) {
             return false;
         }
@@ -172,7 +181,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
     }
 
     x->fx->dspLock.Enter();
-    if ( x->fx->compile(*is) ) {
+    if ( x->fx->compile(*(x->path), x->scriptpath) ) {
         if ( x->fx->srate != 0 )
             x->fx->prepare(*(x->fx->srate), *(x->fx->samplesblock));
         x->bypass = false;

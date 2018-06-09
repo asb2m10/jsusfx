@@ -733,42 +733,6 @@ bool JsusFx::compileSections(JsusFx_Sections &sections) {
 	return result;
 }
 
-bool JsusFx::compile(std::istream &input) {
-	releaseCode();
-	
-	std::string path;
-	
-	// read code for the various sections inside the jsusfx script
-	
-	JsusFx_Sections sections;
-	if ( ! readSections(pathLibrary, path, input, sections) )
-		return false;
-	
-	// compile the sections
-	
-	if ( ! compileSections(sections) ) {
-		releaseCode();
-		return false;
-	}
-	
-	computeSlider = 1;
-	
-    // in_pin and out_pin is optional, we default it to 2 in / 2 out if nothing is specified.
-    // if you really want no in or out, specify in_pin:none/out_pin:none
-    if ( numInputs == 0 )
-        numInputs = 2;
-    else if ( numInputs == -1 )
-        numInputs = 0;
-    
-    if ( numOutputs == 0 )
-        numOutputs = 2;
-    else if ( numOutputs == -1 )
-        numOutputs = 0;
-    
-    
-	return true;
-}
-
 bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 	releaseCode();
 	
@@ -800,6 +764,20 @@ bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 	}
 	
 	computeSlider = 1;
+    
+    // in_pin and out_pin is optional, we default it to 2 in / 2 out if nothing is specified.
+    // if you really want no in or out, specify in_pin:none/out_pin:none
+    if ( numInputs == 0 )
+        numInputs = 2;
+    else if ( numInputs == -1 )
+        numInputs = 0;
+    
+    if ( numOutputs == 0 )
+        numOutputs = 2;
+    else if ( numOutputs == -1 )
+        numOutputs = 0;
+    
+    return true;
 	
 	return true;
 }
