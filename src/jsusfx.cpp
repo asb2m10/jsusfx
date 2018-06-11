@@ -396,7 +396,6 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
     m_string_context = new eel_string_context_state();
     eel_string_initvm(m_vm);
     computeSlider = false;
-    normalizeSliders = 0;
     srate = 0;
 	
     pathLibrary = _pathLibrary;
@@ -786,13 +785,13 @@ void JsusFx::prepare(int sampleRate, int blockSize) {
     NSEEL_code_execute(codeInit);
 }
 
-void JsusFx::moveSlider(int idx, float value) {
+void JsusFx::moveSlider(int idx, float value, int normalizeSlider) {
     if ( idx < 0 || idx >= kMaxSliders || !sliders[idx].exists )
         return;
 
-    if ( normalizeSliders != 0 ) {
+    if ( normalizeSlider != 0 ) {
         float steps = sliders[idx].max - sliders[idx].min;
-        value  = (value * steps) / normalizeSliders;
+        value  = (value * steps) / normalizeSlider;
         value += sliders[idx].min;
     }
 

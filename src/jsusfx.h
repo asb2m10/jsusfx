@@ -167,7 +167,6 @@ public:
 	
     NSEEL_VMCTX m_vm;
     JsusFx_Slider sliders[kMaxSliders];
-    int normalizeSliders;
     char desc[64];
     
     EEL_F *tempo, *play_state, *play_position, *beat_position, *ts_num, *ts_denom;
@@ -197,7 +196,9 @@ public:
 
     bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
-    void moveSlider(int idx, float value);
+    
+    // move slider, normalizeSlider is used to normalize the value to a constant (0 means no normalization)
+    void moveSlider(int idx, float value, int normalizeSlider = 0);
     void setMidi(const void * midi, int numBytes);
     bool process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels);
     bool process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels);

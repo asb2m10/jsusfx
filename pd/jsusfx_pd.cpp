@@ -157,7 +157,6 @@ void jsusfx_dumpvars(t_jsusfx *x) {
 
 void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
     x->bypass = true;
-    std::ifstream *is;
     std::string filename = std::string(newFile->s_name);
 
     if ( newFile != NULL && newFile->s_name[0] != 0) {
@@ -201,7 +200,7 @@ void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
         error("jsusfx~: slider number %d is not assigned for this effect", i);
         return;
     }
-    x->fx->moveSlider(i, value);
+    x->fx->moveSlider(i, value, 1);
 }
 
 void jsusfx_bypass(t_jsusfx *x, t_float id) {
@@ -260,7 +259,6 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
     x->user_bypass = false;
     x->scriptpath[0] = 0;
     x->fx = new JsusFxPd(*(x->path));
-    x->fx->normalizeSliders = 1;
 
     x->pinIn = 2;
     x->pinOut = 2;
@@ -333,7 +331,6 @@ void *jxrt_new(t_symbol *script) {
     x->user_bypass = false;
     x->scriptpath[0] = 0;
     x->fx = new JsusFxPd(*(x->path));
-    x->fx->normalizeSliders = 1;
     
     x->pinIn = 2;
     x->pinOut = 2;
@@ -384,7 +381,7 @@ void jxrt_free(t_jsusfx *x) {
 }
 
 static void inlet_float(t_inlet_proxy *proxy, t_float f) {
-    proxy->peer->fx->moveSlider(proxy->idx, f);
+    proxy->peer->fx->moveSlider(proxy->idx, f, 0);
 }
 
 extern "C" {
