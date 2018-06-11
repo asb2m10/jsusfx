@@ -39,14 +39,26 @@ public:
             return true;
         }
         
+        std::string searchDir;
+        // check if the import parentPath is a script and remove the extension (if needed)
+        // usually the directory should contain the import script
+        const size_t dotPos = parentPath.rfind(".");
+        if ( dotPos != std::string::npos && dotPos > pos ) {
+            searchDir = parentPath.substr(0, dotPos);
+        } else {
+            searchDir = dataRoot;
+        }
+        
         char result[1024];
         char *bufptr;
-        int fd = open_via_path(dataRoot.c_str(), importPath.c_str(), "", result, &bufptr, 1023, 1);
+        int fd = open_via_path(searchDir.c_str(), importPath.c_str(), "", result, &bufptr, 1023, 1);
         if ( fd < 0 || result[0] == 0 ) {
             return false;
         }
-        sys_close(fd);        
-        resolvedPath = result;        
+        sys_close(fd);
+        resolvedPath = result;
+        resolvedPath += '/';
+        resolvedPath += importPath;
         return true;
     }
     
@@ -57,8 +69,10 @@ public:
         if ( fd < 0 || result[0] == 0 ) {
             return false;
         }
-        sys_close(fd);        
+        sys_close(fd);
         resolvedPath = result;
+        resolvedPath += '/';
+        resolvedPath += importPath;
         return true;
     }
 };
@@ -149,8 +163,9 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
     if ( newFile != NULL && newFile->s_name[0] != 0) {
         std::string result;
 
+        // find if the file exists with the .jsfx suffix
         if ( ! x->path->resolveDataPath(std::string(filename), result) ) {
-            // maybe the suffix isn't specified, try with the .jsfx
+            // maybe it isn't specified, try with the .jsfx
             filename += ".jsfx";
             
             if ( ! x->path->resolveDataPath(std::string(filename), result) ) {
@@ -158,26 +173,10 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
                 return;
             }
         }
-
-        result += '/';
-        result += getFileName(filename);
-
-        is = new std::ifstream(result);
-        if ( ! is->is_open() ) {
-            error("jsusfx~: error opening file %s", result.c_str());
-            delete is;
-            return;
-        }
-        strncpy(x->scriptpath, result.c_str(), 1024);
+        strncpy(x->scriptpath, filename.c_str(), 1024);
     } else {
         if ( x->scriptpath[0] == 0 )
             return;
-        is = new std::ifstream(x->scriptpath);
-        if ( ! is->is_open() ) {
-            error("jsusfx~: error opening file %s", x->scriptpath);
-            delete is;
-            return;
-        }
     }
 
     x->fx->dspLock.Enter();
@@ -189,8 +188,6 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
         x->bypass = true;
     }
     x->fx->dspLock.Leave();
-
-    delete is;
 
     if ( ! x->bypass )
         jsusfx_describe(x);

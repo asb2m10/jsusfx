@@ -511,7 +511,7 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
 bool JsusFx::processImport(JsusFxPathLibrary &pathLibrary, const std::string &path, const std::string &importPath, JsusFx_Sections &sections) {
 	bool result = true;
 	
-	//displayMsg("Importing %s", import.c_str());
+	//displayMsg("Importing %s", path.c_str());
 	
 	std::string resolvedPath;
 	if ( ! pathLibrary.resolveImportPath(importPath, path, resolvedPath) ) {
@@ -778,8 +778,6 @@ bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
         numOutputs = 0;
     
     return true;
-	
-	return true;
 }
 
 void JsusFx::prepare(int sampleRate, int blockSize) {    
