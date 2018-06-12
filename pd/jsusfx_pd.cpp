@@ -22,7 +22,7 @@
 #include <stdarg.h>
 
 // The maximum of signal inlet/outlet
-const int MAX_SIGNAL_PORT = 16;
+const int MAX_SIGNAL_PORT = 24;
 
 class JsusFxPdPath : public JsusFxPathLibrary_Basic {
 public:
@@ -187,9 +187,6 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
         x->bypass = true;
     }
     x->fx->dspLock.Leave();
-
-    if ( ! x->bypass )
-        jsusfx_describe(x);
 }
 
 void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
@@ -272,6 +269,7 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
             t_symbol *s = atom_getsymbol(argv);
             jsusfx_compile(x, s);
             if (! x->bypass) { 
+                jsusfx_describe(x);
                 // the first compile will permantly set the number of pins for this instance. (unless it is
                 // specified in the pd object arguments)
                 x->pinIn = x->fx->numInputs;
@@ -366,8 +364,6 @@ void *jxrt_new(t_symbol *script) {
             proxy->idx = i;
             proxy->peer = x;
             inlet_new(&x->x_obj, &proxy->x_obj.ob_pd, 0, 0);
-        } else {
-            break;
         }
     }
 

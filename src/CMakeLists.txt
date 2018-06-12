@@ -26,7 +26,7 @@ if (UNIX AND NOT APPLE)
 		add_library(jsusfx ${sources} ${headers})
 	else() 
 		# Linux x64
-		if (CMAKE_SIZEOF_VOID_P EQUALS 8)
+		if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 			add_custom_command(
 				OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o
 				COMMAND php a2x64.php elf64
