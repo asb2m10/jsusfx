@@ -1,5 +1,5 @@
 """
- * Copyright 2014-2018 Pascal Gauthier
+ * Copyright 2018 Pascal Gauthier
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import datetime
 class Patch :
 	def __init__(self, scriptName) :
 		self.items = []
+		print("Processing %s" % os.path.abspath(scriptName))
 		filename = scriptName.split(".")[0]
 		self.fd = open("%s.pd" % filename, "w")
 		self.fd.write("#N canvas 50 50 605 405 10;\r\n")
@@ -102,7 +103,7 @@ if __name__ == "__main__" :
 				pinOuts = -1
 
 	patch.addText(10, 20, "================================================")
-	patch.addText(10, 35, "Generated from jsfx2path.py on %s" % datetime.datetime.now())
+	patch.addText(10, 35, "Generated from jsfx2abstract.py on %s" % datetime.datetime.now())
 
 	sliderX = -137
 	sliderY = 80
@@ -125,7 +126,7 @@ if __name__ == "__main__" :
 
 		patch.add(sliderX, sliderY, i)
 
-	fxobj = PdObj("jxrt~ %s" % script)
+	fxobj = PdObj("jsfx~ %s" % script)
 	patch.add(30, sliderY + 60, fxobj)
 
 	inlets = []
@@ -150,5 +151,3 @@ if __name__ == "__main__" :
 		patch.connect(fxobj, outlets.index(i), i, 0)
 
 	patch.close();
-
-sys.exit(0);

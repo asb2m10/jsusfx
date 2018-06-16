@@ -118,7 +118,7 @@ typedef struct _jsusfx {
 } t_jsusfx;
 
 static t_class *jsusfx_class;
-static t_class *jxrt_class;
+static t_class *jsfx_class;
 static t_class *inlet_proxy;
 
 typedef struct _inlet_proxy {
@@ -317,7 +317,7 @@ void jsusfx_free(t_jsusfx *x) {
     delete x->path;
 }
 
-void *jxrt_new(t_symbol *script) {
+void *jsfx_new(t_symbol *script) {
     if ( script == NULL || script->s_name[0] == 0) {
         error("jsusfx~: missing script");
         return NULL;
@@ -370,7 +370,7 @@ void *jxrt_new(t_symbol *script) {
     return (x);
 }
 
-void jxrt_free(t_jsusfx *x) {
+void jsfx_free(t_jsusfx *x) {
     delete x->fx;
     delete x->path;
     // delete also the inlet proxy or it is done automatically ?
@@ -391,16 +391,20 @@ extern "C" {
         class_addmethod(jsusfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
 
-        jxrt_class = class_new(gensym("jxrt~"), (t_newmethod)jxrt_new, (t_method)jxrt_free, sizeof(t_jsusfx), 0L, A_SYMBOL, 0);
-        class_addmethod(jxrt_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);
-        class_addmethod(jxrt_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
-        class_addmethod(jxrt_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
-        class_addmethod(jxrt_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
-        CLASS_MAINSIGNALIN(jxrt_class, t_jsusfx, x_f);
+        jsfx_class = class_new(gensym("jsfx~"), (t_newmethod)jsfx_new, (t_method)jsfx_free, sizeof(t_jsusfx), 0L, A_SYMBOL, 0);
+        class_addmethod(jsfx_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);
+        class_addmethod(jsfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
+        class_addmethod(jsfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
+        class_addmethod(jsfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
+        CLASS_MAINSIGNALIN(jsfx_class, t_jsusfx, x_f);
 
-        inlet_proxy = class_new(gensym("jxrt_inlet_proxy"), NULL,NULL, sizeof(t_inlet_proxy), CLASS_PD|CLASS_NOINLET, A_NULL);
+        inlet_proxy = class_new(gensym("jsfx_inlet_proxy"), NULL,NULL, sizeof(t_inlet_proxy), CLASS_PD|CLASS_NOINLET, A_NULL);
         class_addfloat(inlet_proxy, (t_method)inlet_float);
 
         JsusFx::init();
+    }
+
+    void jsfx_tilde_setup(void) {
+        jsusfx_tilde_setup();
     }
 }

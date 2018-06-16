@@ -1,10 +1,10 @@
-#N canvas 507 120 653 554 10;
-#X obj 26 381 dac~;
+#N canvas 244 245 653 554 10;
+#X obj 25 381 dac~;
 #X obj 17 490 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
 -262144 -1 -1 0 1;
 #X obj 18 454 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
 -262144 -1 -1 0 1;
-#X msg 109 215 describe;
+#X msg 97 206 describe;
 #X obj 167 454 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
 0 10 -262144 -1 -1 0 1;
 #X obj 166 490 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
@@ -45,8 +45,8 @@
 #X connect 14 0 0 0;
 #X connect 15 0 16 0;
 #X connect 16 0 0 0;
-#X restore 103 316 pd slider_r;
-#X msg 132 254 dumpvars;
+#X restore 115 262 pd slider_r;
+#X msg 113 232 dumpvars;
 #X msg 55 151 compile gain.jsfx;
 #X obj 318 490 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
 0 10 -262144 -1 -1 0 1;
@@ -55,24 +55,38 @@
 #X obj 467 455 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
 0 10 -262144 -1 -1 0 1;
 #X msg 82 178 bypass \$1;
-#X text 154 178 bypass is used to bypass the fx processing;
-#X text 173 216 describe outputs the assigned slider to the pd console
+#X text 154 179 bypass is used to bypass the fx processing;
+#X text 160 205 describe outputs the assigned slider to the pd console
 ;
-#X text 196 255 dumpvars output all the variable output to the pd console
+#X text 180 231 dumpvars output all the variable output to the pd console
 ;
 #X obj 26 98 openpanel;
 #X obj 26 71 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
 -1;
 #X msg 26 124 compile \$1;
 #X obj 25 347 jsusfx~ 2 2;
-#X text 186 293 slider <num> <value 0..1> is used to change the value
+#X text 197 256 slider <num> <value 0..1> is used to change the value
 of a parameter of the jsfx script. It is normalized from 0 to 1;
-#X text 119 339 You can specify the script to load and also the number
-of input and output pins;
-#X text 10 10 jsusfx~ : Jesusonic for pure-data ============================================================see:
-https://github.com/asb2m10/jsusfx;
 #X text 116 112 Use compile to recompile the current script or specify
 a new one. the current script.;
+#X text 109 345 You can specify the script to load and also the number
+of DSP io pins;
+#N canvas 745 75 450 300 test_tones 0;
+#X obj 52 246 outlet~;
+#X obj 53 184 phasor~;
+#X obj 55 125 *~ 110;
+#X obj 54 154 +~ 220;
+#X obj 54 89 phasor~ 0.1;
+#X obj 53 213 *~ 0.25;
+#X connect 1 0 5 0;
+#X connect 2 0 3 0;
+#X connect 3 0 1 0;
+#X connect 4 0 2 0;
+#X connect 5 0 0 0;
+#X restore 88 317 pd test_tones;
+#X text 10 10 jsusfx~ : Jesusonic development external for pure-data
+============================================================see: https://github.com/asb2m10/jsusfx
+;
 #X connect 3 0 20 0;
 #X connect 7 0 20 0;
 #X connect 8 0 20 0;
@@ -83,3 +97,5 @@ a new one. the current script.;
 #X connect 19 0 20 0;
 #X connect 20 0 0 0;
 #X connect 20 1 0 1;
+#X connect 24 0 20 0;
+#X connect 24 0 20 1;
