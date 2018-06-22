@@ -52,6 +52,9 @@
 #include "wdltypes.h"
 #include "wdlatomic.h"
 
+// TO SUPPORT try
+#undef _DEBUG 
+
 #ifdef _DEBUG
 #include <assert.h>
 #endif

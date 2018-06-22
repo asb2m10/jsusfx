@@ -11,7 +11,12 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/../src ${PROJECT_SOURCE_DIR}/../src)
 include(pd.build/pd.cmake)
 include_directories(${PROJECT_SOURCE_DIR}/../src)
 
-set_pd_sources(/Applications/Pd.app/Contents/Resources/src/)
+if (WIN32)
+	set_pd_sources(C:/Apps/pd/src)
+else()
+	set_pd_sources(/Applications/Pd.app/Contents/Resources/src/)
+endif()
+
 set_pd_external_path(${PROJECT_SOURCE_DIR})
 
 add_pd_external(jsusfx_pd_project jsfx~ jsusfx_pd.cpp)
@@ -23,14 +28,19 @@ set(DIST ${PROJECT_SOURCE_DIR}/dist)
 
 file(GLOB JSSCRIPT "${PROJECT_SOURCE_DIR}/../scripts/liteon/*.jsfx")
 
-foreach(script ${JSSCRIPT}) 
+foreach(script ${JSSCRIPT})
 	install(FILES ${script} DESTINATION ${DIST}/externals)
 	install(CODE "execute_process(COMMAND python ${PROJECT_SOURCE_DIR}/jsfx2abstract.py ${script} WORKING_DIRECTORY ${DIST}/externals)" )
 endforeach()
 
 install(TARGETS jsusfx_pd_project DESTINATION ${DIST}/externals)
 install(FILES ${PDHELP} DESTINATION ${DIST}/externals)
-install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsfx~.pd_darwin ${DIST}/externals/jsusfx~.pd_darwin)")
+if (UNIX AND NOT APPLE)
+	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsfx~.pd_darwin ${DIST}/externals/jsusfx~.pd_darwin)")
+else()
+	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsfx~.pd_linux ${DIST}/externals/jsusfx~.pd_linux)")
+endif()
+
 file(GLOB PDHELP "${PROJECT_SOURCE_DIR}/externals/*-help.pd")
 
 install(FILES ${PROJECT_SOURCE_DIR}/jsfx2abstract.py DESTINATION ${DIST})

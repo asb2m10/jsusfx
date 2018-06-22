@@ -5,24 +5,25 @@ The jsusfx implementation is done through 2 externals called `jsfx~` and `jsusfx
 * `jsfx~` is the runtime object to expose JSFX scripts in pure-data. It expect as object 
 creation argument the script to use that should be in the pd path. Upon object creation, 
 each of the sliders will be exposed as an inlet.
-** Use [describe] to output the associated sliders
-** Use [dumpvars] to dump the current variables values
-** Use [bypass 0/1] to bypass the effect
+..* Use [describe] to output the associated sliders
+..* Use [dumpvars] to dump the current variables values
+..* Use [bypass 0/1] to bypass the effect
 * `jsusfx~` is used for script development and can switch script with the command compile. All
 the slider parameter are read trought the slider message. At object creation, you can also put 
 the number of inlet/outlet the script is expected to use. If you don't specify it, it will 
 count the number of time in_pin and out_pin is used.
-** To change a slider, you need to send [slider <slider id> <0..1 value>]
-** Sliders are normalized to 0..1 for all parameters (for the jsusfx~ object)
-** Use [compile] message to recompile your script. Optionally you can specify a new script to compile
-** Use [describe] to output the associated sliders
-** Use [dumpvars] to dump the current variables values
-** Use [bypass 0/1] to bypass the effect
+..* To change a slider, you need to send [slider <slider id> <0..1 value>]
+..* Sliders are normalized to 0..1 for all parameters (for the jsusfx~ object)
+..* Use [compile] message to recompile your script. Optionally you can specify a new script to compile
+..* Use [describe] to output the associated sliders
+..* Use [dumpvars] to dump the current variables values
+..* Use [bypass 0/1] to bypass the effect
 
 Version 0.4
 -----------
 * Multi-channel support
-* Native ARM support (Raspberry Pi) 
+* Native ARM support (Raspberry Pi)
+* Support for Windows
 * File API support
 * @import support
 * Subpatch wrapper generator (see jsfx2patch.py) 
@@ -46,7 +47,6 @@ $ python jsfx2abstract.py <jsfx script>
 Limitations
 -----------
 * @gfx, @serialize section is ignored
-* No midi support
 
 BUILDING
 --------

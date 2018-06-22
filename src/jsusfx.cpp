@@ -20,7 +20,9 @@
 #include "jsusfx_gfx.h"
 
 #include <string.h>
-#include <unistd.h>
+#ifndef WIN32
+	#include <unistd.h>
+#endif
 
 #include "WDL/ptrlist.h"
 #include "WDL/assocarray.h"
