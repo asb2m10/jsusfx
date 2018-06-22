@@ -35,7 +35,7 @@ desc: NP1136 (Peak Limiter)
 //=============================================================================
 slider1:-12<-40,0,0.01>Threshold (dB)
 slider2:4<1,20,0.01>Ratio (20:1 - PD Mode)
-slider3:30<0,100,0.01>Attack (µs)
+slider3:30<0,100,0.01>Attack (Âµs)
 slider4:45<0,100,0.01>Release (ms)
 slider5:0<0,100,0.01>Detector HP (Hz)
 slider6:-18<-40,0,0.01>GR Limit (Off / Y dB)

@@ -31,7 +31,7 @@ slider4:4000<1500,12000,1>Frequency (Hz)
 slider5:1.5<0.1,3.1,0.0005>Bandwidth (Oct)
 slider6:-25<-80,0,0.01>Threshold (dB)
 slider7:4<1,20,0.01>Ratio
-slider8:0<0,1,1{A: 3 µs - R: 50 ms,A: 30 µs - R: 100 ms,A: 100 µs - R: 300 ms}>Time Constants
+slider8:0<0,1,1{A: 3 Âµs - R: 50 ms,A: 30 Âµs - R: 100 ms,A: 100 Âµs - R: 300 ms}>Time Constants
 slider9:0<-24,24,0.001>Gain (-inf/+24dB)
 
 @init

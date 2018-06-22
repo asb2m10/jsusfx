@@ -262,6 +262,7 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
 
     if ( argc < 1 ) {
         post("jsusfx~: missing script");
+        x->scriptpath[0] == 0;
     } else {
         int argPos = 0;
 

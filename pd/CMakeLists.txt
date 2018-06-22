@@ -34,14 +34,14 @@ foreach(script ${JSSCRIPT})
 endforeach()
 
 install(TARGETS jsusfx_pd_project DESTINATION ${DIST}/externals)
+file(GLOB PDHELP "${PROJECT_SOURCE_DIR}/*-help.pd")
 install(FILES ${PDHELP} DESTINATION ${DIST}/externals)
-if (UNIX AND NOT APPLE)
+
+if (UNIX AND APPLE)
 	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsfx~.pd_darwin ${DIST}/externals/jsusfx~.pd_darwin)")
 else()
 	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsfx~.pd_linux ${DIST}/externals/jsusfx~.pd_linux)")
 endif()
-
-file(GLOB PDHELP "${PROJECT_SOURCE_DIR}/externals/*-help.pd")
 
 install(FILES ${PROJECT_SOURCE_DIR}/jsfx2abstract.py DESTINATION ${DIST})
 install(FILES ${PROJECT_SOURCE_DIR}/README.md DESTINATION ${DIST})
