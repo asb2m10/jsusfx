@@ -327,6 +327,15 @@ static EEL_F NSEEL_CGEN_CALL _gfx_setimgdim(void *opaque, EEL_F *img, EEL_F *w, 
 
 //
 
+static EEL_F NSEEL_CGEN_CALL _gfx_getchar(void *opaque, EEL_F *p)
+{
+  JsusFxGfx *ctx=EEL_GFX_GET_INTERFACE(opaque);
+  if (ctx) return ctx->gfx_getchar(*p);
+  return 0.0;
+}
+
+//
+
 // todo : remove
 static EEL_F NSEEL_CGEN_CALL __stub(void *opaque, INT_PTR np, EEL_F **parms)
 {
@@ -389,6 +398,5 @@ void JsusFxGfx::init(NSEEL_VMCTX vm) {
 	NSEEL_addfunc_varparm("gfx_getfont",1,NSEEL_PProc_THIS,&_gfx_getfont);
 	NSEEL_addfunc_varparm("gfx_set",1,NSEEL_PProc_THIS,&_gfx_set);
 	
-	// todo
-	NSEEL_addfunc_varparm("gfx_getchar",1,NSEEL_PProc_THIS,&__stub);
+	NSEEL_addfunc_retval("gfx_getchar",1,NSEEL_PProc_THIS,&_gfx_getchar);
 }
