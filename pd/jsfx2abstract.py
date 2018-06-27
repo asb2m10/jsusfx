@@ -62,92 +62,108 @@ if __name__ == "__main__" :
 	patch = Patch(script);
 	sliders = [];
 	desc = "";
-	pinIns = 0;
-	pinOuts = 0;
+	pinIns = [];
+	pinOuts = [];
 
 	for i in open(sys.argv[1], "r").readlines() :
 		if i[0] == '@':
 			break
 
 		if i.startswith("slider") :
-			slider = i.split(":")
-			id = slider[0][5:]
-			default = float(slider[1].split("<")[0])
+			slider = i.split(":");
+			id = slider[0][5:];
 
 			if len(slider[1].split(">")) > 1 :
 				name = slider[1].split(">")[1].rstrip("\r\n");
 			else :
-				name = "undefined"
+				name = "undefined";
 
-			sliderRange = slider[1].split("<")[1].split(">")[0].split(",")
+			sliderRange = slider[1].split("<")[1].split(">")[0].split(",");
 
-			mn = float(sliderRange[0])
-			mx = float(sliderRange[1])
+			try:
+				default = float(slider[1].split("<")[0]);
+			except :
+				default = float(sliderRange[0]);
 
-			steps = 127.0 / (-mn + mx)
-			default = (default + -mn) * steps * 100
+			mn = float(sliderRange[0]);
+			mx = float(sliderRange[1]);
 
-			sliders.append(makeSlider(name, mn, mx, int(default)))
+			steps = 127.0 / (-mn + mx);
+			default = (default + -mn) * steps * 100;
+
+			sliders.append(makeSlider(name, mn, mx, int(default)));
 
 		elif i.startswith("desc") :
-			patch.addText(10, 5, "JSFX:%s" % i[5:].rstrip("\r\n"))
+			patch.addText(10, 5, "JSFX:%s" % i[5:].rstrip("\r\n"));
 		elif i.startswith("in_pin") :
-			if pinIns != -1 :
-				pinIns += 1
+			if pinIns != None :
+				pinIns.append(i[8:]);
 			elif i.startswith("in_pin:none") :
-				pinIns = -1
+				pinIns = None;
 		elif i.startswith("out_pin") :
-			if pinOuts != -1 :
-				pinOuts += 1
+			if pinOuts != None :
+				pinOuts.append(i[9:]);
 			elif i.startswith("out_pin:none") :
-				pinOuts = -1
+				pinOuts = None;
 
-	patch.addText(10, 20, "================================================")
-	patch.addText(10, 35, "Generated from jsfx2abstract.py on %s" % datetime.datetime.now())
+	patch.addText(10, 20, "Generated from jsfx2abstract.py on %s" % datetime.date.today())
+	patch.addText(10, 35, "================================================")
 
-	sliderX = -137
-	sliderY = 80
+	sliderX = -137;
+	sliderY = 80;
 
-	if pinIns == 0 :
-		pinIns = 2;
-	elif pinIns == -1 : 
-		pinIns = 1;
-	if pinOuts == 0 :
-		pinOuts = 2;
-	elif pinOuts == -1 :
-		pinOuts = 0;
+	if pinIns == None :
+		pinIns = [];
+	elif len(pinIns) == 0 :
+		pinIns.append("input_l");
+		pinIns.append("input_r");
+	if pinOuts == None :
+		pinOuts = [];
+	elif len(pinOuts) == 0 :
+		pinOuts.append("output_l");
+		pinOuts.append("output_r");
+
 
 	for i in sliders :
 		if sliderX > 450 :
-			sliderY += 50
-			sliderX = 13
+			sliderY += 50;
+			sliderX = 13;
 		else :
-			sliderX += 150
+			sliderX += 150;
 
-		patch.add(sliderX, sliderY, i)
+		patch.add(sliderX, sliderY, i);
 
-	fxobj = PdObj("jsfx~ %s" % script)
-	patch.add(30, sliderY + 60, fxobj)
+	fxobj = PdObj("jsfx~ %s" % script);
+	patch.add(30, sliderY + 60, fxobj);
 
-	inlets = []
-	for i in range(pinIns) :
-		dspInlet = PdObj("inlet~")
-		inlets.append(dspInlet)
-		patch.add(30, sliderY + 40, dspInlet)
+	inlets = [];
+	for i in range(len(pinIns)) :
+		dspInlet = PdObj("inlet~");
+		inlets.append(dspInlet);
+		patch.add(30, sliderY + 37, dspInlet);
+
+	midiin = PdObj("inlet");
+	patch.add(80, sliderY + 37, midiin);
 
 	outlets = []
-	for i in range(pinOuts) :
-		dspOutlet = PdObj("outlet~")
-		outlets.append(dspOutlet)
-		patch.add(30, sliderY + 83, dspOutlet)
+	for i in range(len(pinOuts)) :
+		dspOutlet = PdObj("outlet~");
+		outlets.append(dspOutlet);
+		patch.add(30, sliderY + 83, dspOutlet);
+
+	midiout = PdObj("outlet")
+	patch.add(80, sliderY + 83, midiout)
+
+	patch.connect(midiin, 0, fxobj, 0)
+	patch.connect(fxobj, len(outlets), midiout, 0)
 
 	for i in sliders :
-		patch.connect(i, 0, fxobj, pinOuts + sliders.index(i))
+		patch.connect(i, 0, fxobj, len(pinOuts) + sliders.index(i));
 
 	for i in inlets :
-		patch.connect(i, 0, fxobj, inlets.index(i))
+		patch.connect(i, 0, fxobj, inlets.index(i));
 
 	for i in outlets :
-		patch.connect(fxobj, outlets.index(i), i, 0)
+		patch.connect(fxobj, outlets.index(i), i, 0);
 
 	patch.close();

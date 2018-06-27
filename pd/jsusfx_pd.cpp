@@ -15,23 +15,28 @@
 */
 
 
+#include <stdarg.h>
 #include <fstream>
+
 #include "m_pd.h"
 #include "WDL/mutex.h"
 #include "jsusfx.h"
-#include <stdarg.h>
+
+#define REAPER_GET_INTERFACE(opaque) ((opaque) ? ((JsusFxPd*)opaque) : nullptr)
+
+using namespace std;
 
 // The maximum of signal inlet/outlet
-const int MAX_SIGNAL_PORT = 24;
+const int MAX_SIGNAL_PORT = 32;
 
 class JsusFxPdPath : public JsusFxPathLibrary_Basic {
 public:
     JsusFxPdPath(const char * _dataRoot) : JsusFxPathLibrary_Basic(_dataRoot) {
     }
     
-    bool resolveImportPath(const std::string &importPath, const std::string &parentPath, std::string &resolvedPath) {
+    bool resolveImportPath(const string &importPath, const string &parentPath, string &resolvedPath) {
         const size_t pos = parentPath.rfind('/', '\\');
-        if ( pos != std::string::npos )
+        if ( pos != string::npos )
             resolvedPath = parentPath.substr(0, pos + 1);
         
         if ( fileExists(resolvedPath + importPath) ) {
@@ -39,11 +44,11 @@ public:
             return true;
         }
         
-        std::string searchDir;
+        string searchDir;
         // check if the import parentPath is a script and remove the extension (if needed)
         // usually the directory should contain the import script
         const size_t dotPos = parentPath.rfind(".");
-        if ( dotPos != std::string::npos && dotPos > pos ) {
+        if ( dotPos != string::npos && dotPos > pos ) {
             searchDir = parentPath.substr(0, dotPos);
         } else {
             searchDir = dataRoot;
@@ -62,7 +67,7 @@ public:
         return true;
     }
     
-    bool resolveDataPath(const std::string &importPath, std::string &resolvedPath) {
+    bool resolveDataPath(const string &importPath, string &resolvedPath) {
         char result[1024];
         char *bufptr;
         int fd = open_via_path(dataRoot.c_str(), importPath.c_str(), "", result, &bufptr, 1023, 1);
@@ -77,9 +82,78 @@ public:
     }
 };
 
+static EEL_F NSEEL_CGEN_CALL midisend(void *opaque, INT_PTR np, EEL_F **parms);
+
 class JsusFxPd : public JsusFx {
 public:
-    JsusFxPd(JsusFxPathLibrary &pathLibrary) : JsusFx(pathLibrary) {   
+    static const int kMidiBufferSize = 4096;
+    
+    uint8_t midiHead[kMidiBufferSize];
+    uint8_t midiPreStream[4];
+    int midiPre = 0, midiExpt = 0;
+    uint8_t midiOutBuffer[kMidiBufferSize];
+    int midiOutSize = 0;
+    
+    // this is used to indicate if dsp is on (and midi parsing should be done)
+    bool dspOn;
+    WDL_Mutex dspLock;
+
+    JsusFxPd(JsusFxPathLibrary &pathLibrary) : JsusFx(pathLibrary) {
+        midi = &midiHead[0];
+        NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&midisend);
+    }
+    
+    ~JsusFxPd() {
+    }
+
+    // we pre-stream the byte messages since it might come in between dsp cycles
+    void midiin(uint8_t b) {
+        // midi is read in the dsp thread. Do accumulate stuff if you don't read it
+        if ( ! dspOn )
+            return;
+        
+        // in sysex stream, ignore everything
+        if ( midiExpt == -1) {
+            if ( b == 0xf0 ) {
+                midiExpt = 0;
+                return;
+            }
+        }
+        
+        // nothing is expected; new midi message
+        if ( midiExpt == 0 ) {
+            if ((b & 0xf0) == 0xf0) {
+                midiExpt = -1;
+                return;
+            }
+            
+            midiPre = 1;
+            midiPreStream[0] = b;
+            
+            switch(b & 0xf0) {
+                case 0xc0:
+                case 0xd0:
+                    midiExpt = 2;
+                    break;
+                default:
+                    midiExpt = 3;
+            }
+            return;
+        }
+    
+        midiPreStream[midiPre++] = b;
+        if ( midiPre >= midiExpt) {
+            if ( midiSize + midiExpt >= kMidiBufferSize ) {
+                post("jsusfx~: midi buffer full");
+                dspOn = false;
+                return;
+            }
+        
+            for(int i=0;i<midiExpt;i++) {
+                midi[midiSize++] = midiPreStream[i];
+            }
+            midiExpt = 0;
+        }
     }
     
     void displayMsg(const char *fmt, ...) {
@@ -102,24 +176,50 @@ public:
         error("%s", output);
     }
 
-    WDL_Mutex dspLock;
+    void flushMidi() {
+        midi = &midiHead[0];
+        midiSize = 0;
+    }
 };
+
+static EEL_F NSEEL_CGEN_CALL midisend(void *opaque, INT_PTR np, EEL_F **parms) {
+    JsusFxPd *ctx = REAPER_GET_INTERFACE(opaque);
+    
+    if ( JsusFxPd::kMidiBufferSize <= ctx->midiOutSize + (np-1) ) {
+        ctx->midiOutSize = JsusFxPd::kMidiBufferSize;
+        return 1;
+    }
+
+    ctx->midiOutBuffer[ctx->midiOutSize++] = *parms[1];
+    if ( np >= 4 ) {
+        ctx->midiOutBuffer[ctx->midiOutSize++] = *parms[2];
+        ctx->midiOutBuffer[ctx->midiOutSize++] = *parms[3];
+    } else {
+        int v = *parms[2];
+        ctx->midiOutBuffer[ctx->midiOutSize++] = v % 256;
+        ctx->midiOutBuffer[ctx->midiOutSize++] = v / 256;
+    }
+    
+    return 0;
+}
 
 typedef struct _jsusfx {
     t_object x_obj;
     t_float x_f;
     JsusFxPd *fx;
     JsusFxPdPath *path;
-    char scriptpath[2048];
+    char scriptpath[1024];
+    t_clock *x_clock;
     bool bypass;
     bool user_bypass;
     int pinIn, pinOut;
     t_int **dspVect;
+    t_outlet *midiout;
 } t_jsusfx;
 
 static t_class *jsusfx_class;
 static t_class *jsfx_class;
-static t_class *inlet_proxy;
+static t_class *slider_proxy;
 
 typedef struct _inlet_proxy {
     t_object x_obj;
@@ -127,10 +227,10 @@ typedef struct _inlet_proxy {
     int idx;
 } t_inlet_proxy;
 
-std::string getFileName(const std::string &s) {
+string getFileName(const string &s) {
     char sep = '/';
     size_t i = s.rfind(sep, s.length());
-    if (i != std::string::npos) {
+    if (i != string::npos) {
         return s.substr(i+1, s.length() - i);
     }
     return s;
@@ -157,22 +257,22 @@ void jsusfx_dumpvars(t_jsusfx *x) {
 
 void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
     x->bypass = true;
-    std::string filename = std::string(newFile->s_name);
+    string filename = string(newFile->s_name);
 
     if ( newFile != NULL && newFile->s_name[0] != 0) {
-        std::string result;
+        string result;
 
         // find if the file exists with the .jsfx suffix
-        if ( ! x->path->resolveDataPath(std::string(filename), result) ) {
+        if ( ! x->path->resolveDataPath(string(filename), result) ) {
             // maybe it isn't specified, try with the .jsfx
             filename += ".jsfx";
             
-            if ( ! x->path->resolveDataPath(std::string(filename), result) ) {
+            if ( ! x->path->resolveDataPath(string(filename), result) ) {
                 error("jsusfx~: unable to find script %s", newFile->s_name);
                 return;
             }
         }
-        strncpy(x->scriptpath, filename.c_str(), 1024);
+        strncpy(x->scriptpath, filename.c_str(), 1023);
     } else {
         if ( x->scriptpath[0] == 0 )
             return;
@@ -227,6 +327,11 @@ t_int *jsusfx_perform(t_int *w) {
         x->fx->dspLock.Leave();
     }
 
+    if ( x->fx->midiOutSize != 0 )
+        clock_delay(x->x_clock, 0);
+    
+    x->fx->flushMidi();
+    
     return (w+argc);
 }
 
@@ -245,8 +350,20 @@ void jsusfx_dsp(t_jsusfx *x, t_signal **sp) {
         //post("jsusfx~ dsp-vecout: %x", x->dspVect[i+j+1]);
     }
     x->dspVect[i+j+1] = (t_int *) ((long)sp[0]->s_n);
-
+    x->fx->dspOn = true;
+    
     dsp_addv(jsusfx_perform, x->pinIn + x->pinOut + 2, (t_int*)x->dspVect);
+}
+
+static void jsusfx_midiout(t_jsusfx *x) {
+    if ( x->fx->midiOutSize >= JsusFxPd::kMidiBufferSize ) {
+        post("jsusfx~: midiout buffer full");
+    } else {
+        for(int i=0;i<x->fx->midiOutSize;i++) {
+            outlet_float(x->midiout, x->fx->midiOutBuffer[i]);
+        }
+    }
+    x->fx->midiOutSize = 0;
 }
 
 void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
@@ -256,13 +373,14 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
     x->user_bypass = false;
     x->scriptpath[0] = 0;
     x->fx = new JsusFxPd(*(x->path));
+    x->x_clock = clock_new(x, (t_method)jsusfx_midiout);
 
     x->pinIn = 2;
     x->pinOut = 2;
 
     if ( argc < 1 ) {
         post("jsusfx~: missing script");
-        x->scriptpath[0] == 0;
+        x->scriptpath[0] = 0;
     } else {
         int argPos = 0;
 
@@ -309,10 +427,13 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
         outlet_new(&x->x_obj, gensym("signal"));
 
     x->dspVect = (t_int **)t_getbytes(sizeof(t_int *) * (x->pinIn + x->pinOut + 2));
+    
+    x->midiout = outlet_new(&x->x_obj, &s_float);
     return (x);
 }
 
 void jsusfx_free(t_jsusfx *x) {
+    clock_free(x->x_clock);
     t_freebytes(x->dspVect, sizeof(t_int) * (x->pinIn + x->pinOut + 2));
     delete x->fx;
     delete x->path;
@@ -330,6 +451,7 @@ void *jsfx_new(t_symbol *script) {
     x->user_bypass = false;
     x->scriptpath[0] = 0;
     x->fx = new JsusFxPd(*(x->path));
+    x->x_clock = clock_new(x, (t_method)jsusfx_midiout);
     
     x->pinIn = 2;
     x->pinOut = 2;
@@ -361,24 +483,38 @@ void *jsfx_new(t_symbol *script) {
     
     for(int i=1;i<64;i++) {
         if ( x->fx->sliders[i].exists ) {
-            t_inlet_proxy *proxy = (t_inlet_proxy *) pd_new(inlet_proxy);
+            t_inlet_proxy *proxy = (t_inlet_proxy *) pd_new(slider_proxy);
             proxy->idx = i;
             proxy->peer = x;
             inlet_new(&x->x_obj, &proxy->x_obj.ob_pd, 0, 0);
         }
     }
 
+    x->midiout = outlet_new(&x->x_obj, &s_float);
+    
     return (x);
 }
 
 void jsfx_free(t_jsusfx *x) {
+    clock_free(x->x_clock);
     delete x->fx;
     delete x->path;
     // delete also the inlet proxy or it is done automatically ?
 }
 
-static void inlet_float(t_inlet_proxy *proxy, t_float f) {
+static void slider_float(t_inlet_proxy *proxy, t_float f) {
     proxy->peer->fx->moveSlider(proxy->idx, f, 0);
+}
+
+static void jsusfx_float(t_inlet_proxy *proxy, t_float f) {
+    proxy->peer->fx->midiin(f);
+}
+
+static void jsusfx_list(t_inlet_proxy *proxy, t_symbol *c, int ac, t_atom *av) {
+    for(int i=0;i<ac;i++) {
+        if ( av[i].a_type == A_FLOAT )
+            proxy->peer->fx->midiin(atom_getfloat(&(av[i])));
+    }
 }
 
 extern "C" {
@@ -390,6 +526,8 @@ extern "C" {
         class_addmethod(jsusfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
+        class_addfloat(jsusfx_class, (t_method)jsusfx_float);
+        class_addlist(jsusfx_class, (t_method)jsusfx_list);
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
 
         jsfx_class = class_new(gensym("jsfx~"), (t_newmethod)jsfx_new, (t_method)jsfx_free, sizeof(t_jsusfx), 0L, A_SYMBOL, 0);
@@ -397,11 +535,13 @@ extern "C" {
         class_addmethod(jsfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
+        class_addfloat(jsfx_class, (t_method)jsusfx_float);
+        class_addlist(jsfx_class, (t_method)jsusfx_list);
         CLASS_MAINSIGNALIN(jsfx_class, t_jsusfx, x_f);
 
-        inlet_proxy = class_new(gensym("jsfx_inlet_proxy"), NULL,NULL, sizeof(t_inlet_proxy), CLASS_PD|CLASS_NOINLET, A_NULL);
-        class_addfloat(inlet_proxy, (t_method)inlet_float);
-
+        slider_proxy = class_new(gensym("slider_proxy"), NULL,NULL, sizeof(t_inlet_proxy), CLASS_PD|CLASS_NOINLET, A_NULL);
+        class_addfloat(slider_proxy, (t_method)slider_float);
+        
         JsusFx::init();
     }
 

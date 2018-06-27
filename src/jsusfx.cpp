@@ -116,7 +116,8 @@ static EEL_F NSEEL_CGEN_CALL _midirecv(void *opaque, INT_PTR np, EEL_F **parms)
 			}
 		} else {
 			// data byte without a preceeding status byte? something is wrong here
-			printf("help!\n");
+            ctx->midiSize--; // decrement this otherwise it is an infinite loop
+			printf("inconsistent midi stream\n");
 		}
 	}
 	return 0;
@@ -436,7 +437,8 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
 	NSEEL_addfunc_varparm("slider",1,NSEEL_PProc_THIS,&__stub); // todo : support this syntax: slider(index) = x
 	NSEEL_addfunc_retptr("spl",1,NSEEL_PProc_THIS,&_reaper_spl);
 	NSEEL_addfunc_varparm("midirecv",3,NSEEL_PProc_THIS,&_midirecv);
-	NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
+    // This should be implemented by the target implementation
+    //NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
 }
 
 JsusFx::~JsusFx() {

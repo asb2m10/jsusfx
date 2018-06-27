@@ -40,7 +40,7 @@ Limitations
 -----------
 * @serialize section is ignored
 
-BUILDING
+Building
 --------
 * cmake, PHP and nasm is required to build native x86_64 support code
 
