@@ -1,4 +1,4 @@
-#N canvas 244 245 653 554 10;
+#N canvas 143 45 653 554 10;
 #X obj 25 381 dac~;
 #X obj 17 490 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
 -262144 -1 -1 0 1;
@@ -47,7 +47,6 @@
 #X connect 16 0 0 0;
 #X restore 115 262 pd slider_r;
 #X msg 113 232 dumpvars;
-#X msg 55 151 compile gain.jsfx;
 #X obj 318 490 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
 0 10 -262144 -1 -1 0 1;
 #X obj 466 490 hsl 128 15 0.011 1 0 0 slider8 slider8 slider8 -2 -8
@@ -67,9 +66,9 @@
 #X obj 25 347 jsusfx~ 2 2;
 #X text 197 256 slider <num> <value 0..1> is used to change the value
 of a parameter of the jsfx script. It is normalized from 0 to 1;
-#X text 116 112 Use compile to recompile the current script or specify
+#X text 108 117 Use compile to recompile the current script or specify
 a new one. the current script.;
-#X text 109 345 You can specify the script to load and also the number
+#X text 109 342 You can specify the script to load and also the number
 of DSP io pins;
 #N canvas 745 75 450 300 test_tones 0;
 #X obj 52 246 outlet~;
@@ -84,18 +83,30 @@ of DSP io pins;
 #X connect 4 0 2 0;
 #X connect 5 0 0 0;
 #X restore 88 317 pd test_tones;
-#X text 10 10 jsusfx~ : Jesusonic development external for pure-data
-============================================================see: https://github.com/asb2m10/jsusfx
-;
-#X connect 3 0 20 0;
-#X connect 7 0 20 0;
-#X connect 8 0 20 0;
-#X connect 9 0 20 0;
-#X connect 13 0 20 0;
-#X connect 17 0 19 0;
-#X connect 18 0 17 0;
-#X connect 19 0 20 0;
-#X connect 20 0 0 0;
-#X connect 20 1 0 1;
-#X connect 24 0 20 0;
-#X connect 24 0 20 1;
+#X obj 125 291 midiin;
+#X text 179 286 Any float or list sent to first inlet is considered
+as midi data;
+#X text 96 382 The last inlet is used if the script is sending midi
+messages;
+#X obj 87 412 midiout;
+#X text 9 10 jsusfx~ : Used for JSFX script development and can switch
+script with the command compile ============================================================see:
+https://github.com/asb2m10/jsusfx;
+#X obj 184 153 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X msg 56 151 compile moog24db;
+#X connect 3 0 19 0;
+#X connect 7 0 19 0;
+#X connect 8 0 19 0;
+#X connect 12 0 19 0;
+#X connect 16 0 18 0;
+#X connect 17 0 16 0;
+#X connect 18 0 19 0;
+#X connect 19 0 0 0;
+#X connect 19 1 0 1;
+#X connect 19 2 27 0;
+#X connect 23 0 19 0;
+#X connect 23 0 19 1;
+#X connect 24 0 19 0;
+#X connect 29 0 12 0;
+#X connect 30 0 19 0;

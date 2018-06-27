@@ -185,8 +185,7 @@ public:
 static EEL_F NSEEL_CGEN_CALL midisend(void *opaque, INT_PTR np, EEL_F **parms) {
     JsusFxPd *ctx = REAPER_GET_INTERFACE(opaque);
     
-    if ( JsusFxPd::kMidiBufferSize <= ctx->midiOutSize + (np-1) ) {
-        ctx->midiOutSize = JsusFxPd::kMidiBufferSize;
+    if ( JsusFxPd::kMidiBufferSize <= ctx->midiOutSize + 3 ) {
         return 1;
     }
 
@@ -329,10 +328,20 @@ t_int *jsusfx_perform(t_int *w) {
     
     if ( (x->bypass || x->user_bypass) || x->fx->dspLock.TryEnter() ) {
         //x->fx->displayMsg("system is bypassed");
-        for(int i=0;i<x->pinOut;i++) {
-            for(int j=0;j<n;j++)
-                outs[i][j] = 0;
+        
+        if ( x->pinIn == x->pinOut ) {
+            for(int i=0;i<x->pinOut;i++) {
+                for(int j=0;j<n;j++) {
+                    outs[i][j] = ins[i][j];
+                }
+            }
+        } else {
+            for(int i=0;i<x->pinOut;i++) {
+                for(int j=0;j<n;j++)
+                    outs[i][j] = 0;
+            }
         }
+        
     } else {
         x->fx->process(ins, outs, n, x->pinIn, x->pinOut);
         x->fx->dspLock.Leave();

@@ -65,6 +65,16 @@ def makeSlider(name, mn, mx, default, id) :
 	obj.id = id
 	return obj
 
+
+def makeRadio(name, step, default, id) :
+	name = name.replace(" ", "_")
+	if name == "" :
+		name = "undefined"
+
+	obj = PdObj("hradio 15 1 0 %d empty empty %s 0 -8 0 8 -262144 -1 -1 %d" % (step, name, default));
+	obj.id = id
+	return obj	
+
 if __name__ == "__main__" :
 	if len(sys.argv) < 2 :
 		print("Missing jsfx file");
@@ -92,19 +102,35 @@ if __name__ == "__main__" :
 				name = "undefined";
 
 			sliderRange = slider[1].split("<")[1].split(">")[0].split(",");
-
 			try:
-				default = float(slider[1].split("<")[0]);
+				default = slider[1].split("<")[0]
+				if '=' in default :
+					default = float(default.split("=")[1]);
+				else :
+					default = float(default);
 			except :
 				default = float(sliderRange[0]);
+
+			if len(sliderRange) > 2 :
+				stepper = sliderRange[2];
+				if '{' in stepper :
+					stepper = stepper.split("{")[0];
+				try :
+					stepper = float(stepper);
+				except :
+					stepper = -1;
+			else :
+				stepper = -1;
 
 			mn = float(sliderRange[0]);
 			mx = float(sliderRange[1]);
 
-			steps = 127.0 / (-mn + mx);
-			default = (default + -mn) * steps * 100;
-
-			sliders.append(makeSlider(name, mn, mx, int(default), id));
+			if stepper == 1 and mn == 0 and mx <= 8 :
+				sliders.append(makeRadio(name, mx+1, int(default), id))
+			else :
+				steps = 127.0 / (-mn + mx);
+				default = (default + -mn) * steps * 100;
+				sliders.append(makeSlider(name, mn, mx, int(default), id));
 
 		elif i.startswith("desc") :
 			patch.addText(10, 5, "JSFX:%s" % i[5:].rstrip("\r\n"));
@@ -175,7 +201,7 @@ if __name__ == "__main__" :
 	patch.connect(fxobj, len(outlets), midiout, 0)
 
 	extraIdx = 0;
-	for idx, i in enumerate(sliders) :		
+	for idx, i in enumerate(sliders) :
 		if idx+len(pinIns) > 17 :
 			patch.connect(i, 0, extraSliders[extraIdx], 0);
 			patch.connect(extraSliders[extraIdx], 0, fxobj, 0);
