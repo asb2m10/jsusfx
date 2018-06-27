@@ -117,7 +117,7 @@ static EEL_F NSEEL_CGEN_CALL _midirecv(void *opaque, INT_PTR np, EEL_F **parms)
 		} else {
 			// data byte without a preceeding status byte? something is wrong here
             ctx->midiSize--; // decrement this otherwise it is an infinite loop
-			printf("inconsistent midi stream\n");
+			ctx->displayMsg("Inconsistent midi stream %x\n", b);
 		}
 	}
 	return 0;

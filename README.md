@@ -16,7 +16,7 @@ implementation focuses on Pure Data support. Support for version 0.4 is
 in progress for Pure Data. See subdirectory [pd](pd).
 
 Marcel Smit, who is also working on [Framework](https://github.com/marcel303/framework) 
-that uses JsusFx, greatly contributed on version 0.4. See below. 
+that uses JsusFx, greatly contributed on version 0.4, see below video. 
 
 [![Framework](https://img.youtube.com/vi/7f9fOeBecaY/0.jpg)](https://www.youtube.com/watch?v=7f9fOeBecaY)
 
@@ -42,7 +42,7 @@ Limitations
 
 Building
 --------
-* cmake, PHP and nasm is required to build native x86_64 support code
+* cmake is the build system and PHP and nasm are required to build native x86_64 support code
 
 Credits
 -------

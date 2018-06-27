@@ -4,7 +4,7 @@
 -262144 -1 -1 0 1;
 #X obj 18 454 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
 -262144 -1 -1 0 1;
-#X msg 97 206 describe;
+#X msg 90 202 describe;
 #X obj 167 454 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
 0 10 -262144 -1 -1 0 1;
 #X obj 166 490 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
@@ -45,8 +45,8 @@
 #X connect 14 0 0 0;
 #X connect 15 0 16 0;
 #X connect 16 0 0 0;
-#X restore 115 262 pd slider_r;
-#X msg 113 232 dumpvars;
+#X restore 187 322 pd slider_r;
+#X msg 103 225 dumpvars;
 #X obj 318 490 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
 0 10 -262144 -1 -1 0 1;
 #X obj 466 490 hsl 128 15 0.011 1 0 0 slider8 slider8 slider8 -2 -8
@@ -64,11 +64,11 @@
 -1;
 #X msg 26 124 compile \$1;
 #X obj 25 347 jsusfx~ 2 2;
-#X text 197 256 slider <num> <value 0..1> is used to change the value
+#X text 265 315 slider <num> <value 0..1> is used to change the value
 of a parameter of the jsfx script. It is normalized from 0 to 1;
 #X text 108 117 Use compile to recompile the current script or specify
 a new one. the current script.;
-#X text 109 342 You can specify the script to load and also the number
+#X text 107 343 You can specify the script to load and also the number
 of DSP io pins;
 #N canvas 745 75 450 300 test_tones 0;
 #X obj 52 246 outlet~;
@@ -82,10 +82,8 @@ of DSP io pins;
 #X connect 3 0 1 0;
 #X connect 4 0 2 0;
 #X connect 5 0 0 0;
-#X restore 88 317 pd test_tones;
-#X obj 125 291 midiin;
-#X text 179 286 Any float or list sent to first inlet is considered
-as midi data;
+#X restore 82 309 pd test_tones;
+#X obj 105 249 midiin;
 #X text 96 382 The last inlet is used if the script is sending midi
 messages;
 #X obj 87 412 midiout;
@@ -95,6 +93,9 @@ https://github.com/asb2m10/jsusfx;
 #X obj 184 153 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
 #X msg 56 151 compile moog24db;
+#X text 167 256 Midi message with float or list sent to first inlet
+is considered as midi data;
+#X msg 104 272 midi \$1;
 #X connect 3 0 19 0;
 #X connect 7 0 19 0;
 #X connect 8 0 19 0;
@@ -104,9 +105,10 @@ https://github.com/asb2m10/jsusfx;
 #X connect 18 0 19 0;
 #X connect 19 0 0 0;
 #X connect 19 1 0 1;
-#X connect 19 2 27 0;
+#X connect 19 2 26 0;
 #X connect 23 0 19 0;
 #X connect 23 0 19 1;
-#X connect 24 0 19 0;
-#X connect 29 0 12 0;
-#X connect 30 0 19 0;
+#X connect 24 0 31 0;
+#X connect 28 0 12 0;
+#X connect 29 0 19 0;
+#X connect 31 0 19 0;

@@ -4,11 +4,10 @@ The jsusfx implementation is done through 2 externals called `jsfx~` and `jsusfx
 
 * `jsfx~` is the runtime object to expose JSFX scripts in pure-data. It expect as object creation argument 
 the script to use that should be in the pd path. Upon object creation, each of the sliders will be exposed as an inlet.
-Any float or list sent to the first inlet will be considered as midi data. Any midi message generated from the script
-will be sent with the last outlet.
-
+Any midi message generated from the script will be sent with the last outlet.
 ⋅⋅⋅ To change a slider, send message [slider <slider id> <0..1 value>]; the values are normalized from 0 to 1
 ⋅⋅⋅ For un-normalized values, send message [uslider <slider id> <raw value>]
+⋅⋅⋅ Use [midi <midi stream>] to send midi data to script
 ⋅⋅⋅ Use [describe] to output the associated sliders
 ⋅⋅⋅ Use [dumpvars] to dump the current variables values
 ⋅⋅⋅ Use [bypass 0/1] to bypass the effect
@@ -16,12 +15,11 @@ will be sent with the last outlet.
 * `jsusfx~` is used for script development and can switch script with the command compile. All
 the slider parameter are read trought the slider message. At object creation, you can also put 
 the number of inlet/outlet the script is expected to use. If you don't specify it, it will 
-count the number of time in_pin and out_pin is used.
-Any float or list sent to the first inlet will be considered as midi data. Any midi message generated from the script
-will be sent with the last outlet.
-
+count the number of time in_pin and out_pin is used. Any midi message generated from the script will be sent 
+with the last outlet.
 ⋅⋅⋅ To change a slider, send message [slider <slider id> <0..1 value>]; the values are normalized from 0 to 1
 ⋅⋅⋅ For un-normalized values, send message [uslider <slider id> <raw value>]
+⋅⋅⋅ Use [midi <midi stream>] to send midi data to script
 ⋅⋅⋅ Use [compile] message to recompile your script. Optionally you can specify a new script to compile
 ⋅⋅⋅ Use [describe] to output the associated sliders
 ⋅⋅⋅ Use [dumpvars] to dump the current variables values

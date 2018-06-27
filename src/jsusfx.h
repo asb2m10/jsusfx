@@ -162,7 +162,8 @@ protected:
 
 public:
 	static const int kMaxSamples = 64;
-	static const int kMaxSliders = 64;
+	// Theoretically, it is 64 slider, but starting @ 1, we are simply allowing slider0 to exists 
+	static const int kMaxSliders = 65;
 	static const int kMaxFileInfos = 128;
 	
     NSEEL_VMCTX m_vm;
