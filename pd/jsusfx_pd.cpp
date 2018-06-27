@@ -26,8 +26,8 @@
 
 using namespace std;
 
-// The maximum of signal inlet/outlet
-const int MAX_SIGNAL_PORT = 32;
+// The maximum of signal inlet/outlet; PD seems to have a limitation to 18 inlets ...
+const int MAX_SIGNAL_PORT = 8;
 
 class JsusFxPdPath : public JsusFxPathLibrary_Basic {
 public:
@@ -300,6 +300,17 @@ void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
     x->fx->moveSlider(i, value, 1);
 }
 
+void jsusfx_uslider(t_jsusfx *x, t_float id, t_float value) {
+    int i = (int) id;
+    if ( i > 64 || i < 0 )
+        return;
+    if ( ! x->fx->sliders[i].exists ) {
+        error("jsusfx~: slider number %d is not assigned for this effect", i);
+        return;
+    }
+    x->fx->moveSlider(i, value, 0);
+}
+
 void jsusfx_bypass(t_jsusfx *x, t_float id) {
     x->user_bypass = id != 0;
 }
@@ -506,14 +517,14 @@ static void slider_float(t_inlet_proxy *proxy, t_float f) {
     proxy->peer->fx->moveSlider(proxy->idx, f, 0);
 }
 
-static void jsusfx_float(t_inlet_proxy *proxy, t_float f) {
-    proxy->peer->fx->midiin(f);
+static void jsusfx_float(t_jsusfx *x, t_float f) {
+    x->fx->midiin(f);
 }
 
-static void jsusfx_list(t_inlet_proxy *proxy, t_symbol *c, int ac, t_atom *av) {
+static void jsusfx_list(t_jsusfx *x, t_symbol *c, int ac, t_atom *av) {
     for(int i=0;i<ac;i++) {
         if ( av[i].a_type == A_FLOAT )
-            proxy->peer->fx->midiin(atom_getfloat(&(av[i])));
+            x->fx->midiin(atom_getfloat(&(av[i])));
     }
 }
 
@@ -522,6 +533,7 @@ extern "C" {
         jsusfx_class = class_new(gensym("jsusfx~"), (t_newmethod)jsusfx_new, (t_method)jsusfx_free, sizeof(t_jsusfx), 0L, A_GIMME, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_slider, gensym("slider"), A_FLOAT, A_FLOAT, 0);
+        class_addmethod(jsusfx_class, (t_method)jsusfx_uslider, gensym("uslider"), A_FLOAT, A_FLOAT, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_compile, gensym("compile"), A_DEFSYMBOL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
@@ -531,6 +543,8 @@ extern "C" {
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
 
         jsfx_class = class_new(gensym("jsfx~"), (t_newmethod)jsfx_new, (t_method)jsfx_free, sizeof(t_jsusfx), 0L, A_SYMBOL, 0);
+        class_addmethod(jsfx_class, (t_method)jsusfx_slider, gensym("slider"), A_FLOAT, A_FLOAT, 0);
+        class_addmethod(jsfx_class, (t_method)jsusfx_uslider, gensym("uslider"), A_FLOAT, A_FLOAT, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);

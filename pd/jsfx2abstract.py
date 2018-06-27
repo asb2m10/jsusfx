@@ -17,7 +17,7 @@
 import os;
 import os.path;
 import sys;
-import datetime
+import datetime;
 
 class Patch :
 	def __init__(self, scriptName) :
@@ -36,6 +36,10 @@ class Patch :
 		self.items.append(None)
 		self.fd.write("#X text %d %d %s;\r\n" % (x, y, msg))
 
+	def addMsg(self, x, y, msg) :
+		self.items.append(msg)
+		self.fd.write("#X msg %d %d %s;\r\n" % (x, y, msg.args))
+
 	def connect(self, source, outlet, dest, inlet) :
 		srcId = self.items.index(source);
 		destId = self.items.index(dest);
@@ -47,11 +51,19 @@ class Patch :
 class PdObj :
 	def __init__(self, args) :
 		self.args = args;
-		self.objnum = -1;
 
-def makeSlider(name, mn, mx, default) :
+class PdMsg :
+	def __init__(self, args) :
+		self.args = args;
+
+
+def makeSlider(name, mn, mx, default, id) :
 	name = name.replace(" ", "_");
-	return PdObj("hsl 128 15 %d %d 0 1 empty empty %s -2 -6 0 8 -262144 -1 -1 %d 1" % (mn, mx, name, default));
+	if name == "" :
+		name = "undefined";
+	obj = PdObj("hsl 128 15 %d %d 0 1 empty empty %s -2 -6 0 8 -262144 -1 -1 %d 1" % (mn, mx, name, default));
+	obj.id = id
+	return obj
 
 if __name__ == "__main__" :
 	if len(sys.argv) < 2 :
@@ -64,6 +76,7 @@ if __name__ == "__main__" :
 	desc = "";
 	pinIns = [];
 	pinOuts = [];
+	extraSliders = [];
 
 	for i in open(sys.argv[1], "r").readlines() :
 		if i[0] == '@':
@@ -71,8 +84,8 @@ if __name__ == "__main__" :
 
 		if i.startswith("slider") :
 			slider = i.split(":");
-			id = slider[0][5:];
-
+			id = int(slider[0][6:]);
+	
 			if len(slider[1].split(">")) > 1 :
 				name = slider[1].split(">")[1].rstrip("\r\n");
 			else :
@@ -91,7 +104,7 @@ if __name__ == "__main__" :
 			steps = 127.0 / (-mn + mx);
 			default = (default + -mn) * steps * 100;
 
-			sliders.append(makeSlider(name, mn, mx, int(default)));
+			sliders.append(makeSlider(name, mn, mx, int(default), id));
 
 		elif i.startswith("desc") :
 			patch.addText(10, 5, "JSFX:%s" % i[5:].rstrip("\r\n"));
@@ -123,42 +136,52 @@ if __name__ == "__main__" :
 		pinOuts.append("output_l");
 		pinOuts.append("output_r");
 
-
-	for i in sliders :
+	for idx, val in enumerate(sliders) :
 		if sliderX > 450 :
 			sliderY += 50;
 			sliderX = 13;
 		else :
 			sliderX += 150;
 
-		patch.add(sliderX, sliderY, i);
+		patch.add(sliderX, sliderY, val);
+		# PD has a limitation of 17 inlet, we have to "front" the other ones...
+		if idx + len(pinIns) > 17 :
+			msg = PdMsg("uslider %d \\$1" % val.id);
+			patch.addMsg(sliderX, sliderY + 17, msg);
+			extraSliders.append(msg);
 
 	fxobj = PdObj("jsfx~ %s" % script);
-	patch.add(30, sliderY + 60, fxobj);
+	patch.add(30, sliderY + 65, fxobj);
 
 	inlets = [];
 	for i in range(len(pinIns)) :
 		dspInlet = PdObj("inlet~");
 		inlets.append(dspInlet);
-		patch.add(30, sliderY + 37, dspInlet);
+		patch.add(30, sliderY + 42, dspInlet);
 
 	midiin = PdObj("inlet");
-	patch.add(80, sliderY + 37, midiin);
+	patch.add(80, sliderY + 42, midiin);
 
 	outlets = []
 	for i in range(len(pinOuts)) :
 		dspOutlet = PdObj("outlet~");
 		outlets.append(dspOutlet);
-		patch.add(30, sliderY + 83, dspOutlet);
+		patch.add(30, sliderY + 88, dspOutlet);
 
 	midiout = PdObj("outlet")
-	patch.add(80, sliderY + 83, midiout)
+	patch.add(80, sliderY + 88, midiout)
 
 	patch.connect(midiin, 0, fxobj, 0)
 	patch.connect(fxobj, len(outlets), midiout, 0)
 
-	for i in sliders :
-		patch.connect(i, 0, fxobj, len(pinOuts) + sliders.index(i));
+	extraIdx = 0;
+	for idx, i in enumerate(sliders) :		
+		if idx+len(pinIns) > 17 :
+			patch.connect(i, 0, extraSliders[extraIdx], 0);
+			patch.connect(extraSliders[extraIdx], 0, fxobj, 0);
+			extraIdx += 1;
+		else :
+			patch.connect(i, 0, fxobj, len(pinOuts) + idx);
 
 	for i in inlets :
 		patch.connect(i, 0, fxobj, inlets.index(i));
