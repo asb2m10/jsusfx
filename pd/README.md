@@ -5,6 +5,7 @@ The jsusfx implementation is done through 2 externals called `jsfx~` and `jsusfx
 * `jsfx~` is the runtime object to expose JSFX scripts in pure-data. It expect as object creation argument 
 the script to use that should be in the pd path. Upon object creation, each of the sliders will be exposed as an inlet.
 Any midi message generated from the script will be sent with the last outlet.
+
 ⋅⋅⋅ To change a slider, send message [slider <slider id> <0..1 value>]; the values are normalized from 0 to 1
 ⋅⋅⋅ For un-normalized values, send message [uslider <slider id> <raw value>]
 ⋅⋅⋅ Use [midi <midi stream>] to send midi data to script
