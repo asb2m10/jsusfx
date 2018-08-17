@@ -979,7 +979,7 @@ bool JsusFx::serialize(JsusFxSerializer & _serializer, const bool write) {
 		return false;
 	
 	serializer = &_serializer;
-	serializer->begin();
+	serializer->begin(*this, write);
 	NSEEL_code_execute(codeSerialize);
 	serializer->end();
 	serializer = nullptr;

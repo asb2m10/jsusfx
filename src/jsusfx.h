@@ -264,7 +264,7 @@ struct JsusFxSerializationData
 
 struct JsusFxSerializer
 {
-	virtual void begin() = 0;
+	virtual void begin(JsusFx & _jsusFx, const bool _write) = 0;
 	virtual void end() = 0;
 	
 	virtual int file_avail() const = 0;
@@ -274,28 +274,32 @@ struct JsusFxSerializer
 
 struct JsusFxSerializer_Basic : JsusFxSerializer
 {
-	JsusFx & jsusFx;
-	JsusFxSerializationData & serializationData;
+	JsusFx * jsusFx;
 	bool write;
+	
+	JsusFxSerializationData & serializationData;
 	
 	int varPosition;
 	
-	JsusFxSerializer_Basic(JsusFx & _jsusFx, JsusFxSerializationData & _serializationData, const bool _write)
-		: jsusFx(_jsusFx)
+	JsusFxSerializer_Basic(JsusFxSerializationData & _serializationData)
+		: jsusFx(nullptr)
+		, write(false)
 		, serializationData(_serializationData)
-		, write(_write)
 		, varPosition(0)
 	{
 	}
 	
-	virtual void begin() override
+	virtual void begin(JsusFx & _jsusFx, const bool _write) override
 	{
+		jsusFx = &_jsusFx;
+		write = _write;
+		
 		varPosition = 0;
 		
 		if (write)
-			saveSliders(jsusFx, serializationData);
+			saveSliders(*jsusFx, serializationData);
 		else
-			restoreSliders(jsusFx, serializationData);
+			restoreSliders(*jsusFx, serializationData);
 	}
 	
 	virtual void end() override
