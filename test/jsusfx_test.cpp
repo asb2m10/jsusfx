@@ -137,7 +137,7 @@ void test_script(const char *path) {
 	gfx.init(fx->m_vm);
 #endif
 	
-	printf("compile %d: %s\n", fx->compile(pathLibrary, path), path);
+	printf("compile %d: %s\n", fx->compile(pathLibrary, path, 0), path);
 	
 	printf("desc: %s\n", fx->desc);
 
