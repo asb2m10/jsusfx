@@ -18,6 +18,7 @@
 #include "jsusfx.h"
 #include "jsusfx_file.h"
 #include "jsusfx_gfx.h"
+#include "jsusfx_serialize.h"
 
 #include <string.h>
 #ifndef WIN32

@@ -16,6 +16,7 @@
 
 #include "jsusfx.h"
 #include "jsusfx_file.h"
+#include "jsusfx_serialize.h"
 #include "riff.h"
 #include <assert.h>
 
