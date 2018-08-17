@@ -158,16 +158,22 @@ protected:
     bool computeSlider;
     void releaseCode();
     bool compileSection(int state, const char *code, int line_offset);
-    bool processImport(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, const std::string &importPath, JsusFx_Sections &sections);
+    bool processImport(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, const std::string &importPath, JsusFx_Sections &sections, const int compileFlags);
     bool readHeader(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input);
-    bool readSections(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input, JsusFx_Sections &sections);
-    bool compileSections(JsusFx_Sections &sections);
+    bool readSections(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input, JsusFx_Sections &sections, const int compileFlags);
+    bool compileSections(JsusFx_Sections &sections, const int compileFlags);
 
 public:
 	static const int kMaxSamples = 64;
 	// Theoretically, it is 64 slider, but starting @ 1, we are simply allowing slider0 to exists 
 	static const int kMaxSliders = 65;
 	static const int kMaxFileInfos = 128;
+	
+	enum CompileFlags
+	{
+		kCompileFlag_CompileGraphicsSection = 1 << 0,
+		kCompileFlag_CompileSerializeSection = 1 << 1
+	};
 	
     NSEEL_VMCTX m_vm;
     JsusFx_Slider sliders[kMaxSliders];
@@ -200,7 +206,7 @@ public:
     JsusFx(JsusFxPathLibrary &pathLibrary);
     virtual ~JsusFx();
 
-    bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
+    bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path, const int compileFlags);
     bool readHeader(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
     
@@ -210,7 +216,7 @@ public:
     bool process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels);
     bool process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels);
     void draw();
-    bool serialize(const bool write);
+    bool serialize(JsusFxSerializer & serializer, const bool write);
 	
     const char * getString(int index, WDL_FastString ** fs);
 	
@@ -258,6 +264,9 @@ struct JsusFxSerializationData
 
 struct JsusFxSerializer
 {
+	virtual void begin() = 0;
+	virtual void end() = 0;
+	
 	virtual int file_avail() const = 0;
 	virtual int file_var(EEL_F & value) = 0;
 	virtual int file_mem(EEL_F * values, const int numValues) = 0;
@@ -265,32 +274,32 @@ struct JsusFxSerializer
 
 struct JsusFxSerializer_Basic : JsusFxSerializer
 {
-	JsusFx * jsusFx;
-	JsusFxSerializationData * serializationData;
+	JsusFx & jsusFx;
+	JsusFxSerializationData & serializationData;
 	bool write;
 	
 	int varPosition;
 	
-	JsusFxSerializer_Basic()
-		: jsusFx(nullptr)
-		, serializationData()
-		, write(false)
+	JsusFxSerializer_Basic(JsusFx & _jsusFx, JsusFxSerializationData & _serializationData, const bool _write)
+		: jsusFx(_jsusFx)
+		, serializationData(_serializationData)
+		, write(_write)
 		, varPosition(0)
 	{
 	}
 	
-	void begin(JsusFx & _jsusFx, JsusFxSerializationData & _serializationData, const bool _write)
+	virtual void begin() override
 	{
-		jsusFx = &_jsusFx;
-		serializationData = &_serializationData;
-		write = _write;
-		
 		varPosition = 0;
 		
 		if (write)
-			saveSliders(*jsusFx, *serializationData);
+			saveSliders(jsusFx, serializationData);
 		else
-			restoreSliders(*jsusFx, *serializationData);
+			restoreSliders(jsusFx, serializationData);
+	}
+	
+	virtual void end() override
+	{
 	}
 	
 	static void saveSliders(const JsusFx & jsusFx, JsusFxSerializationData & serializationData)
@@ -324,22 +333,22 @@ struct JsusFxSerializer_Basic : JsusFxSerializer
 		if (write)
 			return -1;
 		else
-			return varPosition == serializationData->vars.size() ? 0 : 1;
+			return varPosition == serializationData.vars.size() ? 0 : 1;
 	}
 	
 	virtual int file_var(EEL_F & value) override
 	{
 		if (write)
 		{
-			serializationData->vars.push_back(value);
+			serializationData.vars.push_back(value);
 			
 			return 1;
 		}
 		else
 		{
-			if (varPosition >= 0 && varPosition < serializationData->vars.size())
+			if (varPosition >= 0 && varPosition < serializationData.vars.size())
 			{
-				value = serializationData->vars[varPosition];
+				value = serializationData.vars[varPosition];
 				varPosition++;
 				return 1;
 			}
@@ -357,7 +366,7 @@ struct JsusFxSerializer_Basic : JsusFxSerializer
 		{
 			for (int i = 0; i < numValues; ++i)
 			{
-				serializationData->vars.push_back(values[i]);
+				serializationData.vars.push_back(values[i]);
 			}
 			return 1;
 		}
@@ -365,11 +374,11 @@ struct JsusFxSerializer_Basic : JsusFxSerializer
 		{
 			if (numValues < 0)
 				return 0;
-			if (varPosition >= 0 && varPosition + numValues <= serializationData->vars.size())
+			if (varPosition >= 0 && varPosition + numValues <= serializationData.vars.size())
 			{
 				for (int i = 0; i < numValues; ++i)
 				{
-					values[i] = serializationData->vars[varPosition];
+					values[i] = serializationData.vars[varPosition];
 					varPosition++;
 				}
 				return 1;

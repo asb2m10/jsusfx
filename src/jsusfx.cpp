@@ -453,8 +453,7 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
 	NSEEL_addfunc_retptr("slider",1,NSEEL_PProc_THIS,&_reaper_slider);
 	NSEEL_addfunc_retptr("spl",1,NSEEL_PProc_THIS,&_reaper_spl);
 	NSEEL_addfunc_varparm("midirecv",3,NSEEL_PProc_THIS,&_midirecv);
-    // This should be implemented by the target implementation
-    //NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
+    NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
 }
 
 JsusFx::~JsusFx() {
@@ -507,10 +506,6 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         }
         break;
     case 4:
-        // ignore block if there is no gfx implemented
-        if ( gfx == NULL )
-            return true;
-
         codeGfx = NSEEL_code_compile_ex(m_vm, code, line_offset, NSEEL_CODE_COMPILE_FLAG_COMMONFUNCS);
         if ( codeGfx == NULL ) {
             snprintf(errorMsg, 4096, "@gfx line %s", NSEEL_code_getcodeerror(m_vm));
@@ -519,10 +514,6 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
         }
         break;
     case 5:
-    	// ignore block if there is no serialization implemented
-    	if ( serializer == NULL )
-    		return true;
-			
         codeSerialize = NSEEL_code_compile_ex(m_vm, code, line_offset, NSEEL_CODE_COMPILE_FLAG_COMMONFUNCS);
         if ( codeSerialize == NULL ) {
             snprintf(errorMsg, 4096, "@serialize line %s", NSEEL_code_getcodeerror(m_vm));
@@ -539,7 +530,7 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
     return true;
 }
 
-bool JsusFx::processImport(JsusFxPathLibrary &pathLibrary, const std::string &path, const std::string &importPath, JsusFx_Sections &sections) {
+bool JsusFx::processImport(JsusFxPathLibrary &pathLibrary, const std::string &path, const std::string &importPath, JsusFx_Sections &sections, const int compileFlags) {
 	bool result = true;
 	
 	//displayMsg("Importing %s", path.c_str());
@@ -553,7 +544,7 @@ bool JsusFx::processImport(JsusFxPathLibrary &pathLibrary, const std::string &pa
 	std::istream *is = pathLibrary.open(resolvedPath);
 
 	if ( is != nullptr ) {
-		result &= readSections(pathLibrary, resolvedPath, *is, sections);
+		result &= readSections(pathLibrary, resolvedPath, *is, sections, compileFlags);
 	} else {
 		displayError("Failed to open imported file %s", importPath.c_str());
 		result &= false;
@@ -632,7 +623,7 @@ bool JsusFx::readHeader(JsusFxPathLibrary &pathLibrary, const std::string &path,
 	return true;
 }
 
-bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &path, std::istream &input, JsusFx_Sections &sections) {
+bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &path, std::istream &input, JsusFx_Sections &sections, const int compileFlags) {
     WDL_String * code = nullptr;
     char line[4096];
 	
@@ -660,14 +651,14 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 section = &sections.block;
             else if ( ! strnicmp(b, "sample", 6) )
                 section = &sections.sample;
-            else if ( ! strnicmp(b, "gfx", 3) ) {
+            else if ( ! strnicmp(b, "gfx", 3) && (compileFlags & kCompileFlag_CompileGraphicsSection) != 0 ) {
             	if ( sscanf(b+3, "%d %d", &gfx_w, &gfx_h) != 2 ) {
             		gfx_w = 0;
             		gfx_h = 0;
 				}
                 section = &sections.gfx;
 			}
-			else if ( ! strnicmp(b, "serialize", 9) )
+			else if ( ! strnicmp(b, "serialize", 9) && (compileFlags & kCompileFlag_CompileSerializeSection) != 0  )
                 section = &sections.serialize;
 			
             if ( section != nullptr ) {
@@ -764,7 +755,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 				src = trim(src, true, true);
 					
 				if (*src) {
-					processImport(pathLibrary, path, src, sections);
+					processImport(pathLibrary, path, src, sections, compileFlags);
 				}
                 continue;
             }
@@ -790,7 +781,7 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
 	return true;
 }
 
-bool JsusFx::compileSections(JsusFx_Sections &sections) {
+bool JsusFx::compileSections(JsusFx_Sections &sections, const int compileFlags) {
 	bool result = true;
 	
 	// 0 init
@@ -808,9 +799,9 @@ bool JsusFx::compileSections(JsusFx_Sections &sections) {
 		result &= compileSection(2, sections.block.code.Get(), sections.block.lineOffset);
 	if (sections.sample.code.GetLength() != 0)
 		result &= compileSection(3, sections.sample.code.Get(), sections.sample.lineOffset);
-	if (sections.gfx.code.GetLength() != 0)
+	if (sections.gfx.code.GetLength() != 0 && (compileFlags & kCompileFlag_CompileGraphicsSection) != 0)
 		result &= compileSection(4, sections.gfx.code.Get(), sections.gfx.lineOffset);
-	if (sections.serialize.code.GetLength() != 0)
+	if (sections.serialize.code.GetLength() != 0 && (compileFlags & kCompileFlag_CompileSerializeSection) != 0)
 		result &= compileSection(5, sections.serialize.code.Get(), sections.serialize.lineOffset);
 	
 	if (result == false)
@@ -819,7 +810,7 @@ bool JsusFx::compileSections(JsusFx_Sections &sections) {
 	return result;
 }
 
-bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
+bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path, const int compileFlags) {
 	releaseCode();
 	
 	std::string resolvedPath;
@@ -837,14 +828,14 @@ bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 	// read code for the various sections inside the jsusfx script
 	
 	JsusFx_Sections sections;
-	if ( ! readSections(pathLibrary, resolvedPath, *input, sections) )
+	if ( ! readSections(pathLibrary, resolvedPath, *input, sections, compileFlags) )
 		return false;
 	
 	pathLibrary.close(input);
 	
 	// compile the sections
 	
-	if ( ! compileSections(sections) ) {
+	if ( ! compileSections(sections, compileFlags) ) {
 		releaseCode();
 		return false;
 	}
@@ -983,11 +974,16 @@ void JsusFx::draw() {
 		gfx->endDraw();
 }
 
-bool JsusFx::serialize(const bool write) {
-	if ( serializer == nullptr || codeSerialize == nullptr )
+bool JsusFx::serialize(JsusFxSerializer & _serializer, const bool write) {
+	if ( codeSerialize == nullptr )
 		return false;
 	
+	serializer = &_serializer;
+	serializer->begin();
 	NSEEL_code_execute(codeSerialize);
+	serializer->end();
+	serializer = nullptr;
+	
 	return true;
 }
 
