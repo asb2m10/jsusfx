@@ -34,6 +34,8 @@ class JsusFx;
 struct JsusFxFileAPI;
 struct JsusFxGfx;
 struct JsusFxPathLibrary;
+struct JsusFxSerializationData;
+struct JsusFxSerializer;
 
 struct JsusFx_FileInfo;
 class JsusFx_Slider;
@@ -150,7 +152,7 @@ struct JsusFxPathLibrary_Basic : JsusFxPathLibrary {
 
 class JsusFx {
 protected:
-    NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample, codeGfx;
+    NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample, codeGfx, codeSerialize;
 
     bool computeSlider;
     void releaseCode();
@@ -191,6 +193,8 @@ public:
     JsusFxGfx *gfx;
     int gfx_w;
     int gfx_h;
+	
+	JsusFxSerializer *serializer;
 
     JsusFx(JsusFxPathLibrary &pathLibrary);
     virtual ~JsusFx();
@@ -204,6 +208,7 @@ public:
     bool process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels);
     bool process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels);
     void draw();
+    bool serialize(const bool write);
 	
     const char * getString(int index, WDL_FastString ** fs);
 	
@@ -220,3 +225,159 @@ public:
     eel_string_context_state *m_string_context;
 };
 
+struct JsusFxSerializationData
+{
+	// note : Reaper will always save/restore values using single precision floating point, so we don't use EEL_F here,
+	// as it may be double or float depending on compile time options
+	
+	struct Slider
+	{
+		int index;
+		float value;
+	};
+	
+	std::vector<Slider> sliders;
+	std::vector<float> vars;
+	
+	void addSlider(const int index, const float value)
+	{
+		sliders.resize(sliders.size() + 1);
+		
+		Slider & slider = sliders.back();
+		slider.index = index;
+		slider.value = value;
+	}
+	
+	void addVar(const float value)
+	{
+		vars.push_back(value);
+	}
+};
+
+struct JsusFxSerializer
+{
+	virtual int file_avail() const = 0;
+	virtual int file_var(EEL_F & value) = 0;
+	virtual int file_mem(EEL_F * values, const int numValues) = 0;
+};
+
+struct JsusFxSerializer_Basic : JsusFxSerializer
+{
+	JsusFx * jsusFx;
+	JsusFxSerializationData * serializationData;
+	bool write;
+	
+	int varPosition;
+	
+	JsusFxSerializer_Basic()
+		: jsusFx(nullptr)
+		, serializationData()
+		, write(false)
+		, varPosition(0)
+	{
+	}
+	
+	void begin(JsusFx & _jsusFx, JsusFxSerializationData & _serializationData, const bool _write)
+	{
+		jsusFx = &_jsusFx;
+		serializationData = &_serializationData;
+		write = _write;
+		
+		varPosition = 0;
+		
+		if (write)
+			saveSliders(*jsusFx, *serializationData);
+		else
+			restoreSliders(*jsusFx, *serializationData);
+	}
+	
+	static void saveSliders(const JsusFx & jsusFx, JsusFxSerializationData & serializationData)
+	{
+		for (int i = 0; i < jsusFx.kMaxSliders; ++i)
+		{
+			if (jsusFx.sliders[i].exists)
+			{
+				serializationData.addSlider(i, jsusFx.sliders[i].getValue());
+			}
+		}
+	}
+	
+	static void restoreSliders(JsusFx & jsusFx, const JsusFxSerializationData & serializationData)
+	{
+		for (int i = 0; i < serializationData.sliders.size(); ++i)
+		{
+			const JsusFxSerializationData::Slider & slider = serializationData.sliders[i];
+			
+			if (slider.index >= 0 &&
+				slider.index < JsusFx::kMaxSliders &&
+				jsusFx.sliders[slider.index].exists)
+			{
+				jsusFx.sliders[slider.index].setValue(slider.value);
+			}
+		}
+	}
+	
+	virtual int file_avail() const override
+	{
+		if (write)
+			return -1;
+		else
+			return varPosition == serializationData->vars.size() ? 0 : 1;
+	}
+	
+	virtual int file_var(EEL_F & value) override
+	{
+		if (write)
+		{
+			serializationData->vars.push_back(value);
+			
+			return 1;
+		}
+		else
+		{
+			if (varPosition >= 0 && varPosition < serializationData->vars.size())
+			{
+				value = serializationData->vars[varPosition];
+				varPosition++;
+				return 1;
+			}
+			else
+			{
+				value = 0.f;
+				return 0;
+			}
+		}
+	}
+	
+	virtual int file_mem(EEL_F * values, const int numValues) override
+	{
+		if (write)
+		{
+			for (int i = 0; i < numValues; ++i)
+			{
+				serializationData->vars.push_back(values[i]);
+			}
+			return 1;
+		}
+		else
+		{
+			if (numValues < 0)
+				return 0;
+			if (varPosition >= 0 && varPosition + numValues <= serializationData->vars.size())
+			{
+				for (int i = 0; i < numValues; ++i)
+				{
+					values[i] = serializationData->vars[varPosition];
+					varPosition++;
+				}
+				return 1;
+			}
+			else
+			{
+				for (int i = 0; i < numValues; ++i)
+					values[i] = 0.f;
+				return 0;
+			}
+		}
+	}
+};
