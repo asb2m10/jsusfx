@@ -1,0 +1,114 @@
+#N canvas 143 45 653 554 10;
+#X obj 25 381 dac~;
+#X obj 17 490 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
+-262144 -1 -1 0 1;
+#X obj 18 454 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
+-262144 -1 -1 0 1;
+#X msg 90 202 describe;
+#X obj 167 454 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X obj 166 490 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X obj 317 455 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
+0 10 -262144 -1 -1 0 1;
+#N canvas 489 423 644 279 slider_r 0;
+#X obj 311 245 outlet;
+#X obj 45 33 r slider1;
+#X obj 114 34 r slider2;
+#X obj 180 37 r slider3;
+#X obj 245 30 r slider4;
+#X msg 44 87 slider 1 \$1;
+#X obj 308 37 r slider5;
+#X msg 307 92 slider 5 \$1;
+#X msg 242 114 slider 4 \$1;
+#X msg 180 89 slider 3 \$1;
+#X msg 111 114 slider 2 \$1;
+#X obj 382 31 r slider6;
+#X msg 383 113 slider 6 \$1;
+#X obj 467 30 r slider7;
+#X msg 468 91 slider 7 \$1;
+#X obj 549 33 r slider8;
+#X msg 549 112 slider 8 \$1;
+#X connect 1 0 5 0;
+#X connect 2 0 10 0;
+#X connect 3 0 9 0;
+#X connect 4 0 8 0;
+#X connect 5 0 0 0;
+#X connect 6 0 7 0;
+#X connect 7 0 0 0;
+#X connect 8 0 0 0;
+#X connect 9 0 0 0;
+#X connect 10 0 0 0;
+#X connect 11 0 12 0;
+#X connect 12 0 0 0;
+#X connect 13 0 14 0;
+#X connect 14 0 0 0;
+#X connect 15 0 16 0;
+#X connect 16 0 0 0;
+#X restore 187 322 pd slider_r;
+#X msg 103 225 dumpvars;
+#X obj 318 490 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X obj 466 490 hsl 128 15 0.011 1 0 0 slider8 slider8 slider8 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X obj 467 455 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
+0 10 -262144 -1 -1 0 1;
+#X msg 82 178 bypass \$1;
+#X text 154 179 bypass is used to bypass the fx processing;
+#X text 160 205 describe outputs the assigned slider to the pd console
+;
+#X text 180 231 dumpvars output all the variable output to the pd console
+;
+#X obj 26 98 openpanel;
+#X obj 26 71 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+-1;
+#X msg 26 124 compile \$1;
+#X obj 25 347 jsusfx~ 2 2;
+#X text 265 315 slider <num> <value 0..1> is used to change the value
+of a parameter of the jsfx script. It is normalized from 0 to 1;
+#X text 108 117 Use compile to recompile the current script or specify
+a new one. the current script.;
+#X text 107 343 You can specify the script to load and also the number
+of DSP io pins;
+#N canvas 745 75 450 300 test_tones 0;
+#X obj 52 246 outlet~;
+#X obj 53 184 phasor~;
+#X obj 55 125 *~ 110;
+#X obj 54 154 +~ 220;
+#X obj 54 89 phasor~ 0.1;
+#X obj 53 213 *~ 0.25;
+#X connect 1 0 5 0;
+#X connect 2 0 3 0;
+#X connect 3 0 1 0;
+#X connect 4 0 2 0;
+#X connect 5 0 0 0;
+#X restore 82 309 pd test_tones;
+#X obj 105 249 midiin;
+#X text 96 382 The last inlet is used if the script is sending midi
+messages;
+#X obj 87 412 midiout;
+#X text 9 10 jsusfx~ : Used for JSFX script development and can switch
+script with the command compile ============================================================see:
+https://github.com/asb2m10/jsusfx;
+#X obj 184 153 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X msg 56 151 compile moog24db;
+#X text 167 256 Midi message with float or list sent to first inlet
+is considered as midi data;
+#X msg 104 272 midi \$1;
+#X connect 3 0 19 0;
+#X connect 7 0 19 0;
+#X connect 8 0 19 0;
+#X connect 12 0 19 0;
+#X connect 16 0 18 0;
+#X connect 17 0 16 0;
+#X connect 18 0 19 0;
+#X connect 19 0 0 0;
+#X connect 19 1 0 1;
+#X connect 19 2 26 0;
+#X connect 23 0 19 0;
+#X connect 23 0 19 1;
+#X connect 24 0 31 0;
+#X connect 28 0 12 0;
+#X connect 29 0 19 0;
+#X connect 31 0 19 0;

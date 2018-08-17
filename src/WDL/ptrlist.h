@@ -51,7 +51,7 @@ template<class PTRTYPE> class WDL_PtrList
     PTRTYPE *Get(INT_PTR index) const 
     { 
       PTRTYPE **list = (PTRTYPE**)m_hb.Get(); 
-      if (list && index >= 0 && index < (INT_PTR)(m_hb.GetSize()/sizeof(PTRTYPE *))) return list[index]; 
+      if (list && (UINT_PTR)index < (UINT_PTR)(m_hb.GetSize()/sizeof(PTRTYPE *))) return list[index]; 
       return NULL; 
     }
 
@@ -106,7 +106,6 @@ template<class PTRTYPE> class WDL_PtrList
       if (!list) return item;
 
       if (index<0) index=0;
-      else if (index > s) index=s;
     
       int x;
       for (x = s; x > index; x --) list[x]=list[x-1];
@@ -229,6 +228,8 @@ template<class PTRTYPE> class WDL_PtrList
       *ismatch = false;
       return a;
     }
+
+    void Compact() { m_hb.Resize(m_hb.GetSize(),true); }
 
   private:
     WDL_HeapBuf m_hb;

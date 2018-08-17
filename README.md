@@ -1,4 +1,4 @@
-jsusfx -  Opensource JesuSonic FX implementation
+jsusfx -  Opensource Jesusonic FX implementation
 ================================================
 jsusfx is an opensource implementation of the [JSFX](http://www.reaper.fm/sdk/js/js.php) 
 scripting language that was created by [Cockos](http://www.cockos.com/jesusonic/) and
@@ -12,15 +12,23 @@ This project comes with a subset of the original eel2 code from Cockos
 [WDL](http://www.cockos.com/wdl).
 
 While this project could support plugin formats like LV2 or VST, this 
-implementation focuses on Pure Data and Max support.
+implementation focuses on Pure Data support. Support for version 0.4 is
+in progress for Pure Data. See subdirectory [pd](pd).
 
-Version 0.4 (still in development)
-----------------------------------
+Marcel Smit, who is also working on [Framework](https://github.com/marcel303/framework) 
+that uses JsusFx, greatly contributed on version 0.4, see below video. 
+
+[![Framework](https://img.youtube.com/vi/7f9fOeBecaY/0.jpg)](https://www.youtube.com/watch?v=7f9fOeBecaY)
+
+Version 0.4
+-----------
+* Multi-channel support
 * File API support
-* @gfx and @import section support
+* @import and @gfx section support
 * Midi support
 * More support of extended sliders
 * Various bug fixes
+* Native ARM support
 * CMake now global build system
 
 Version 0.3
@@ -28,35 +36,15 @@ Version 0.3
 * Native x86 x86_64 for OS X and Linux (10 times faster than portable)
 * gcc generated code now works at runtime
 
-Version 0.2
------------
-* Add OS X as a target for Pure Data external
-
-Pure Data and Max implementation
---------------------------------
-The external object is called jsusfx~ and the object arguments are the 
-script to run. This script is search trough your pd/max path.
-
-* To change a slider, you need to send [slider <num> <0..1 value>]
-* Sliders are normalized to 0..1 for all parameters
-* Turning on the DSP runs the @init section
-* Use [compile] message to recompile your script. Optionally you can specify a new script to compile
-* Use [describe] to output the associated sliders
-* Use [dumpvars] to dump the current variables values
-* Use [bypass 0/1] to bypass the effect
-* Double click on the object and you can edit the JSFX script (Max only)
-
-See the pd and max directory to see how to build them.
-
 Limitations
 -----------
 * @serialize section is ignored
 
-BUILDING
+Building
 --------
-* cmake, PHP and nasm is required to build native x86_64 support code
+* cmake is the build system and PHP and nasm are required to build native x86_64 support code
 
 Credits
 -------
-* @marcel303 (Marcel Smit) did a lot of work (Version 0.4) in implementing the missing features from the previous version
+* @marcel303 (Marcel Smit) did a lot of work (Version 0.4) in implementing the missing features from the previous versions
 * The core of the language is from WDL (the authors of JSFX and Reaper)

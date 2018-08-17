@@ -72,16 +72,17 @@ extern "C" {
 
 #ifdef _WDL_CSTRING_IF_ONLY_
 
-  void lstrcpyn_safe(char *o, const char *in, int count);
-  void lstrcatn(char *o, const char *in, int count);
-  void WDL_VARARG_WARN(printf,3,4) snprintf_append(char *o, int count, const char *format, ...);
-  void vsnprintf_append(char *o, int count, const char *format, va_list va);
+  void lstrcpyn_safe(char *o, const char *in, INT_PTR count);
+  void lstrcatn(char *o, const char *in, INT_PTR count);
+  void WDL_VARARG_WARN(printf,3,4) snprintf_append(char *o, INT_PTR count, const char *format, ...);
+  void vsnprintf_append(char *o, INT_PTR count, const char *format, va_list va);
 
   const char *WDL_get_filepart(const char *str); // returns whole string if no dir chars
   const char *WDL_get_fileext(const char *str); // returns ".ext" or end of string "" if no extension
   char *WDL_remove_fileext(char *str); // returns pointer to "ext" if ".ext" was removed (zero-d dot), or NULL
   char WDL_remove_filepart(char *str); // returns dir character that was zeroed, or 0 if new string is empty
   int WDL_remove_trailing_dirchars(char *str); // returns trailing dirchar count removed, will not convert "/" into ""
+  size_t WDL_remove_trailing_crlf(char *str); // returns new length
 
 
   #if defined(_WIN32) && defined(_MSC_VER)
@@ -121,7 +122,7 @@ extern "C" {
     }
   #endif
 
-  _WDL_CSTRING_PREFIX void lstrcpyn_safe(char *o, const char *in, int count)
+  _WDL_CSTRING_PREFIX void lstrcpyn_safe(char *o, const char *in, INT_PTR count)
   {
     if (count>0)
     {
@@ -130,7 +131,7 @@ extern "C" {
     }
   }
 
-  _WDL_CSTRING_PREFIX void lstrcatn(char *o, const char *in, int count)
+  _WDL_CSTRING_PREFIX void lstrcatn(char *o, const char *in, INT_PTR count)
   {
     if (count>0)
     {
@@ -208,7 +209,16 @@ extern "C" {
     return cnt;
   }
 
-  _WDL_CSTRING_PREFIX void WDL_VARARG_WARN(printf,3,4) snprintf_append(char *o, int count, const char *format, ...)
+  _WDL_CSTRING_PREFIX size_t WDL_remove_trailing_crlf(char *str) // returns new length
+  {
+    char *p=str;
+    while (*p) p++;
+    while (p > str && (p[-1] == '\r' || p[-1] == '\n')) p--;
+    *p = 0;
+    return p-str;
+  }
+
+  _WDL_CSTRING_PREFIX void WDL_VARARG_WARN(printf,3,4) snprintf_append(char *o, INT_PTR count, const char *format, ...)
   {
     if (count>0)
     {
@@ -220,7 +230,7 @@ extern "C" {
     }
   } 
 
-  _WDL_CSTRING_PREFIX void vsnprintf_append(char *o, int count, const char *format, va_list va)
+  _WDL_CSTRING_PREFIX void vsnprintf_append(char *o, INT_PTR count, const char *format, va_list va)
   {
     if (count>0)
     {

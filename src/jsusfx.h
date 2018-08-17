@@ -1,5 +1,6 @@
 /*
  * Copyright 2014-2015 Pascal Gauthier
+ * Copyright 2018 Pascal Gauthier, Marcel Smit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,12 +165,12 @@ protected:
 
 public:
 	static const int kMaxSamples = 64;
-	static const int kMaxSliders = 64;
+	// Theoretically, it is 64 slider, but starting @ 1, we are simply allowing slider0 to exists 
+	static const int kMaxSliders = 65;
 	static const int kMaxFileInfos = 128;
 	
     NSEEL_VMCTX m_vm;
     JsusFx_Slider sliders[kMaxSliders];
-    int normalizeSliders;
     char desc[64];
     
     EEL_F *tempo, *play_state, *play_position, *beat_position, *ts_num, *ts_denom;
@@ -199,11 +200,12 @@ public:
     JsusFx(JsusFxPathLibrary &pathLibrary);
     virtual ~JsusFx();
 
-    bool compile(std::istream &input);
     bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
     bool readHeader(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
-    void moveSlider(int idx, float value);
+    
+    // move slider, normalizeSlider is used to normalize the value to a constant (0 means no normalization)
+    void moveSlider(int idx, float value, int normalizeSlider = 0);
     void setMidi(const void * midi, int numBytes);
     bool process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels);
     bool process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels);

@@ -1,5 +1,9 @@
 desc:gain testing
 
+out_pin:sig1
+out_pin:sig2
+out_pin:sig3
+
 slider1:1<0,5,0.01>GAINL
 slider2:1<0,5,0.01>GAINR
 
@@ -8,4 +12,5 @@ gg=0
 
 @sample
 spl0=spl0*slider1;
-spl1=spl1*slider2;
+spl2=spl1*slider2;
+spl1=0

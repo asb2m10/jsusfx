@@ -1,5 +1,6 @@
 /*
  * Copyright 2014-2015 Pascal Gauthier
+ * Copyright 2018 Pascal Gauthier, Marcel Smit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +20,9 @@
 #include "jsusfx_gfx.h"
 
 #include <string.h>
-#include <unistd.h>
+#ifndef WIN32
+	#include <unistd.h>
+#endif
 
 #include "WDL/ptrlist.h"
 #include "WDL/assocarray.h"
@@ -125,7 +128,8 @@ static EEL_F NSEEL_CGEN_CALL _midirecv(void *opaque, INT_PTR np, EEL_F **parms)
 			}
 		} else {
 			// data byte without a preceeding status byte? something is wrong here
-			printf("help!\n");
+            ctx->midiSize--; // decrement this otherwise it is an infinite loop
+			ctx->displayMsg("Inconsistent midi stream %x\n", b);
 		}
 	}
 	return 0;
@@ -408,7 +412,6 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
     m_string_context = new eel_string_context_state();
     eel_string_initvm(m_vm);
     computeSlider = false;
-    normalizeSliders = 0;
     srate = 0;
 	
     pathLibrary = _pathLibrary;
@@ -450,7 +453,8 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
 	NSEEL_addfunc_retptr("slider",1,NSEEL_PProc_THIS,&_reaper_slider);
 	NSEEL_addfunc_retptr("spl",1,NSEEL_PProc_THIS,&_reaper_spl);
 	NSEEL_addfunc_varparm("midirecv",3,NSEEL_PProc_THIS,&_midirecv);
-	NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
+    // This should be implemented by the target implementation
+    //NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
 }
 
 JsusFx::~JsusFx() {
@@ -538,7 +542,7 @@ bool JsusFx::compileSection(int state, const char *code, int line_offset) {
 bool JsusFx::processImport(JsusFxPathLibrary &pathLibrary, const std::string &path, const std::string &importPath, JsusFx_Sections &sections) {
 	bool result = true;
 	
-	//displayMsg("Importing %s", import.c_str());
+	//displayMsg("Importing %s", path.c_str());
 	
 	std::string resolvedPath;
 	if ( ! pathLibrary.resolveImportPath(importPath, path, resolvedPath) ) {
@@ -765,10 +769,20 @@ bool JsusFx::readSections(JsusFxPathLibrary &pathLibrary, const std::string &pat
                 continue;
             }
             else if ( ! strncmp(line, "in_pin:", 7) ) {
-            	numInputs++;
+                if ( ! strncmp(line+7, "none", 4) ) {
+                    numInputs = -1;
+                } else {
+                    if ( numInputs != -1 )
+                        numInputs++;
+                }
             }
             else if ( ! strncmp(line, "out_pin:", 8) ) {
-            	numOutputs++;
+                if ( ! strncmp(line+8, "none", 4) ) {
+                    numOutputs = -1;
+                } else {
+                    if ( numOutputs != -1 )
+                        numOutputs++;
+                }
             }
         }
     }
@@ -805,30 +819,6 @@ bool JsusFx::compileSections(JsusFx_Sections &sections) {
 	return result;
 }
 
-bool JsusFx::compile(std::istream &input) {
-	releaseCode();
-	
-	JsusFxPathLibrary pathLibrary;
-	std::string path;
-	
-	// read code for the various sections inside the jsusfx script
-	
-	JsusFx_Sections sections;
-	if ( ! readSections(pathLibrary, path, input, sections) )
-		return false;
-	
-	// compile the sections
-	
-	if ( ! compileSections(sections) ) {
-		releaseCode();
-		return false;
-	}
-	
-	computeSlider = 1;
-	
-	return true;
-}
-
 bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 	releaseCode();
 	
@@ -860,8 +850,20 @@ bool JsusFx::compile(JsusFxPathLibrary &pathLibrary, const std::string &path) {
 	}
 	
 	computeSlider = 1;
-	
-	return true;
+    
+    // in_pin and out_pin is optional, we default it to 2 in / 2 out if nothing is specified.
+    // if you really want no in or out, specify in_pin:none/out_pin:none
+    if ( numInputs == 0 )
+        numInputs = 2;
+    else if ( numInputs == -1 )
+        numInputs = 0;
+    
+    if ( numOutputs == 0 )
+        numOutputs = 2;
+    else if ( numOutputs == -1 )
+        numOutputs = 0;
+    
+    return true;
 }
 
 bool JsusFx::readHeader(JsusFxPathLibrary &pathLibrary, const std::string &path) {
@@ -891,13 +893,13 @@ void JsusFx::prepare(int sampleRate, int blockSize) {
     NSEEL_code_execute(codeInit);
 }
 
-void JsusFx::moveSlider(int idx, float value) {
+void JsusFx::moveSlider(int idx, float value, int normalizeSlider) {
     if ( idx < 0 || idx >= kMaxSliders || !sliders[idx].exists )
         return;
 
-    if ( normalizeSliders != 0 ) {
+    if ( normalizeSlider != 0 ) {
         float steps = sliders[idx].max - sliders[idx].min;
-        value  = (value * steps) / normalizeSliders;
+        value  = (value * steps) / normalizeSlider;
         value += sliders[idx].min;
     }
 
