@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.6)
 project(jsusfx)
 
 # -- JSUSFX library --
-set(CMAKE_OSX_ARCHITECTURES "i386;x86_64")
 set(sources
 	jsusfx.cpp
 	jsusfx_file.cpp
@@ -22,21 +21,36 @@ source_group("sources" FILES ${sources})
 source_group("headers" FILES ${headers})
 
 if (UNIX AND NOT APPLE)
-	add_custom_command(
-		OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o
-		COMMAND php a2x64.php elf64
-		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
-	)
-	add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x86.o)
+	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") 
+		add_definitions(-mfpu=vfp -march=armv6t2 -marm)
+		add_library(jsusfx ${sources} ${headers})
+	else() 
+		# Linux x64
+		if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+			add_custom_command(
+				OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o
+				COMMAND php a2x64.php elf64
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
+			)
+			add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o)
+		else()
+			# Linux i686
+			add_library(jsusfx ${sources} ${headers})
+		endif()
+	endif()
 else()
-	add_custom_command(
-		OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o
-		COMMAND php a2x64.php macho64x
-		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
-	)
-	add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o)
+	if (WIN32)
+		add_library(jsusfx ${sources} ${headers})
+	else()
+		# MacOS, 64-bit always
+		add_custom_command(
+			OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o
+			COMMAND php a2x64.php macho64x
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
+		)
+		add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o)
+	endif()
 endif()
 
 target_compile_definitions(jsusfx PUBLIC WDL_FFT_REALSIZE=8)
 target_include_directories(jsusfx PUBLIC "${PROJECT_SOURCE_DIR}")
-

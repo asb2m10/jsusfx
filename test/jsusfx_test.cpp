@@ -182,7 +182,7 @@ extern "C" void test_jsfx();
 void test_jsfx() {
     JsusFx::init();
 #if TEST_GFX
-    test_script("../scripts/liteon/3bandpeakfilter");
+    test_script("../scripts/liteon/3bandpeakfilter.jsfx");
 #else
     test_script("../pd/gain.jsfx");
 #endif

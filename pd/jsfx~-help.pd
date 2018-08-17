@@ -1,0 +1,55 @@
+#N canvas 636 177 653 554 10;
+#X obj 25 381 dac~;
+#X msg 52 141 describe;
+#X msg 78 169 dumpvars;
+#X msg 27 113 bypass \$1;
+#X text 118 141 describe outputs the assigned slider to the pd console
+;
+#X text 144 170 dumpvars output all the variable output to the pd console
+;
+#X obj 25 347 jsfx~ moog24db;
+#X text 103 113 bypass is used to mute the fx processing;
+#X text 121 341 Specify the script to load. The sliders are maps to
+inlets (the first inlets are DSP inlets);
+#N canvas 745 75 450 300 test_tones 0;
+#X obj 52 246 outlet~;
+#X obj 53 184 phasor~;
+#X obj 55 125 *~ 110;
+#X obj 54 154 +~ 220;
+#X obj 54 89 phasor~ 0.1;
+#X obj 53 213 *~ 0.25;
+#X connect 1 0 5 0;
+#X connect 2 0 3 0;
+#X connect 3 0 1 0;
+#X connect 4 0 2 0;
+#X connect 5 0 0 0;
+#X restore 84 200 pd test_tones;
+#X obj 149 280 hsl 128 15 0 100 0 1 empty empty Cutoff_(Scale) -2 -6
+0 8 -262144 -1 -1 7800 1;
+#X obj 299 280 hsl 128 15 0 0 0 1 empty empty Res_(Min/Max) -2 -6 0
+8 -262144 -1 -1 10600 1;
+#X obj 27 82 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0 1
+;
+#X text 121 390 The last inlet is used if the script is sending midi
+messages;
+#X obj 106 424 midiout;
+#X obj 86 240 midiin;
+#X text 10 10 jsfx~ : is the runtime object to expose JSFX scripts
+in pure-data. All slider will be exposed as inlets ============================================================see:
+https://github.com/asb2m10/jsusfx;
+#X text 134 231 midi message with float or list sent to first inlet
+is considered as midi data;
+#X msg 86 264 midi \$1;
+#X connect 1 0 6 0;
+#X connect 2 0 6 0;
+#X connect 3 0 6 0;
+#X connect 6 0 0 0;
+#X connect 6 1 0 1;
+#X connect 6 2 14 0;
+#X connect 9 0 6 0;
+#X connect 9 0 6 1;
+#X connect 10 0 6 4;
+#X connect 11 0 6 5;
+#X connect 12 0 3 0;
+#X connect 15 0 18 0;
+#X connect 18 0 6 0;

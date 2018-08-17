@@ -1,17 +1,16 @@
 #N canvas 221 166 701 545 10;
-#X obj 113 406 dac~;
+#X obj 83 455 dac~;
 #X obj 14 508 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
--262144 -1 -1 0 1;
+-262144 -1 -1 8100 1;
 #X obj 15 472 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
--262144 -1 -1 0 1;
+-262144 -1 -1 4800 1;
 #X msg 261 249 describe;
 #X obj 164 472 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
-0 10 -262144 -1 -1 0 1;
+0 10 -262144 -1 -1 5900 1;
 #X obj 163 508 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
-0 10 -262144 -1 -1 0 1;
-#X obj 21 365 jsusfx~ gain.jsfx;
+0 10 -262144 -1 -1 8700 1;
 #X obj 314 473 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
-0 10 -262144 -1 -1 0 1;
+0 10 -262144 -1 -1 12700 1;
 #N canvas 489 423 644 279 slider_r 0;
 #X obj 311 245 outlet;
 #X obj 45 33 r slider1;
@@ -50,27 +49,13 @@
 #X msg 266 295 dumpvars;
 #X msg 53 166 compile gain.jsfx;
 #X obj 315 508 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
-0 10 -262144 -1 -1 0 1;
+0 10 -262144 -1 -1 9000 1;
 #X obj 463 508 hsl 128 15 0.011 1 0 0 slider8 slider8 slider8 -2 -8
-0 10 -262144 -1 -1 0 1;
+0 10 -262144 -1 -1 6300 1;
 #X msg 73 232 compile octaveup;
 #X msg 54 203 compile butterworth24db;
-#X msg 47 129 compile;
 #X obj 464 473 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
-0 10 -262144 -1 -1 0 1;
-#N canvas 745 75 450 300 test_tones 0;
-#X obj 52 246 outlet~;
-#X obj 53 184 phasor~;
-#X obj 55 125 *~ 110;
-#X obj 54 154 +~ 220;
-#X obj 54 89 phasor~ 0.1;
-#X obj 53 213 *~ 0.25;
-#X connect 1 0 5 0;
-#X connect 2 0 3 0;
-#X connect 3 0 1 0;
-#X connect 4 0 2 0;
-#X connect 5 0 0 0;
-#X restore 121 263 pd test_tones;
+0 10 -262144 -1 -1 12100 1;
 #X obj 229 339 s jsfxmsg;
 #X obj 137 323 r jsfxmsg;
 #X msg 229 214 bypass \$1;
@@ -89,15 +74,49 @@ The file will be searched in the pd path.;
 ;
 #X text 193 411 slider <num> <value 0..1> is used to change the value
 of a parameter of the jsfx script.;
-#X connect 3 0 18 0;
+#X obj 22 365 jsusfx~ gain.jsfx;
+#X obj 54 98 openpanel;
+#X obj 55 73 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+-1;
+#X msg 46 142 compile \$1;
+#N canvas 746 75 450 300 test_tones 1;
+#X obj 52 246 outlet~;
+#X obj 53 184 phasor~;
+#X obj 55 125 *~ 110;
+#X obj 54 154 +~ 220;
+#X obj 54 89 phasor~ 0.1;
+#X obj 53 213 *~ 0.25;
+#X obj 175 131 readsf~;
+#X msg 170 70 open ~/Desktop/menage/vinyls/broker-dealer/tracky1-2.wav
+;
+#X msg 211 101 1;
+#X msg 180 33 open ~/Desktop/menage/vinyls/broker-dealer/01-broker_dealer-110704_0012.wav
+;
+#X connect 1 0 5 0;
+#X connect 2 0 3 0;
+#X connect 3 0 1 0;
+#X connect 4 0 2 0;
+#X connect 6 0 0 0;
+#X connect 7 0 6 0;
 #X connect 8 0 6 0;
-#X connect 9 0 18 0;
-#X connect 10 0 6 0;
-#X connect 13 0 6 0;
-#X connect 14 0 6 0;
-#X connect 15 0 6 0;
-#X connect 17 0 6 0;
-#X connect 17 0 6 1;
-#X connect 19 0 6 0;
-#X connect 20 0 18 0;
-#X connect 21 0 20 0;
+#X connect 9 0 6 0;
+#X restore 86 258 pd test_tones;
+#X obj 27 403 TiaR_HadamVerb;
+#X connect 3 0 15 0;
+#X connect 7 0 26 0;
+#X connect 8 0 15 0;
+#X connect 9 0 26 0;
+#X connect 12 0 26 0;
+#X connect 13 0 26 0;
+#X connect 16 0 26 0;
+#X connect 17 0 15 0;
+#X connect 18 0 17 0;
+#X connect 26 0 31 0;
+#X connect 26 1 31 1;
+#X connect 27 0 29 0;
+#X connect 28 0 27 0;
+#X connect 29 0 26 0;
+#X connect 30 0 26 0;
+#X connect 30 0 26 1;
+#X connect 31 0 0 0;
+#X connect 31 1 0 1;
