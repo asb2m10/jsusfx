@@ -35,6 +35,7 @@ class JsusFx;
 struct JsusFxFileAPI;
 struct JsusFxGfx;
 struct JsusFxPathLibrary;
+struct JsusFxSerializer;
 
 struct JsusFx_FileInfo;
 class JsusFx_Slider;
@@ -151,20 +152,27 @@ struct JsusFxPathLibrary_Basic : JsusFxPathLibrary {
 
 class JsusFx {
 protected:
-    NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample, codeGfx;
+    NSEEL_CODEHANDLE codeInit, codeSlider, codeBlock, codeSample, codeGfx, codeSerialize;
 
     bool computeSlider;
     void releaseCode();
     bool compileSection(int state, const char *code, int line_offset);
-    bool processImport(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, const std::string &importPath, JsusFx_Sections &sections);
-    bool readSections(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input, JsusFx_Sections &sections);
-    bool compileSections(JsusFx_Sections &sections);
+    bool processImport(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, const std::string &importPath, JsusFx_Sections &sections, const int compileFlags);
+    bool readHeader(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input);
+    bool readSections(JsusFxPathLibrary &pathLibrary, const std::string &currentPath, std::istream &input, JsusFx_Sections &sections, const int compileFlags);
+    bool compileSections(JsusFx_Sections &sections, const int compileFlags);
 
 public:
 	static const int kMaxSamples = 64;
 	// Theoretically, it is 64 slider, but starting @ 1, we are simply allowing slider0 to exists 
 	static const int kMaxSliders = 65;
 	static const int kMaxFileInfos = 128;
+	
+	enum CompileFlags
+	{
+		kCompileFlag_CompileGraphicsSection = 1 << 0,
+		kCompileFlag_CompileSerializeSection = 1 << 1
+	};
 	
     NSEEL_VMCTX m_vm;
     JsusFx_Slider sliders[kMaxSliders];
@@ -191,11 +199,14 @@ public:
     JsusFxGfx *gfx;
     int gfx_w;
     int gfx_h;
+	
+	JsusFxSerializer *serializer;
 
     JsusFx(JsusFxPathLibrary &pathLibrary);
     virtual ~JsusFx();
 
-    bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path);
+    bool compile(JsusFxPathLibrary &pathLibrary, const std::string &path, const int compileFlags);
+    bool readHeader(JsusFxPathLibrary &pathLibrary, const std::string &path);
     void prepare(int sampleRate, int blockSize);
     
     // move slider, normalizeSlider is used to normalize the value to a constant (0 means no normalization)
@@ -204,6 +215,7 @@ public:
     bool process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels);
     bool process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels);
     void draw();
+    bool serialize(JsusFxSerializer & serializer, const bool write);
 	
     const char * getString(int index, WDL_FastString ** fs);
 	
@@ -219,4 +231,3 @@ public:
     // ==============================================================
     eel_string_context_state *m_string_context;
 };
-

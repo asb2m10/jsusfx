@@ -7,6 +7,7 @@ set(sources
 	jsusfx.cpp
 	jsusfx_file.cpp
 	jsusfx_gfx.cpp
+	jsusfx_serialize.cpp
 	riff.cpp
 	WDL/eel2/nseel-compiler.c
 	WDL/eel2/nseel-eval.c

@@ -278,7 +278,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
     }
 
     x->fx->dspLock.Enter();
-    if ( x->fx->compile(*(x->path), x->scriptpath) ) {
+    if ( x->fx->compile(*(x->path), x->scriptpath, 0) ) {
         if ( x->fx->srate != 0 )
             x->fx->prepare(*(x->fx->srate), *(x->fx->samplesblock));
         x->bypass = false;

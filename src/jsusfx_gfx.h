@@ -86,6 +86,8 @@ struct JsusFxGfx {
 	virtual void gfx_blit(EEL_F img, EEL_F scale, EEL_F rotate) { }
 	virtual void gfx_blitext(EEL_F img, EEL_F * coords, EEL_F angle) { }
 	virtual void gfx_blitext2(int mp, EEL_F ** params, int blitmode) { } // 0=blit, 1=deltablit
+	
+	virtual int gfx_getchar(int p) { return 0; }
 };
 
 // the logging based GFX implementation below is used to see if the API works, and to see which calls a script is making. it's use doesn't extend beyong this basic debugging facility

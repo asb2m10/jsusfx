@@ -16,6 +16,7 @@
 
 #include "jsusfx.h"
 #include "jsusfx_file.h"
+#include "jsusfx_serialize.h"
 #include "riff.h"
 #include <assert.h>
 
@@ -36,7 +37,12 @@ static EEL_F NSEEL_CGEN_CALL _file_open(void *opaque, EEL_F *_index)
 	if (filename == nullptr)
 		return -1;
 	
-	return fileAPI->file_open(jsusFx, filename);
+	const int handle = fileAPI->file_open(jsusFx, filename);
+	
+	// file handle zero is used as the special serialization file
+	assert(handle != 0);
+	
+	return handle;
 }
 
 static EEL_F NSEEL_CGEN_CALL _file_close(void *opaque, EEL_F *_handle)
@@ -45,6 +51,9 @@ static EEL_F NSEEL_CGEN_CALL _file_close(void *opaque, EEL_F *_handle)
 	JsusFx &jsusFx = REAPER_GET_INTERFACE(opaque);
 	
 	const int handle = *_handle;
+	
+	// file handle zero is used as the special serialization file
+	assert(handle != 0);
 	
 	if (fileAPI->file_close(jsusFx, handle))
 		return 0;
@@ -59,7 +68,17 @@ static EEL_F NSEEL_CGEN_CALL _file_avail(void *opaque, EEL_F *_handle)
 	
   	const int handle = *_handle;
 	
-  	return fileAPI->file_avail(jsusFx, handle);
+	if (handle == 0)
+	{
+		if (jsusFx.serializer == nullptr)
+			return 0;
+		else
+			return jsusFx.serializer->file_avail();
+	}
+	else
+	{
+  		return fileAPI->file_avail(jsusFx, handle);
+	}
 }
 
 static EEL_F NSEEL_CGEN_CALL _file_riff(void *opaque, EEL_F *_handle, EEL_F *_numChannels, EEL_F *_sampleRate)
@@ -68,6 +87,9 @@ static EEL_F NSEEL_CGEN_CALL _file_riff(void *opaque, EEL_F *_handle, EEL_F *_nu
 	JsusFx &jsusFx = REAPER_GET_INTERFACE(opaque);
 	
 	const int handle = *_handle;
+	
+	// file handle zero is used as the special serialization file
+	assert(handle != 0);
 	
 	int numChannels;
 	int sampleRate;
@@ -92,6 +114,9 @@ static EEL_F NSEEL_CGEN_CALL _file_text(void *opaque, EEL_F *_handle)
 	
 	const int handle = *_handle;
 	
+	// file handle zero is used as the special serialization file
+	assert(handle != 0);
+	
 	if (fileAPI->file_text(jsusFx, handle) == false)
 		return -1;
 	
@@ -114,7 +139,17 @@ static EEL_F NSEEL_CGEN_CALL _file_mem(void *opaque, EEL_F *_handle, EEL_F *_des
 	
 	const int numValues = (int)*_numValues;
 	
-	return fileAPI->file_mem(jsusFx, handle, dest, numValues);
+	if (handle == 0)
+	{
+		if (jsusFx.serializer == nullptr)
+			return 0;
+		else
+			return jsusFx.serializer->file_mem(dest, numValues);
+	}
+	else
+	{
+		return fileAPI->file_mem(jsusFx, handle, dest, numValues);
+	}
 }
 
 static EEL_F NSEEL_CGEN_CALL _file_var(void *opaque, EEL_F *_handle, EEL_F *dest)
@@ -124,10 +159,20 @@ static EEL_F NSEEL_CGEN_CALL _file_var(void *opaque, EEL_F *_handle, EEL_F *dest
 	
 	const int handle = *_handle;
 	
-	if (fileAPI->file_var(jsusFx, handle, *dest) == false)
-		return 0;
+	if (handle == 0)
+	{
+		if (jsusFx.serializer == nullptr)
+			return 0;
+		else
+			return jsusFx.serializer->file_var(*dest);
+	}
 	else
-		return 1;
+	{
+		if (fileAPI->file_var(jsusFx, handle, *dest) == false)
+			return 0;
+		else
+			return 1;
+	}
 }
 
 void JsusFxFileAPI::init(NSEEL_VMCTX vm)
