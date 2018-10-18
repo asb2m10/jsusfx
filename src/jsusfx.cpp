@@ -976,12 +976,12 @@ void JsusFx::draw() {
 }
 
 bool JsusFx::serialize(JsusFxSerializer & _serializer, const bool write) {
-	if ( codeSerialize == nullptr )
-		return false;
-	
 	serializer = &_serializer;
 	serializer->begin(*this, write);
-	NSEEL_code_execute(codeSerialize);
+	{
+		if (codeSerialize != nullptr)
+			NSEEL_code_execute(codeSerialize);
+	}
 	serializer->end();
 	serializer = nullptr;
 	
