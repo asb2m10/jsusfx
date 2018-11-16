@@ -18,7 +18,7 @@
 
 #include <vector>
 
-struct JsusFx;
+class JsusFx;
 
 struct JsusFxSerializationData
 {
@@ -36,6 +36,30 @@ struct JsusFxSerializationData
 	
 	void addSlider(const int index, const float value);
 	void addVar(const float value);
+	
+	bool operator==(const JsusFxSerializationData & other) const
+	{
+		if (sliders.size() != other.sliders.size())
+			return false;
+		if (vars.size() != other.vars.size())
+			return false;
+		
+		for (size_t i = 0; i < sliders.size(); ++i)
+			if (sliders[i].index != other.sliders[i].index ||
+				sliders[i].value != other.sliders[i].value)
+				return false;
+		
+		for (size_t i = 0; i < vars.size(); ++i)
+			if (vars[i] != other.vars[i])
+				return false;
+		
+		return true;
+	}
+	
+	bool operator!=(const JsusFxSerializationData & other) const
+	{
+		return !(*this == other);
+	}
 };
 
 struct JsusFxSerializer
