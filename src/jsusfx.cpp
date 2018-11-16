@@ -138,10 +138,69 @@ static EEL_F NSEEL_CGEN_CALL _midirecv(void *opaque, INT_PTR np, EEL_F **parms)
 
 static EEL_F NSEEL_CGEN_CALL _midisend(void *opaque, INT_PTR np, EEL_F **parms)
 {
-	return 0;
+	JsusFx *ctx = REAPER_GET_INTERFACE(opaque);
+	if (ctx->midiSendBufferSize + 3 > ctx->midiSendBufferCapacity) {
+		return 0;
+	} else if (np == 3) {
+		const int offset = (int)*parms[0];
+		(void)offset; // sample offset into current block. not used
+		
+		const uint8_t msg1 = (uint8_t)*parms[1];
+		const uint16_t msg23 = (uint16_t)*parms[2];
+		const uint8_t msg2 = (msg23 >> 0) & 0xff;
+		const uint8_t msg3 = (msg23 >> 8) & 0xff;
+
+		//printf("midi send. cmd=%x, msg2=%d, msg3=%x\n", msg1, msg2, msg3);
+
+		ctx->midiSendBuffer[ctx->midiSendBufferSize++] = msg1;
+		ctx->midiSendBuffer[ctx->midiSendBufferSize++] = msg2;
+		ctx->midiSendBuffer[ctx->midiSendBufferSize++] = msg3;
+
+		return msg1;
+	} else if (np == 4) {
+		const int offset = (int)*parms[0];
+		(void)offset; // sample offset into current block. not used
+		
+		const uint8_t msg1 = (uint8_t)*parms[1];
+		const uint8_t msg2 = (uint8_t)*parms[2];
+		const uint8_t msg3 = (uint8_t)*parms[3];
+		
+		ctx->midiSendBuffer[ctx->midiSendBufferSize++] = msg1;
+		ctx->midiSendBuffer[ctx->midiSendBufferSize++] = msg2;
+		ctx->midiSendBuffer[ctx->midiSendBufferSize++] = msg3;
+		
+		return msg1;
+	} else {
+		return 0;
+	}
 }
 
-// todo : remove
+static EEL_F NSEEL_CGEN_CALL _midisend_buf(void *opaque, INT_PTR np, EEL_F **parms)
+{
+	JsusFx *ctx = REAPER_GET_INTERFACE(opaque);
+	if (np == 3) {
+		const int offset = (int)*parms[0];
+		(void)offset; // sample offset into current block. not used
+		
+		void *buf = (void*)parms[1];
+		const int len = (int)*parms[2];
+		
+	// note : should we auto-detect SysEx messages? Reaper does it, but it seems like a bad idea..
+	//        auto-detection would automagically determine the message's length here by parsing the message stream
+	
+		if (len < 0 || ctx->midiSendBufferSize + len > ctx->midiSendBufferCapacity) {
+			return 0;
+		} else {
+			memcpy(&ctx->midiSendBuffer[ctx->midiSendBufferSize], buf, len);
+			ctx->midiSendBufferSize += len;
+			return len;
+		}
+	} else {
+		return 0;
+	}
+}
+
+// todo : remove __stub
 static EEL_F NSEEL_CGEN_CALL __stub(void *opaque, INT_PTR np, EEL_F **parms)
 {
   return 0.0;
@@ -422,6 +481,9 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
     midi = nullptr;
 	midiSize = 0;
 	
+	midiSendBuffer = nullptr;
+	midiSendBufferSize = 0;
+	
 	gfx = nullptr;
     gfx_w = 0;
     gfx_h = 0;
@@ -444,8 +506,23 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
     AUTOVAR(srate);
     AUTOVARV(num_ch, 2);
     AUTOVAR(samplesblock);
-    AUTOVARV(tempo, 120);
-    AUTOVARV(play_state, 1);
+		
+    AUTOVAR(trigger);
+		
+	// transport state. use setTransportValues to set these
+    AUTOVARV(tempo, 120); // playback tempo in beats per minute
+    AUTOVARV(play_state, 1); // playback state. see the PlaybackState enum for details
+    AUTOVAR(play_position); // current playback position in seconds
+    AUTOVAR(beat_position); // current playback position in beat (beats = quarternotes in /4 time signatures)
+    AUTOVARV(ts_num, 0); // time signature nominator. i.e. 3 if using 3/4 time
+    AUTOVARV(ts_denom, 4); // time signature denominator. i.e. 4 if using 3/4 time
+		
+    AUTOVAR(ext_noinit);
+    AUTOVAR(ext_nodenorm); // set to 1 to disable noise added to signals to avoid denormals from popping up
+	
+	// midi bus support
+    AUTOVAR(ext_midi_bus); // when set to 1, support for midi buses is enabled. otherwise, only bus 0 is active and others will pass through
+    AUTOVAR(midi_bus);
 	
 	// Reaper API
 	NSEEL_addfunc_varparm("slider_automate",1,NSEEL_PProc_THIS,&__stub); // todo : implement slider_automate. add Reaper api interface?
@@ -455,6 +532,7 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
 	NSEEL_addfunc_retptr("spl",1,NSEEL_PProc_THIS,&_reaper_spl);
 	NSEEL_addfunc_varparm("midirecv",3,NSEEL_PProc_THIS,&_midirecv);
     NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&_midisend);
+    NSEEL_addfunc_varparm("midisend_buf",3,NSEEL_PProc_THIS,&_midisend_buf);
 }
 
 JsusFx::~JsusFx() {
@@ -896,7 +974,7 @@ void JsusFx::moveSlider(int idx, float value, int normalizeSlider) {
     }
 
     if ( sliders[idx].inc != 0 ) {
-        int tmp = value / sliders[idx].inc + .5f;
+        int tmp = roundf(value / sliders[idx].inc);
         value = sliders[idx].inc * tmp;
     }
 
@@ -904,12 +982,30 @@ void JsusFx::moveSlider(int idx, float value, int normalizeSlider) {
 }
 
 void JsusFx::setMidi(const void * _midi, int numBytes) {
-	if ((numBytes % 3) != 0) {
-		displayError("midi buffer size is not a multiple of four");
-	} else {
-		midi = (uint8_t*)_midi;
-		midiSize = numBytes;
-	}
+	midi = (uint8_t*)_midi;
+	midiSize = numBytes;
+}
+
+void JsusFx::setMidiSendBuffer(void * buffer, int numBytes) {
+	midiSendBuffer = (uint8_t*)buffer;
+	midiSendBufferCapacity = numBytes;
+	midiSendBufferSize = 0;
+}
+
+void JsusFx::setTransportValues(
+	const double in_tempo,
+	const PlaybackState in_playbackState,
+	const double in_playbackPositionInSeconds,
+	const double in_beatPosition,
+	const int in_timeSignatureNumerator,
+	const int in_timeSignatureDenumerator)
+{
+	*tempo = in_tempo;
+	*play_state = in_playbackState;
+	*play_position = in_playbackPositionInSeconds;
+	*beat_position = in_beatPosition;
+	*ts_num = in_timeSignatureNumerator;
+	*ts_denom = in_timeSignatureDenumerator;
 }
 
 bool JsusFx::process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels) {
@@ -976,12 +1072,19 @@ void JsusFx::draw() {
 }
 
 bool JsusFx::serialize(JsusFxSerializer & _serializer, const bool write) {
-	if ( codeSerialize == nullptr )
-		return false;
-	
 	serializer = &_serializer;
 	serializer->begin(*this, write);
-	NSEEL_code_execute(codeSerialize);
+	{
+		if (codeSerialize != nullptr)
+			NSEEL_code_execute(codeSerialize);
+		
+		if (write == false)
+		{
+			if (codeSlider != nullptr)
+				NSEEL_code_execute(codeSlider);
+			computeSlider = false;
+		}
+	}
 	serializer->end();
 	serializer = nullptr;
 	
