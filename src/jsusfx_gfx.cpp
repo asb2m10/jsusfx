@@ -246,7 +246,7 @@ static EEL_F NSEEL_CGEN_CALL _gfx_setfont(void *opaque, INT_PTR np, EEL_F **parm
 
 static EEL_F NSEEL_CGEN_CALL _gfx_getfont(void *opaque, INT_PTR np, EEL_F **parms)
 {
-  // todo : implement
+  // todo : implement _gfx_getfont
   return 0.0;
 }
 
@@ -336,7 +336,7 @@ static EEL_F NSEEL_CGEN_CALL _gfx_getchar(void *opaque, EEL_F *p)
 
 //
 
-// todo : remove
+// todo : remove __stub
 static EEL_F NSEEL_CGEN_CALL __stub(void *opaque, INT_PTR np, EEL_F **parms)
 {
   return 0.0;

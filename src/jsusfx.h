@@ -174,6 +174,15 @@ public:
 		kCompileFlag_CompileSerializeSection = 1 << 1
 	};
 	
+	enum PlaybackState // see 'play_state' at https://www.reaper.fm/sdk/js/vars.php#js_specialvars
+	{
+		kPlaybackState_Error = 0,
+		kPlaybackState_Playing = 1,
+		kPlaybackState_Paused = 2,
+		kPlaybackState_Recording = 5,
+		kPlaybackState_RecordingPaused = 6
+	};
+	
     NSEEL_VMCTX m_vm;
     JsusFx_Slider sliders[kMaxSliders];
     char desc[64];
@@ -182,6 +191,7 @@ public:
     EEL_F *ext_noinit, *ext_nodenorm, *pdc_delay, *pdc_bot_cd, *pdc_top_ch;
     EEL_F *srate, *num_ch, *samplesblock;
     EEL_F *spl[kMaxSamples], *trigger;
+    EEL_F *ext_midi_bus, *midi_bus;
     EEL_F dummyValue;
 	
     int numInputs;
@@ -192,9 +202,15 @@ public:
 	
     JsusFxFileAPI *fileAPI;
     JsusFx_FileInfo fileInfos[kMaxFileInfos];
-
-	uint8_t * midi;
+	
+	// midi receive buffer. pointer is incremented and the size decremented by the appropriate number of bytes whenever midirecv is called from within the script
+	const uint8_t * midi;
     int midiSize;
+	
+	// midi send buffer. the pointer and capacity stay the same. size is incremented by the number of bytes written by midisend or midisend_buf
+    uint8_t * midiSendBuffer;
+    int midiSendBufferCapacity;
+    int midiSendBufferSize;
 	
     JsusFxGfx *gfx;
     int gfx_w;
@@ -211,7 +227,18 @@ public:
     
     // move slider, normalizeSlider is used to normalize the value to a constant (0 means no normalization)
     void moveSlider(int idx, float value, int normalizeSlider = 0);
+	
     void setMidi(const void * midi, int numBytes);
+    void setMidiSendBuffer(void * buffer, int maxBytes);
+	
+    void setTransportValues(
+    	const double tempo,
+    	const PlaybackState playbackState,
+    	const double playbackPositionInSeconds,
+    	const double beatPosition,
+    	const int timeSignatureNumerator,
+    	const int timeSignatureDenumerator);
+	
     bool process(const float **input, float **output, int size, int numInputChannels, int numOutputChannels);
     bool process64(const double **input, double **output, int size, int numInputChannels, int numOutputChannels);
     void draw();
