@@ -47,6 +47,7 @@ else()
 		add_custom_command(
 			OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o
 			COMMAND php a2x64.php macho64x
+			DEPENDS ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x86-gcc.c
 			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
 		)
 		add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o)
