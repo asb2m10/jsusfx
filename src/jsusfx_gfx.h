@@ -40,6 +40,7 @@ struct JsusFxGfx {
 	EEL_F *m_mouse_x;
 	EEL_F *m_mouse_y;
 	EEL_F *m_mouse_cap;
+	EEL_F *m_mouse_wheel;
 	
 	virtual ~JsusFxGfx() { }
 	
