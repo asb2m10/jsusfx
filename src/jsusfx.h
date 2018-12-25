@@ -246,6 +246,9 @@ public:
 	
     const char * getString(int index, WDL_FastString ** fs);
 	
+	bool hasGraphicsSection() const { return codeGfx != nullptr; }
+	bool hasSerializeSection() const { return codeSerialize != nullptr; }
+	
     bool handleFile(int index, const char *filename);
 	
     virtual void displayMsg(const char *fmt, ...) = 0;
