@@ -18,6 +18,7 @@
 
 #include "WDL/eel2/ns-eel.h"
 #include <iostream>
+#include <vector>
 
 class JsusFx;
 struct JsusFxFileAPI;
