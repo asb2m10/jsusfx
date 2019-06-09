@@ -234,13 +234,13 @@ bool JsusFxFileAPI_Basic::file_close(JsusFx & jsusFx, const int index)
 	if (index < 0 || index >= kMaxFileHandles)
 	{
 		jsusFx.displayError("invalid file handle");
-		return -1;
+		return false;
 	}
 	
 	if (files[index] == nullptr)
 	{
 		jsusFx.displayError("file not opened");
-		return -1;
+		return false;
 	}
 	
 	files[index]->close(jsusFx);
@@ -248,7 +248,7 @@ bool JsusFxFileAPI_Basic::file_close(JsusFx & jsusFx, const int index)
 	delete files[index];
 	files[index] = nullptr;
 	
-	return 0;
+	return true;
 }
 
 int JsusFxFileAPI_Basic::file_avail(JsusFx & jsusFx, const int index)
@@ -438,6 +438,7 @@ bool JsusFx_File::riff(int & numChannels, int & sampleRate)
 		}
 		catch (std::exception & e)
 		{
+			(void)e;
 			success &= false;
 		}
 	}
@@ -458,6 +459,7 @@ bool JsusFx_File::riff(int & numChannels, int & sampleRate)
 		}
 		catch (std::exception & e)
 		{
+			(void)e;
 			success &= false;
 		}
 	}
@@ -555,6 +557,7 @@ bool JsusFx_File::text()
 	}
 	catch (std::exception & e)
 	{
+		(void)e;
 		return false;
 	}
 }
