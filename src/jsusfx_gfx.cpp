@@ -362,6 +362,7 @@ void JsusFxGfx::init(NSEEL_VMCTX vm) {
 	m_mouse_x = NSEEL_VM_regvar(vm,"mouse_x");
 	m_mouse_y = NSEEL_VM_regvar(vm,"mouse_y");
 	m_mouse_cap = NSEEL_VM_regvar(vm,"mouse_cap");
+	m_mouse_wheel = NSEEL_VM_regvar(vm,"mouse_wheel");
 	
 	// LICE
 	NSEEL_addfunc_retptr("gfx_lineto",3,NSEEL_PProc_THIS,&_gfx_lineto);

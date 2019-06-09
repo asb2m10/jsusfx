@@ -482,6 +482,7 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
 	midiSize = 0;
 	
 	midiSendBuffer = nullptr;
+	midiSendBufferCapacity = 0;
 	midiSendBufferSize = 0;
 	
 	gfx = nullptr;
@@ -513,7 +514,7 @@ JsusFx::JsusFx(JsusFxPathLibrary &_pathLibrary)
     AUTOVARV(tempo, 120); // playback tempo in beats per minute
     AUTOVARV(play_state, 1); // playback state. see the PlaybackState enum for details
     AUTOVAR(play_position); // current playback position in seconds
-    AUTOVAR(beat_position); // current playback position in beat (beats = quarternotes in /4 time signatures)
+    AUTOVAR(beat_position); // current playback position in beats (beats = quarternotes in /4 time signatures)
     AUTOVARV(ts_num, 0); // time signature nominator. i.e. 3 if using 3/4 time
     AUTOVARV(ts_denom, 4); // time signature denominator. i.e. 4 if using 3/4 time
 		
