@@ -204,7 +204,7 @@ public:
     JsusFx_FileInfo fileInfos[kMaxFileInfos];
 	
 	// midi receive buffer. pointer is incremented and the size decremented by the appropriate number of bytes whenever midirecv is called from within the script
-	const uint8_t * midi;
+	uint8_t *midi;
     int midiSize;
 	
 	// midi send buffer. the pointer and capacity stay the same. size is incremented by the number of bytes written by midisend or midisend_buf
