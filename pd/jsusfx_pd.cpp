@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Pascal Gauthier
+ * Copyright 2014-2019 Pascal Gauthier
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,22 @@
 #include <stdarg.h>
 #include <fstream>
 
-#include "m_pd.h"
+#if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
+extern "C" {
+#endif
+
+#ifdef __linux__
+    #include "pd/m_pd.h"
+    #include "pd/s_stuff.h"
+#else 
+    #include "m_pd.h"
+    #include "s_stuff.h"
+#endif
+
+#if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
+}
+#endif
+
 #include "WDL/mutex.h"
 #include "jsusfx.h"
 
@@ -459,9 +474,21 @@ void jsusfx_free(t_jsusfx *x) {
     delete x->path;
 }
 
-void *jsfx_new(t_symbol *script) {
+void *jsfx_new(t_symbol *objectname, long argc, t_atom *argv) {
+    t_symbol *script = NULL;
+
+    if ( argc < 1 ) {
+        if ( gensym("jsfx~") != objectname ) {
+            script = objectname;
+        }
+    } else {
+        if ( (argv[0]).a_type == A_SYMBOL ) {
+            script = atom_getsymbol(argv);
+        }
+    }
+
     if ( script == NULL || script->s_name[0] == 0) {
-        error("jsusfx~: missing script");
+        error("jsfx~: missing script");
         return NULL;
     }
     
@@ -537,6 +564,24 @@ static void jsusfx_list(t_jsusfx *x, t_symbol *c, int ac, t_atom *av) {
     }
 }
 
+static int jsusfx_loader_pathwise(t_canvas *unused, const char *objectname, const char *path) {
+    char dirbuf[MAXPDSTRING];
+    char *ptr;
+    int fd;
+
+    if(!path)
+        return 0;
+    
+    fd = sys_trytoopenone(path, objectname, ".jsfx", dirbuf, &ptr, MAXPDSTRING, 1);
+    if (fd>0) {
+        sys_close(fd);
+        class_addcreator((t_newmethod) jsfx_new, gensym(objectname), A_GIMME, 0);
+        return 1;          
+    }
+
+    return 0;
+}
+
 extern "C" {
     void jsusfx_tilde_setup(void) {
         t_symbol *midi = gensym("midi");
@@ -554,7 +599,7 @@ extern "C" {
         class_addlist(jsusfx_class, (t_method)jsusfx_list);
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
 
-        jsfx_class = class_new(gensym("jsfx~"), (t_newmethod)jsfx_new, (t_method)jsfx_free, sizeof(t_jsusfx), 0L, A_SYMBOL, 0);
+        jsfx_class = class_new(gensym("jsfx~"), (t_newmethod)jsfx_new, (t_method)jsfx_free, sizeof(t_jsusfx), 0L, A_GIMME, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_slider, gensym("slider"), A_FLOAT, A_FLOAT, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_uslider, gensym("uslider"), A_FLOAT, A_FLOAT, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_dsp, gensym("dsp"), A_CANT, 0);
@@ -566,9 +611,15 @@ extern "C" {
         class_addlist(jsfx_class, (t_method)jsusfx_list);
         CLASS_MAINSIGNALIN(jsfx_class, t_jsusfx, x_f);
 
-        slider_proxy = class_new(gensym("slider_proxy"), NULL,NULL, sizeof(t_inlet_proxy), CLASS_PD|CLASS_NOINLET, A_NULL);
+        slider_proxy = class_new(gensym("slider_proxy"), NULL, NULL, sizeof(t_inlet_proxy), CLASS_PD|CLASS_NOINLET, A_NULL);
         class_addfloat(slider_proxy, (t_method)slider_float);
         
+        int maj=0,min=0,bug=0;
+        sys_getversion(&maj,&min,&bug);
+        if((maj==0) && (min>46)) {
+            sys_register_loader((loader_t)jsusfx_loader_pathwise);
+        } 
+
         JsusFx::init();
     }
 

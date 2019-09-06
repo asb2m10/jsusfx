@@ -1,16 +1,16 @@
-#N canvas 221 166 701 545 10;
-#X obj 83 455 dac~;
+#N canvas 828 179 701 545 10;
+#X obj 82 449 dac~;
 #X obj 14 508 hsl 128 15 0 1 0 0 slider2 slider2 slider2 -2 -8 0 10
--262144 -1 -1 8100 1;
+-262144 -1 -1 0 1;
 #X obj 15 472 hsl 128 15 0 1 0 0 slider1 slider1 slider1 -2 -8 0 10
--262144 -1 -1 4800 1;
+-262144 -1 -1 0 1;
 #X msg 261 249 describe;
 #X obj 164 472 hsl 128 15 0.011 1 0 0 slider3 slider3 slider3 -2 -8
-0 10 -262144 -1 -1 5900 1;
+0 10 -262144 -1 -1 0 1;
 #X obj 163 508 hsl 128 15 0.011 1 0 0 slider4 slider4 slider4 -2 -8
-0 10 -262144 -1 -1 8700 1;
+0 10 -262144 -1 -1 0 1;
 #X obj 314 473 hsl 128 15 0.011 1 0 0 slider5 slider5 slider5 -2 -8
-0 10 -262144 -1 -1 12700 1;
+0 10 -262144 -1 -1 0 1;
 #N canvas 489 423 644 279 slider_r 0;
 #X obj 311 245 outlet;
 #X obj 45 33 r slider1;
@@ -49,13 +49,13 @@
 #X msg 266 295 dumpvars;
 #X msg 53 166 compile gain.jsfx;
 #X obj 315 508 hsl 128 15 0.011 1 0 0 slider6 slider6 slider6 -2 -8
-0 10 -262144 -1 -1 9000 1;
+0 10 -262144 -1 -1 0 1;
 #X obj 463 508 hsl 128 15 0.011 1 0 0 slider8 slider8 slider8 -2 -8
-0 10 -262144 -1 -1 6300 1;
+0 10 -262144 -1 -1 0 1;
 #X msg 73 232 compile octaveup;
 #X msg 54 203 compile butterworth24db;
 #X obj 464 473 hsl 128 15 0.011 1 0 0 slider7 slider7 slider7 -2 -8
-0 10 -262144 -1 -1 12100 1;
+0 10 -262144 -1 -1 0 1;
 #X obj 229 339 s jsfxmsg;
 #X obj 137 323 r jsfxmsg;
 #X msg 229 214 bypass \$1;
@@ -79,7 +79,7 @@ of a parameter of the jsfx script.;
 #X obj 55 73 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
 -1;
 #X msg 46 142 compile \$1;
-#N canvas 746 75 450 300 test_tones 1;
+#N canvas 746 75 450 300 test_tones 0;
 #X obj 52 246 outlet~;
 #X obj 53 184 phasor~;
 #X obj 55 125 *~ 110;
@@ -101,7 +101,7 @@ of a parameter of the jsfx script.;
 #X connect 8 0 6 0;
 #X connect 9 0 6 0;
 #X restore 86 258 pd test_tones;
-#X obj 27 403 TiaR_HadamVerb;
+#X obj 42 410 tilteq;
 #X connect 3 0 15 0;
 #X connect 7 0 26 0;
 #X connect 8 0 15 0;
