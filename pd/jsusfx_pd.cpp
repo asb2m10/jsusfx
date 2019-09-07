@@ -17,25 +17,19 @@
 
 #include <stdarg.h>
 #include <fstream>
-
-#if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
-extern "C" {
-#endif
-
-#ifdef __linux__
-    #include "pd/m_pd.h"
-    #include "pd/s_stuff.h"
-#else 
-    #include "m_pd.h"
-    #include "s_stuff.h"
-#endif
-
-#if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
-}
-#endif
-
 #include "WDL/mutex.h"
 #include "jsusfx.h"
+
+extern "C" {
+    #ifdef __linux__
+        #include "pd/m_pd.h"
+        #include "pd/s_stuff.h"
+    #else 
+        #include "m_pd.h"
+        #include "s_stuff.h"
+    #endif
+}
+
 
 #define REAPER_GET_INTERFACE(opaque) ((opaque) ? ((JsusFxPd*)opaque) : nullptr)
 

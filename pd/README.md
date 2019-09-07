@@ -31,6 +31,7 @@ with the last outlet.
 
 Version 0.4
 -----------
+* PD Loader support
 * Multi-channel support
 * Native ARM support (Raspberry Pi)
 * Windows build support

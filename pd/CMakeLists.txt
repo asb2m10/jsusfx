@@ -19,7 +19,7 @@ endif()
 
 set_pd_external_path(${PROJECT_SOURCE_DIR})
 
-add_pd_external(jsusfx_pd_project jsfx~ jsusfx_pd.cpp)
+add_pd_external(jsusfx_pd_project jsusfx~ jsusfx_pd.cpp)
 
 target_link_libraries(jsusfx_pd_project jsusfx)
 
@@ -38,9 +38,9 @@ file(GLOB PDHELP "${PROJECT_SOURCE_DIR}/*-help.pd")
 install(FILES ${PDHELP} DESTINATION ${DIST}/externals)
 
 if (UNIX AND APPLE)
-	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsfx~.pd_darwin ${DIST}/externals/jsusfx~.pd_darwin)")
+	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsusfx~.pd_darwin ${DIST}/externals/jsusfx~.pd_darwin)")
 else()
-	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsfx~.pd_linux ${DIST}/externals/jsusfx~.pd_linux)")
+	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ./jsusfx~.pd_linux ${DIST}/externals/jsusfx~.pd_linux)")
 endif()
 
 install(FILES ${PROJECT_SOURCE_DIR}/jsfx2abstract.py DESTINATION ${DIST})
