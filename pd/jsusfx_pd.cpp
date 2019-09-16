@@ -547,9 +547,9 @@ static void slider_float(t_inlet_proxy *proxy, t_float f) {
     proxy->peer->fx->moveSlider(proxy->idx, f, 0);
 }
 
-static void jsusfx_midi(t_jsusfx *x, t_float f) {
+/*static void jsusfx_midi(t_jsusfx *x, t_float f) {
     x->fx->midiin(f);
-}
+}*/
 
 static void jsusfx_list(t_jsusfx *x, t_symbol *c, int ac, t_atom *av) {
     for(int i=0;i<ac;i++) {
@@ -588,7 +588,6 @@ extern "C" {
         class_addmethod(jsusfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
-        class_addmethod(jsusfx_class, (t_method)jsusfx_midi, midi, A_FLOAT, 0);
         class_addmethod(jsusfx_class, (t_method)jsusfx_list, midi, A_GIMME, 0);
         class_addlist(jsusfx_class, (t_method)jsusfx_list);
         CLASS_MAINSIGNALIN(jsusfx_class, t_jsusfx, x_f);
@@ -600,8 +599,7 @@ extern "C" {
         class_addmethod(jsfx_class, (t_method)jsusfx_bypass, gensym("bypass"), A_FLOAT, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_describe, gensym("describe"), A_NULL, 0);
         class_addmethod(jsfx_class, (t_method)jsusfx_dumpvars, gensym("dumpvars"), A_NULL, 0);
-        class_addmethod(jsusfx_class, (t_method)jsusfx_midi, midi, A_FLOAT, 0);
-        class_addmethod(jsusfx_class, (t_method)jsusfx_list, midi, A_GIMME, 0);
+        class_addmethod(jsfx_class, (t_method)jsusfx_list, midi, A_GIMME, 0);
         class_addlist(jsfx_class, (t_method)jsusfx_list);
         CLASS_MAINSIGNALIN(jsfx_class, t_jsusfx, x_f);
 
