@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 2.6)
 
 project(jsusfx)
+option(PORTABLE "build a portable eel2")
+if (PORTABLE)
+	add_definitions(-DEEL_TARGET_PORTABLE=1)
+endif()
+
 
 # -- JSUSFX library --
 set(sources
@@ -27,7 +32,7 @@ if (UNIX AND NOT APPLE)
 		add_library(jsusfx ${sources} ${headers})
 	else() 
 		# Linux x64
-		if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+		if ((NOT PORTABLE) AND (CMAKE_SIZEOF_VOID_P EQUAL 8))
 			add_custom_command(
 				OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.o
 				COMMAND php a2x64.php elf64
@@ -40,7 +45,7 @@ if (UNIX AND NOT APPLE)
 		endif()
 	endif()
 else()
-	if (WIN32)
+	if (PORTABLE OR WIN32)
 		add_library(jsusfx ${sources} ${headers})
 	else()
 		# MacOS, 64-bit always
