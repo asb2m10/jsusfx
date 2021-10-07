@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.2)
 
 project(jsusfx)
 option(PORTABLE "build a portable eel2")
@@ -44,19 +44,30 @@ if (UNIX AND NOT APPLE)
 			add_library(jsusfx ${sources} ${headers})
 		endif()
 	endif()
+elseif (MINGW)
+		# MinGW x64
+		if ((NOT PORTABLE) AND (CMAKE_SIZEOF_VOID_P EQUAL 8))
+			add_custom_command(
+				OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.obj
+				COMMAND php a2x64.php win64
+				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
+			)
+			add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64.obj)
+		else()
+			# MinGW i686
+			add_library(jsusfx ${sources} ${headers})
+		endif()
+elseif (PORTABLE OR WIN32)
+	add_library(jsusfx ${sources} ${headers})
 else()
-	if (PORTABLE OR WIN32)
-		add_library(jsusfx ${sources} ${headers})
-	else()
-		# MacOS, 64-bit always
-		add_custom_command(
-			OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o
-			COMMAND php a2x64.php macho64x
-			DEPENDS ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x86-gcc.c
-			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
-		)
-		add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o)
-	endif()
+	# MacOS, 64-bit always
+	add_custom_command(
+		OUTPUT ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o
+		COMMAND php a2x64.php macho64x
+		DEPENDS ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x86-gcc.c
+		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/WDL/eel2
+	)
+	add_library(jsusfx ${sources} ${headers} ${PROJECT_SOURCE_DIR}/WDL/eel2/asm-nseel-x64-macho.o)
 endif()
 
 target_compile_definitions(jsusfx PUBLIC WDL_FFT_REALSIZE=8)
