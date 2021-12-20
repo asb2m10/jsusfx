@@ -107,7 +107,11 @@ public:
     bool dspOn;
     WDL_Mutex dspLock;
 
-    JsusFxPd(JsusFxPathLibrary &pathLibrary) : JsusFx(pathLibrary) {
+    const void *object;
+
+    JsusFxPd(JsusFxPathLibrary &pathLibrary, const void*obj = nullptr)
+	   : JsusFx(pathLibrary)
+	   , object(obj) {
         midi = &midiHead[0];
         NSEEL_addfunc_varparm("midisend",3,NSEEL_PProc_THIS,&midisend);
     }
@@ -182,7 +186,7 @@ public:
         vsnprintf(output, 4095, fmt, argptr);
         va_end(argptr);
 
-        error("%s", output);
+        pd_error(object, "%s", output);
     }
 
     void flushMidi() {
@@ -276,7 +280,7 @@ void jsusfx_compile(t_jsusfx *x, t_symbol *newFile) {
             filename += ".jsfx";
             
             if ( ! x->path->resolveDataPath(string(filename), result) ) {
-                error("jsusfx~: unable to find script %s", newFile->s_name);
+                pd_error(x, "jsusfx~: unable to find script %s", newFile->s_name);
                 return;
             }
         }
@@ -302,7 +306,7 @@ void jsusfx_slider(t_jsusfx *x, t_float id, t_float value) {
     if ( i > 64 || i < 0 )
         return;
     if ( ! x->fx->sliders[i].exists ) {
-        error("jsusfx~: slider number %d is not assigned for this effect", i);
+        pd_error(x, "jsusfx~: slider number %d is not assigned for this effect", i);
         return;
     }
     x->fx->moveSlider(i, value, 1);
@@ -313,7 +317,7 @@ void jsusfx_uslider(t_jsusfx *x, t_float id, t_float value) {
     if ( i > 64 || i < 0 )
         return;
     if ( ! x->fx->sliders[i].exists ) {
-        error("jsusfx~: slider number %d is not assigned for this effect", i);
+        pd_error(x, "jsusfx~: slider number %d is not assigned for this effect", i);
         return;
     }
     x->fx->moveSlider(i, value, 0);
@@ -401,7 +405,7 @@ void *jsusfx_new(t_symbol *notused, long argc, t_atom *argv) {
     x->bypass = true;
     x->user_bypass = false;
     x->scriptpath[0] = 0;
-    x->fx = new JsusFxPd(*(x->path));
+    x->fx = new JsusFxPd(*(x->path), x);
     x->x_clock = clock_new(x, (t_method)jsusfx_midiout);
 
     x->pinIn = 2;
@@ -482,7 +486,7 @@ void *jsfx_new(t_symbol *objectname, long argc, t_atom *argv) {
     }
 
     if ( script == NULL || script->s_name[0] == 0) {
-        error("jsfx~: missing script");
+        pd_error(0, "jsfx~: missing script");
         return NULL;
     }
     
@@ -491,7 +495,7 @@ void *jsfx_new(t_symbol *objectname, long argc, t_atom *argv) {
     x->bypass = true;
     x->user_bypass = false;
     x->scriptpath[0] = 0;
-    x->fx = new JsusFxPd(*(x->path));
+    x->fx = new JsusFxPd(*(x->path), x);
     x->x_clock = clock_new(x, (t_method)jsusfx_midiout);
     
     x->pinIn = 2;
