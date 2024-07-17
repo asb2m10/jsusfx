@@ -1,5 +1,8 @@
-jsusfx -  Opensource Jesusonic FX implementation
-================================================
+jsusfx -  Opensource Jesusonic FX implementation (ARCHIVED)
+===========================================================
+*Please note that this project is archived. For a complete opensource jsfx implementation
+follow this: https://github.com/jpcima/ysfx*
+
 jsusfx is an opensource implementation of the [JSFX](http://www.reaper.fm/sdk/js/js.php) 
 scripting language that was created by [Cockos](http://www.cockos.com/jesusonic/) and
 is made available with [Reaper](http://www.reaper.fm).
